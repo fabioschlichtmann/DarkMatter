@@ -419,8 +419,10 @@ private:
    
 
     UShort_t      fNumTracks; // number of tracks in event
+    UShort_t      fNumV0s; // number of V0s in event
 
     TClonesArray* fTracks;      //->
+    TClonesArray* fV0s;      //->
 
 public:
     Ali_AS_V0() :
@@ -434,12 +436,15 @@ public:
         ADC_sum_det()  */
     {
         fTracks         = new TClonesArray( "Ali_AS_Track", 10 );
+        fV0s         = new TClonesArray( "Ali_AS_V0", 10 );
        // fTracklets      = new TClonesArray( "Ali_AS_Tracklet", 10 );
     }
 	~Ali_AS_V0()
 	{
 	    delete fTracks;
+	    delete fV0s;
             fTracks = NULL;
+            fV0s = NULL;
             //delete fTracklets;
 	    //fTracklets = NULL;
 	}
@@ -513,19 +518,53 @@ public:
 
 	    new((*fTracks)[fNumTracks++]) Ali_AS_Track;
 	    return (Ali_AS_Track*)((*fTracks)[fNumTracks - 1]);
+        }
+
+        Ali_AS_V0* createV0()
+	{
+	    if (fNumV0s == fV0s->GetSize())
+		fV0s->Expand( fNumV0s + 10 );
+	    if (fNumV0s >= 10000)
+	    {
+		Fatal( "Ali_AS_V0::createV0()", "ERROR: Too many V0s (>10000)!" );
+		exit( 2 );
+	    }
+
+	    new((*fV0s)[fNumV0s++]) Ali_AS_V0;
+	    return (Ali_AS_V0*)((*fV0s)[fNumV0s - 1]);
 	}
+
 	void clearTrackList()
 	{
 	    fNumTracks   = 0;
 	    fTracks      ->Clear();
+        }
+
+        void clearV0List()
+	{
+	    fNumV0s   = 0;
+	    fV0s      ->Clear();
 	}
+
+
 	UShort_t getNumTracks() const
 	{
 	    return fNumTracks;
-	}
+        }
+
+        UShort_t getNumV0s() const
+	{
+	    return fNumV0s;
+        }
+
 	Ali_AS_Track* getTrack(UShort_t i) const
 	{
 	    return i < fNumTracks ? (Ali_AS_Track*)((*fTracks)[i]) : NULL;
+        }
+
+        Ali_AS_V0* getV0(UShort_t i) const
+	{
+	    return i < fNumV0s ? (Ali_AS_V0*)((*fV0s)[i]) : NULL;
         }
         //----------------------------
 
@@ -555,6 +594,7 @@ private:
     Float_t z; // Event vertex z
     Int_t   id; // Run id
     Int_t   N_tracks; // total number of tracks
+    Int_t   N_V0s; // total number of tracks
     Int_t   N_TRD_tracklets; // total number of TRD tracklets
     Float_t   cent_class_ZNA; // ZDC neutral A
     Float_t   cent_class_ZNC; // ZDC neutral C
@@ -576,25 +616,30 @@ private:
     TString TriggerWord; // Trigger word
 
     UShort_t      fNumTracks; // number of tracks in event
+    UShort_t      fNumV0s; // number of tracks in event
     UShort_t      fNumTracklets; // number of tracks in event
 
     TClonesArray* fTracks;      //->
+    TClonesArray* fV0s;      //->
     TClonesArray* fTracklets;      //->
 
 public:
     Ali_AS_Event() :
-	x(-1),y(-1),z(-1),id(-1),N_tracks(0),N_TRD_tracklets(0),
+	x(-1),y(-1),z(-1),id(-1),N_tracks(0),N_V0s(),N_TRD_tracklets(0),
 	cent_class_ZNA(0),cent_class_ZNC(0),cent_class_V0A(0),cent_class_V0C(0),cent_class_V0M(0),cent_class_CL0(0),cent_class_CL1(0),
-        cent_class_SPD(0),cent_class_V0MEq(0),cent_class_V0AEq(0),cent_class_V0CEq(0),BeamIntAA(-1),T0zVertex(-1),TriggerWord(),fNumTracks(0),fNumTracklets(0),
+        cent_class_SPD(0),cent_class_V0MEq(0),cent_class_V0AEq(0),cent_class_V0CEq(0),BeamIntAA(-1),T0zVertex(-1),TriggerWord(),fNumTracks(0),fNumV0s(0),fNumTracklets(0),
         ADC_sum_det()
     {
         fTracks         = new TClonesArray( "Ali_AS_Track", 10 );
+        fV0s            = new TClonesArray( "Ali_AS_V0", 10 );
         fTracklets      = new TClonesArray( "Ali_AS_Tracklet", 10 );
     }
 	~Ali_AS_Event()
 	{
 	    delete fTracks;
             fTracks = NULL;
+            delete fV0s;
+            fV0s = NULL;
             delete fTracklets;
 	    fTracklets = NULL;
 	}
@@ -612,7 +657,10 @@ public:
 	Int_t      getid() const                      { return id;                     }
 
 	void       setN_tracks(Int_t r)                 { N_tracks = r;                    }
-	Int_t      getN_tracks() const                    { return N_tracks;                 }
+        Int_t      getN_tracks() const                    { return N_tracks;                 }
+
+        void       setN_V0s(Int_t r)                 { N_V0s = r;                    }
+	Int_t      getN_V0s() const                    { return N_V0s;                 }
 
 	void       setN_TRD_tracklets(Int_t r)                 { N_TRD_tracklets = r;                    }
 	Int_t      getN_TRD_tracklets() const                    { return N_TRD_tracklets;                 }
@@ -676,16 +724,44 @@ public:
 
 	    new((*fTracks)[fNumTracks++]) Ali_AS_Track;
 	    return (Ali_AS_Track*)((*fTracks)[fNumTracks - 1]);
+        }
+
+        Ali_AS_V0* createV0()
+	{
+	    if (fNumV0s == fV0s->GetSize())
+		fV0s->Expand( fNumV0s + 10 );
+	    if (fNumV0s >= 10000)
+	    {
+		Fatal( "Ali_AS_Event::createV0()", "ERROR: Too many V0s (>10000)!" );
+		exit( 2 );
+	    }
+
+	    new((*fV0s)[fNumV0s++]) Ali_AS_V0;
+	    return (Ali_AS_V0*)((*fV0s)[fNumV0s - 1]);
 	}
+
 	void clearTrackList()
 	{
 	    fNumTracks   = 0;
 	    fTracks      ->Clear();
+        }
+
+        void clearV0List()
+	{
+	    fNumV0s   = 0;
+	    fV0s      ->Clear();
 	}
+
 	UShort_t getNumTracks() const
 	{
 	    return fNumTracks;
-	}
+        }
+
+        UShort_t getNumV0s() const
+	{
+	    return fNumV0s;
+        }
+
 	Ali_AS_Track* getTrack(UShort_t i) const
 	{
 	    return i < fNumTracks ? (Ali_AS_Track*)((*fTracks)[i]) : NULL;
@@ -711,11 +787,15 @@ public:
 	{
 	    fNumTracklets   = 0;
 	    fTracklets      ->Clear();
-	}
+        }
+
+        
+
 	UShort_t getNumTracklets() const
 	{
 	    return fNumTracklets;
-	}
+        }
+
 	Ali_AS_Tracklet* getTracklet(UShort_t i) const
 	{
 	    return i < fNumTracklets ? (Ali_AS_Tracklet*)((*fTracklets)[i]) : NULL;

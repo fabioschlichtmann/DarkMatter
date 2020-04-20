@@ -14,10 +14,11 @@ class AliTRDdigitsManager;
 
 ClassImp(Ali_AS_TRD_digit)
 ClassImp(Ali_AS_Track)
-//ClassImp(Ali_AS_V0)
 ClassImp(Ali_AS_Tracklet)
 ClassImp(Ali_AS_offline_Tracklet)
+ClassImp(Ali_AS_V0)
 ClassImp(Ali_AS_Event)
+    
 
 /*
 class Ali_AS_analysis_TRD_digits : public AliAnalysisTaskSE
@@ -123,7 +124,7 @@ public:
 	: AliAnalysisTaskSE(),
 	fDigitsInputFileName("TRD.FltDigits.root"), fDigitsInputFile(0),
 	fDigitsOutputFileName(""), fDigitsOutputFile(0),
-	fDigMan(0),fGeo(0),AS_Event(0),AS_Track(0),AS_Tracklet(0),AS_offline_Tracklet(0),AS_Digit(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0), fDigitsLoadedFlag(kFALSE),
+	fDigMan(0),fGeo(0),AS_Event(0),AS_V0(0),AS_Track(0),AS_Tracklet(0),AS_offline_Tracklet(0),AS_Digit(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0), fDigitsLoadedFlag(kFALSE),
 	h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),h_ADC_tracklet(0x0),h_ADC_vs_time(0x0)
     {
 	cout << "" << endl;
@@ -188,10 +189,10 @@ public:
 	TFile*  fDigitsOutputFile;            //! Digits file for writing
 
 	AliTRDdigitsManager* fDigMan; //! digits manager
-	AliTRDgeometry* fGeo; //! TRD geometry
-	Ali_AS_Event* AS_Event;
+        AliTRDgeometry* fGeo; //! TRD geometry
+        Ali_AS_Event* AS_Event;
+        Ali_AS_V0* AS_V0;
         Ali_AS_Track* AS_Track;
-        //Ali_AS_V0* AS_V0;
         Ali_AS_Tracklet* AS_Tracklet;
         Ali_AS_offline_Tracklet* AS_offline_Tracklet;
         Ali_AS_TRD_digit* AS_Digit;
