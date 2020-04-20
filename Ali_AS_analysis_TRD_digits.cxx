@@ -115,6 +115,7 @@ static TString esdFriendTreeFName;
 //static Class_peak_finder my_class_peak_finder;
 
 ClassImp(Ali_AS_Event)
+ClassImp(Ali_AS_V0)
 ClassImp(Ali_AS_Track)
 ClassImp(Ali_AS_Tracklet)
 ClassImp(Ali_AS_offline_Tracklet)
@@ -126,7 +127,7 @@ ClassImp(Ali_AS_analysis_TRD_digits)
     : AliAnalysisTaskSE(name),
     fDigitsInputFileName("TRD.FltDigits.root"), fDigitsInputFile(0),
     fDigitsOutputFileName(""), fDigitsOutputFile(0),
-    fDigMan(0),fGeo(0),AS_Event(0),AS_Track(0),AS_Tracklet(0),AS_offline_Tracklet(0),AS_Digit(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0), fDigitsLoadedFlag(kFALSE),
+    fDigMan(0),fGeo(0),AS_Event(0),AS_V0(0),AS_Track(0),AS_Tracklet(0),AS_offline_Tracklet(0),AS_Digit(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0), fDigitsLoadedFlag(kFALSE),
     fListOfHistos(0x0),fTree(0x0),h_dca(0x0),h_dca_xyz(0x0), h2D_TPC_dEdx_vs_momentum(0x0), h_ADC_tracklet(0x0), h_ADC_vs_time(0x0), fPIDResponse(0), EsdTrackCuts(0)
 {
     // Constructor
@@ -720,8 +721,9 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
 
 
         //create element of Ali_AS_V0 class
-        Ali_AS_V0* AS_V0;
-        AS_V0 = new Ali_AS_V0();
+        //Ali_AS_V0* AS_V0;
+        //AS_V0 = new Ali_AS_V0();
+        AS_V0  = AS_Event ->createV0();
 
         //use set functions
         AS_V0 -> setxyz(x,y,z);
@@ -734,9 +736,10 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         Ali_AS_Track* as_trackN = AS_V0->createTrack();
 
 
-        //fill  
-        as_trackP -> setnsigma_p_TPC(trackP->GetTPCsignalSigma());   //richtig?
-        as_trackP -> setnsigma_p_TOF(-1);      //not found
+
+        //fill-----------------------------------------------------------------------------------------------------------------------
+        //as_trackP -> setnsigma_p_TPC(trackP->GetTPCsignalSigma());   //richtig?
+        //as_trackP -> setnsigma_p_TOF(-1);      //not found
         as_trackP -> setTRDSignal(trackP->GetTRDsignal());
         as_trackP -> setTRDsumADC(-1);        //not found
         as_trackP -> setdca(V0->GetDcaV0Daughters());               //richtig?
@@ -750,29 +753,84 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         as_trackP ->setHelix(aliHelix.fHelix[0],aliHelix.fHelix[1],aliHelix.fHelix[2],aliHelix.fHelix[3],aliHelix.fHelix[4],aliHelix.fHelix[5],aliHelix.fHelix[6],aliHelix.fHelix[7],aliHelix.fHelix[8]);
 
 
-        /*
-	void setTRDsumADC(Float_t f)                     { TRDsumADC = f;         }
-	void set_TLV_part(TLorentzVector tlv)     { TLV_part = tlv; }
-	void setNTPCcls(UShort_t s)               { NTPCcls = s;}
-	void setNTRDcls(UShort_t s)               { NTRDcls = s;}
-	void setNITScls(UShort_t s)               { NITScls = s;}
-	void setStatus(UShort_t s)                { status = s;}
-        void setTRD_layer(Int_t i_layer, ULong64_t l)  { TRD_ADC_time_layer[i_layer] = l;}
-        void setimpact_angle_on_TRD(Float_t f)           {impact_angle_on_TRD = f;}
-        void setHelix(Float_t a, Float_t b,Float_t c,Float_t d,Float_t e,Float_t f,Float_t g,Float_t h,Float_t i)
-        {
-            aliHelix_params[0] = a;
-            aliHelix_params[1] = b;
-            aliHelix_params[2] = c;
-            aliHelix_params[3] = d;
-            aliHelix_params[4] = e;
-            aliHelix_params[5] = f;
-            aliHelix_params[6] = g;
-            aliHelix_params[7] = h;
-            aliHelix_params[8] = i;
-        }      */
+        //track_PID
+        // e = 0, muon = 1, pion = 2, kaon = 3, proton = 4
+	Double_t Track_PID_P[10] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+
+        // nSigma TPC
+	Track_PID_P[0] = fPIDResponse->NumberOfSigmasTPC(trackP,AliPID::kElectron);
+	Track_PID_P[1] = fPIDResponse->NumberOfSigmasTPC(trackP,AliPID::kMuon);
+	Track_PID_P[2] = fPIDResponse->NumberOfSigmasTPC(trackP,AliPID::kPion);
+	Track_PID_P[3] = fPIDResponse->NumberOfSigmasTPC(trackP,AliPID::kKaon);
+	Track_PID_P[4] = fPIDResponse->NumberOfSigmasTPC(trackP,AliPID::kProton);
+
+        // nSigma TOF, -999 in case there is no TOF hit
+	Track_PID_P[5] = fPIDResponse->NumberOfSigmasTOF(trackP,AliPID::kElectron);
+	Track_PID_P[6] = fPIDResponse->NumberOfSigmasTOF(trackP,AliPID::kMuon);
+	Track_PID_P[7] = fPIDResponse->NumberOfSigmasTOF(trackP,AliPID::kPion);
+	Track_PID_P[8] = fPIDResponse->NumberOfSigmasTOF(trackP,AliPID::kKaon);
+        Track_PID_P[9] = fPIDResponse->NumberOfSigmasTOF(trackP,AliPID::kProton);
+
+
+        as_trackP  ->setnsigma_e_TPC(Track_PID_P[0]);
+	as_trackP  ->setnsigma_e_TOF(Track_PID_P[5]);
+	as_trackP  ->setnsigma_pi_TPC(Track_PID_P[2]);
+	as_trackP  ->setnsigma_pi_TOF(Track_PID_P[7]);
+	as_trackP  ->setnsigma_K_TPC(Track_PID_P[3]);
+	as_trackP  ->setnsigma_K_TOF(Track_PID_P[8]);
+	as_trackP  ->setnsigma_p_TPC(Track_PID_P[4]);
+	as_trackP  ->setnsigma_p_TOF(Track_PID_P[9]);
+
+        //end of filling for P particle track-------------------------------------------------------------------
+
+        //do the same for N particle track-----------------------------------------------------------------------
+
+        as_trackN -> setTRDsumADC(-1);        //not found
+        as_trackN -> setdca(V0->GetDcaV0Daughters());               //richtig?
+        as_trackN -> setTPCchi2(trackN->GetTPCchi2());
+        as_trackN -> setTrack_length(trackN->GetIntegratedLength());
+        as_trackN -> setNTPCcls(trackN ->GetTPCNcls());
+        as_trackN -> setTOFsignal(trackN ->GetTOFsignal());
+        as_trackN -> setTPCdEdx(trackN ->GetTPCsignal());
+
+        FillHelix(trackN,magF);
+        as_trackN ->setHelix(aliHelix.fHelix[0],aliHelix.fHelix[1],aliHelix.fHelix[2],aliHelix.fHelix[3],aliHelix.fHelix[4],aliHelix.fHelix[5],aliHelix.fHelix[6],aliHelix.fHelix[7],aliHelix.fHelix[8]);
+
+
+        //track_PID
+        // e = 0, muon = 1, pion = 2, kaon = 3, proton = 4
+	Double_t Track_PID_N[10] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
+
+        // nSigma TPC
+	Track_PID_N[0] = fPIDResponse->NumberOfSigmasTPC(trackN,AliPID::kElectron);
+	Track_PID_N[1] = fPIDResponse->NumberOfSigmasTPC(trackN,AliPID::kMuon);
+	Track_PID_N[2] = fPIDResponse->NumberOfSigmasTPC(trackN,AliPID::kPion);
+	Track_PID_N[3] = fPIDResponse->NumberOfSigmasTPC(trackN,AliPID::kKaon);
+	Track_PID_N[4] = fPIDResponse->NumberOfSigmasTPC(trackN,AliPID::kProton);
+
+        // nSigma TOF, -999 in case there is no TOF hit
+	Track_PID_N[5] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kElectron);
+	Track_PID_N[6] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kMuon);
+	Track_PID_N[7] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kPion);
+	Track_PID_N[8] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kKaon);
+        Track_PID_N[9] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kProton);
+
+
+        as_trackN  ->setnsigma_e_TPC(Track_PID_N[0]);
+	as_trackN  ->setnsigma_e_TOF(Track_PID_N[5]);
+	as_trackN  ->setnsigma_pi_TPC(Track_PID_N[2]);
+	as_trackN  ->setnsigma_pi_TOF(Track_PID_N[7]);
+	as_trackN  ->setnsigma_K_TPC(Track_PID_N[3]);
+	as_trackN  ->setnsigma_K_TOF(Track_PID_N[8]);
+	as_trackN  ->setnsigma_p_TPC(Track_PID_N[4]);
+        as_trackN  ->setnsigma_p_TOF(Track_PID_N[9]);
+
+        //end of filling for N particle track-------------------------------------------------------------------
 
     }
+    //end of V0 loop
+    //----------------------------------------------------------------------------------------------------------
+    //----------------------------------------------------------------------------------------------------------
 
 
     //printf("RunNum: %d, ncascades: %d , numberV0: %d /n ",RunNum,ncascades,numberV0);
