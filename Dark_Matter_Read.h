@@ -193,9 +193,10 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event)
         as_trackN = AS_V0 -> getTrack(1);
 
 
+
         //getters for track P
         /*
-        Float_t getnsigma_e_TPC();
+         Float_t nsig_e_TPC[2] = {as_trackP->getnsigma_e_TPC(),as_trackN->getnsigma_e_TPC()};
 	Float_t getnsigma_e_TOF();
 	Float_t getnsigma_pi_TPC();
 	Float_t getnsigma_pi_TOF();
@@ -220,6 +221,19 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event)
         Float_t   getHelix_param(Int_t i_param);
         */
 
+        // Lambda0 -> proton + pi-
+        // anti-Lambda0 -> anti-proton + pi+
+        // if(fabs(nsig_pi_TPC[0]) < 2.5)
+
+        // TLorentzVector* tlv_pos = new TLorentzVector();
+        // TLorentzVector* tlv_neg;
+
+        // Double_t Energy = mass
+        // tlv_pos ->SetPxPyPzE(Px,Py,Pz,Energy);
+
+        // TLorentzVector* tlv_Lambda = tlv_pos + tlv_neg;
+        // Double_t M_inv = tlv_Lambda.M();
+        // fill 1D hist with M_inv
     }
 
 
