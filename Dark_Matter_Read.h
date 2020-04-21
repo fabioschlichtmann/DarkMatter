@@ -11,7 +11,7 @@ using namespace std;
 
 #include "Ali_AS_Event.h"
 #include "Ali_AS_EventLinkDef.h"
-#include "Ana_Digits_functions.h"
+//#include "Ana_Digits_functions.h"
 
 ClassImp(Ali_AS_TRD_digit)
 ClassImp(Ali_AS_Track)
@@ -87,28 +87,14 @@ Dark_Matter_Read::Dark_Matter_Read()
    // outputfile_trkl = new TFile("./TRD_Calib_on_trkl.root","RECREATE");
 
 
-    Init_QA();
-
 
 }
 //----------------------------------------------------------------------------------------
 
 
-//----------------------------------------------------------------------------------------
-void Dark_Matter_Read::Init_QA()
-{
-    printf("Dark_Matter_Read::Init_QA() \n");
-    // TFile* inputfile_QA = TFile::Open("/home/ceres/schmah/ALICE/TRD_Run3_calib/QA_out_year_2016_V2.root");
-    TFile* inputfile_QA = TFile::Open("/home/ceres/schlichtmann/ESD_Analysis/AnalysisResults.root");
-}
-//----------------------------------------------------------------------------------------
-
 
 //----------------------------------------------------------------------------------------
-
-
-//----------------------------------------------------------------------------------------
-void TBase_TRD_Calib::Init_tree(TString SEList)
+void Dark_Matter_Read::Init_tree(TString SEList)
 {
     cout << "Initialize tree" << endl;
     // TString pinputdir = "/misc/alidata120/alice_u/schmah/TRD_offline_calib/Data/";
@@ -166,32 +152,6 @@ void TBase_TRD_Calib::Init_tree(TString SEList)
 Int_t Dark_Matter_Read::Loop_event(Long64_t event)
 {
     printf("Loop event number: %lld \n",event);
-
-#if 0
-    //----------------
-    // Check which event has offline tracklet information from friends
-    for(Int_t i_ev = 0; i_ev < 614; i_ev++)
-    {
-        input_SE->GetEntry( i_ev );
-        if((i_ev % 100) == 0) printf("i_ev: %d \n",i_ev);
-        UShort_t N_tr            = AS_Event ->getNumTracks(); // number of tracks in this event
-
-        for(UShort_t i_track = 0; i_track < N_tr; ++i_track) // loop over all tracks of the actual event
-        {
-            AS_Track      = AS_Event ->getTrack( i_track ); // take the track
-            UShort_t  fNumOfflineTracklets = AS_Track ->getNumOfflineTracklets();
-            if(fNumOfflineTracklets > 0)
-            {
-                printf("    ------> i_ev: %d, i_track: %d, N_off_trkl: %d \n",i_ev,i_track,fNumOfflineTracklets);
-            }
-        }
-
-       
-
-
-    }
-    //----------------
-#endif
 
     Event_active = event;
 
