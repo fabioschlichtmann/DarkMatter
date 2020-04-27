@@ -12,6 +12,7 @@ using namespace std;
 
 #include "Ali_AS_Event.h"
 #include "Ali_AS_EventLinkDef.h"
+#include "vertex_modified.h"
 //#include "Ana_Digits_functions.h"
 
 ClassImp(Ali_AS_TRD_digit)
@@ -71,7 +72,7 @@ public:
     Dark_Matter_Read();
     ~Dark_Matter_Read();
     void Init_tree(TString SEList);
-    Int_t Loop_event(Long64_t event,TH1D* histo_invariantmass);
+    Int_t Loop_event(Long64_t event, vector<TH1D*> histos_1D, vector<TH2D*> histos_2D);
     Long64_t getnumberentries(){return file_entries_total;};
    
 
@@ -100,7 +101,8 @@ void Dark_Matter_Read::Init_tree(TString SEList)
 {
     cout << "Initialize tree" << endl;
     // TString pinputdir = "/misc/alidata120/alice_u/schmah/TRD_offline_calib/Data/";
-    TString pinputdir = "/home/ceres/schlichtmann/ESD_Analysis/";
+    //TString pinputdir = "/home/ceres/schlichtmann/ESD_Analysis/";
+    TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter/";
     //TString pinputdir = "/home/ceres/berdnikova/TRD-Run3-Calibration/";
 
     AS_Event = new Ali_AS_Event();
@@ -151,7 +153,7 @@ void Dark_Matter_Read::Init_tree(TString SEList)
 
 
 //----------------------------------------------------------------------------------------
-Int_t Dark_Matter_Read::Loop_event(Long64_t event, TH1D* histo_invariantmass)
+Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vector<TH2D*> histos_2D)
 {
     printf("Loop event number: %lld \n",event);
     cout<<""<<endl;
@@ -179,6 +181,30 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, TH1D* histo_invariantmass)
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
     UShort_t NumV0s = AS_Event ->getN_V0s();
+    Float_t* pos = new Float_t[3];
+    Float_t* momP = new Float_t[3];
+    Float_t* momN = new Float_t[3];
+    TLorentzVector* tlv_pos = new TLorentzVector();
+    TLorentzVector* tlv_neg = new TLorentzVector();
+    TLorentzVector* tlv_Lambda = new TLorentzVector();
+    TLorentzVector* tlv_Kaon = new TLorentzVector();
+    Ali_AS_Track* as_trackP = new Ali_AS_Track;
+    Ali_AS_Track* as_trackN = new Ali_AS_Track;
+    Float_t* sigma_proton_TPC = new Float_t[2];
+    Float_t* sigma_pion_TPC = new Float_t[2];
+    Float_t radius;
+    TVector3 position_SV2;
+    TVector3 position_SV3;
+    TVector3 direction_SV2;
+    TVector3 direction_SV3;
+
+    vector<TVector3> vec_position_SV2;
+    vector<TVector3> vec_position_SV3;
+    vector<TVector3> vec_direction_SV2;
+    vector<TVector3> vec_direction_SV3;
+
+    const Float_t mass_proton = 0.938 ;  //in GeV?
+    const Float_t mass_pion = 0.1396 ;  //in GeV?
 
     //loop over V0s
     for(int V0counter=0; V0counter<NumV0s ; V0counter++)
@@ -186,58 +212,50 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, TH1D* histo_invariantmass)
         AS_V0 = AS_Event -> getV0(V0counter);
 
         //get position of V0
-        Float_t* pos = new Float_t[3];
         pos = AS_V0 -> getxyz();
+        //position.SetXYZ(pos[0],pos[1],pos[2]);
+        radius = sqrt( pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2] );
 
         //printf("x %f,y %f, z %f \n",pos[0],pos[1],pos[2]);
 
         //get momentum of posititve particle
-        Float_t* momP = new Float_t[3];
         momP = AS_V0 -> getPpxpypz();
 
         //printf("momentum of positive particle px: %f,py: %f,pz: %f \n",momP[0],momP[1],momP[2]);
 
         //get momentum for negative particle
-        Float_t* momN = new Float_t[3];
+      
         momN = AS_V0 -> getNpxpypz();
 
         //printf("momentum of negative particle px: %f,py: %f,pz: %f \n",momN[0],momN[1],momN[2]);
 
         //--------------------------------------------------------------------------------
         //get two tracks for each V0
-        Ali_AS_Track* as_trackP = new Ali_AS_Track;
-        Ali_AS_Track* as_trackN = new Ali_AS_Track;
+
         as_trackP = AS_V0 -> getTrack(0);
         as_trackN = AS_V0 -> getTrack(1);
 
         //------------------------------------------------------------------------------
         //------------------------------------------------------------------------------
 
-        TLorentzVector* tlv_pos = new TLorentzVector();
-        TLorentzVector* tlv_neg = new TLorentzVector();
-        TLorentzVector* tlv_Lambda = new TLorentzVector();
         Double_t invariantmass = -1.;
         //_____________________________________________________________________----
-        Float_t* sigma_proton_TPC = new Float_t[2];
 
         sigma_proton_TPC[0] = as_trackP -> getnsigma_p_TPC();
         sigma_proton_TPC[1] = as_trackN -> getnsigma_p_TPC();
         //printf("sigmas proton %f  %f", sigma_proton_TPC[0], sigma_proton_TPC[1]) ;
 
 
-        Float_t* sigma_pion_TPC = new Float_t[2];
 
         sigma_pion_TPC[0]  = as_trackP -> getnsigma_pi_TPC();
         sigma_pion_TPC[1]  = as_trackN -> getnsigma_pi_TPC();
 
-        Float_t mass_proton = 0.938 ;  //in GeV?
-        Float_t mass_pion = 0.1396 ;  //in GeV?
 
         //Lambda0 -> proton + pi-
         //check if positive particle is proton and if negative particle is pion-
-        if(fabs(sigma_proton_TPC[0])<2.5 && sigma_pion_TPC[1]<2.5)
+        if(fabs(sigma_proton_TPC[0])<2.5 && fabs(sigma_pion_TPC[1])<2.5)
         {
-            printf("particles are proton and pion- \n");
+           // printf("particles are proton and pion- \n");
 
             Float_t energy_proton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
             Float_t energy_pion = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
@@ -248,14 +266,26 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, TH1D* histo_invariantmass)
 
             *tlv_Lambda = *tlv_pos + *tlv_neg;
             invariantmass = tlv_Lambda->M();
-            cout<<invariantmass<<endl;
-            histo_invariantmass->Fill(invariantmass);
+            //cout<<invariantmass<<endl;
+            histos_1D[0]->Fill(invariantmass);
+
+            histos_1D[2]->Fill(radius);
+
+            histos_2D[0]->Fill(pos[0],pos[1]);
+
+            position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
+            vec_position_SV3.push_back(position_SV3);
+
+            direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
+            vec_direction_SV3.push_back(direction_SV3);
+            //calcVertexAnalytical(position, TVector3 &dir1,TVector3 &base2, TVector3 &dir2)
+
         }
 
         //check if negative particle is antiproton and if positive particle is pion+
-        if(fabs(sigma_proton_TPC[1])<2.5 && sigma_pion_TPC[0]<2.5)
+        if(fabs(sigma_proton_TPC[1])<2.5 && fabs(sigma_pion_TPC[0])<2.5)
         {
-            printf("particles are antiproton and pion+ \n");
+           // printf("particles are antiproton and pion+ \n");
             Float_t energy_antiproton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
             Float_t energy_pion = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
             //cout<<energy_proton<<endl;
@@ -265,55 +295,72 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, TH1D* histo_invariantmass)
 
             *tlv_Lambda = *tlv_pos + *tlv_neg;
             invariantmass = tlv_Lambda->M();
-            cout<<invariantmass<<endl;
-            histo_invariantmass->Fill(invariantmass);
+           // cout<<invariantmass<<endl;
+            histos_1D[0]->Fill(invariantmass);
+
+            histos_1D[2]->Fill(radius);
+
+            histos_2D[0]->Fill(pos[0],pos[1]);
+
+            position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
+            vec_position_SV3.push_back(position_SV3);
+
+            direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
+            vec_direction_SV3.push_back(direction_SV3);
+
         }
 
-        //getters for track P
-        /*
-         Float_t nsig_e_TPC[2] = {as_trackP->getnsigma_e_TPC(),as_trackN->getnsigma_e_TPC()};
-	Float_t getnsigma_e_TOF();
-	Float_t getnsigma_pi_TPC();
-	Float_t getnsigma_pi_TOF();
-	Float_t getnsigma_K_TPC();
-	Float_t getnsigma_K_TOF();
-	Float_t getnsigma_p_TPC();
-	Float_t getnsigma_p_TOF();
-	Float_t getTRDSignal();
-	Float_t getTRDsumADC();
-	Float_t getdca();
-	TLorentzVector get_TLV_part();
-	UShort_t getNTPCcls();
-	UShort_t getNTRDcls();
-	UShort_t getNITScls();
-	UShort_t getStatus();
-	Float_t  getTPCchi2();
-        ULong64_t getTRD_layer(Int_t i_layer);
-        Float_t   getimpact_angle_on_TRD();
-	Float_t   getTPCdEdx();
-	Float_t   getTOFsignal();
-        Float_t   getTrack_length();
-        Float_t   getHelix_param(Int_t i_param);
-        */
 
-       
-        // anti-Lambda0 -> anti-proton + pi+
-        // if(fabs(nsig_pi_TPC[0]) < 2.5)
+        //check if pion+ and pion-
+        if(fabs(sigma_pion_TPC[0])<2.5 && fabs(sigma_pion_TPC[1])<2.5)
+        {
+           // printf("particles are pion+ and pion- \n");
+            Float_t energy_pion_plus = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+            Float_t energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+            //cout<<energy_proton<<endl;
+            //cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
+            tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion_plus);
+            tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion_minus);
 
-        // TLorentzVector* tlv_pos = new TLorentzVector();
-        // TLorentzVector* tlv_neg;
+            *tlv_Kaon = *tlv_pos + *tlv_neg;
+            invariantmass = tlv_Kaon->M();
+            //cout<<invariantmass<<endl;
+            histos_1D[1]->Fill(invariantmass);
 
-        // Double_t Energy = mass
-        // tlv_pos ->SetPxPyPzE(Px,Py,Pz,Energy);
+            histos_1D[3]->Fill(radius);
 
-        // TLorentzVector* tlv_Lambda = tlv_pos + tlv_neg;
-        // Double_t M_inv = tlv_Lambda.M();
-        // fill 1D hist with M_inv
+            histos_2D[1]->Fill(pos[0],pos[1]);
+
+            position_SV2.SetXYZ(pos[0],pos[1],pos[2]);
+            vec_position_SV2.push_back(position_SV2);
+
+            direction_SV2.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
+            vec_direction_SV2.push_back(direction_SV3);
+        }
+
+        
     }     //end of V0 loop
 
-    histo_invariantmass->Draw();
+    float radiusS;
 
+    for (int vector_loop_1=0; vector_loop_1<vec_position_SV3.size();vector_loop_1++)
+    {
+       for( int vector_loop_2=0; vector_loop_2<vec_position_SV2.size();vector_loop_2++)
+           if(vec_position_SV3.size()>0 && vec_position_SV2.size()>0 && vec_direction_SV3.size()>0 &&  vec_direction_SV2.size()>0)
+           {
+               TVector3 S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2]);
 
+               radiusS = sqrt ( S_vertex_pos[0]*S_vertex_pos[0]+S_vertex_pos[1]*S_vertex_pos[1]+S_vertex_pos[2]*S_vertex_pos[2] ) ;
+               if( fabs(radiusS) < 200 )
+               {
+                   //cout<<S_vertex_pos[0]<<endl;
+                   histos_1D[4]->Fill(radiusS);
+
+                   histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
+               }
+           }
+
+    }
 
 
     //----------------------------------------------------------------------------------
@@ -492,7 +539,14 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, TH1D* histo_invariantmass)
 
     } // end of track loop */
     return 1;
+
+    
 }
+
+
+
+
+
 //----------------------------------------------------------------------------------------
 
 
