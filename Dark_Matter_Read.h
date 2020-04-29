@@ -72,7 +72,7 @@ public:
     Dark_Matter_Read();
     ~Dark_Matter_Read();
     void Init_tree(TString SEList);
-    Int_t Loop_event(Long64_t event, vector<TH1D*> histos_1D, vector<TH2D*> histos_2D);
+    Int_t Loop_event(Long64_t event, vector<TH1D*> histos_1D, vector<TH2D*> histos_2D, double& number_event_counter);
     Long64_t getnumberentries(){return file_entries_total;};
    
 
@@ -153,9 +153,10 @@ void Dark_Matter_Read::Init_tree(TString SEList)
 
 
 //----------------------------------------------------------------------------------------
-Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vector<TH2D*> histos_2D)
+Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vector<TH2D*> histos_2D,double& number_event_counter)
 {
     printf("Loop event number: %lld \n",event);
+    number_event_counter++;
     cout<<""<<endl;
 
     
@@ -176,6 +177,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     Int_t    N_TRD_tracklets_online = AS_Event ->getNumTracklets(); // online tracklet
     Float_t  V0MEq                = AS_Event ->getcent_class_V0MEq();
 
+    //printf("Event vertex: %f", EventVertexX);
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
@@ -273,13 +275,17 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
             histos_2D[0]->Fill(pos[0],pos[1]);
 
-            position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
-            vec_position_SV3.push_back(position_SV3);
 
-            direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
-            vec_direction_SV3.push_back(direction_SV3);
-            //calcVertexAnalytical(position, TVector3 &dir1,TVector3 &base2, TVector3 &dir2)
+            //cut on mass
+            if(invariantmass<1.1157+0.001495*2 && invariantmass > 1.1157-0.001495*2)
+            {
 
+                position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
+                vec_position_SV3.push_back(position_SV3);
+
+                direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
+                vec_direction_SV3.push_back(direction_SV3);
+            }
         }
 
         //check if negative particle is antiproton and if positive particle is pion+
@@ -302,15 +308,19 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
             histos_2D[0]->Fill(pos[0],pos[1]);
 
-            position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
-            vec_position_SV3.push_back(position_SV3);
+            //cut on mass
+            if(invariantmass<1.1157+0.001495*2 && invariantmass > 1.1157-0.001495*2)
+            {
 
-            direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
-            vec_direction_SV3.push_back(direction_SV3);
+                position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
+                vec_position_SV3.push_back(position_SV3);
 
+                direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
+                vec_direction_SV3.push_back(direction_SV3);
+            }
         }
 
-
+        //K0 - > pi+ and pi-
         //check if pion+ and pion-
         if(fabs(sigma_pion_TPC[0])<2.5 && fabs(sigma_pion_TPC[1])<2.5)
         {
@@ -331,25 +341,90 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
             histos_2D[1]->Fill(pos[0],pos[1]);
 
-            position_SV2.SetXYZ(pos[0],pos[1],pos[2]);
-            vec_position_SV2.push_back(position_SV2);
+            //cut on mass
+            if(invariantmass<0.4981+0.0042*2 && invariantmass > 0.4981-0.0042*2)
+            {
 
-            direction_SV2.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
-            vec_direction_SV2.push_back(direction_SV3);
+                position_SV2.SetXYZ(pos[0],pos[1],pos[2]);
+                vec_position_SV2.push_back(position_SV2);
+
+                direction_SV2.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
+                vec_direction_SV2.push_back(direction_SV2);
+            }
         }
 
         
     }     //end of V0 loop
 
+
+
     float radiusS;
+    TLorentzVector* tlv_SV2 = new TLorentzVector();  //kaon
+    TLorentzVector* tlv_SV3 = new TLorentzVector();  //lambda
+    TLorentzVector* tlv_neutron = new TLorentzVector();  //lambda
+
+    TLorentzVector* tlv_SV1 = new TLorentzVector();  //tlv_SV2+tlv_SV3-tlv_neutron
+
+    double mass_K0 = 0.493677;
+    double mass_Lambda = 1.1155683;
+    double mass_neutron = 0.939565;
+    double S_mass = -1;
+
+    tlv_neutron->SetPxPyPzE(0.,0.,0.,mass_neutron);
+
+    TVector3 vec_primary_vertex_to_SV1;
+    TVector3 unit_vec_primary_vertex_to_SV1;
+
+    TVector3 momentum_SV1;
+    TVector3 unit_momentum_SV1;
+
 
     for (int vector_loop_1=0; vector_loop_1<vec_position_SV3.size();vector_loop_1++)
     {
        for( int vector_loop_2=0; vector_loop_2<vec_position_SV2.size();vector_loop_2++)
            if(vec_position_SV3.size()>0 && vec_position_SV2.size()>0 && vec_direction_SV3.size()>0 &&  vec_direction_SV2.size()>0)
            {
+               if(calculateMinimumDistance(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2])>1.){continue;}
+
                TVector3 S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2]);
 
+               //build lorentz vector of SV2 and SV3
+               //SV2
+               double px,py,pz,E;
+               px = vec_direction_SV2[vector_loop_2][0];
+               py = vec_direction_SV2[vector_loop_2][1];
+               pz = vec_direction_SV2[vector_loop_2][2];
+               E = (sqrt(px*px+py*py+pz*pz)+(mass_K0*mass_K0));
+               tlv_SV2 -> SetPxPyPzE(px,py,pz,E);
+
+               //SV3
+               px = vec_direction_SV3[vector_loop_1][0];
+               py = vec_direction_SV3[vector_loop_1][1];
+               pz = vec_direction_SV3[vector_loop_1][2];
+               E = (sqrt(px*px+py*py+pz*pz)+(mass_Lambda*mass_Lambda));
+               tlv_SV3 -> SetPxPyPzE(px,py,pz,E);
+
+               //calculate SV1
+               *tlv_SV1 = *tlv_SV2 + *tlv_SV3 - *tlv_neutron;
+               S_mass = tlv_SV1->M();
+
+
+               //check if SV1 vector is parallel to vertex from primary vertex to SV1 (s-vertex)
+
+               // vector from primary vertex to SV1 (S-vertex)
+               vec_primary_vertex_to_SV1.SetXYZ(S_vertex_pos[0]-EventVertexX ,S_vertex_pos[1]-EventVertexY , S_vertex_pos[2]-EventVertexZ);
+               unit_vec_primary_vertex_to_SV1 = vec_primary_vertex_to_SV1.Unit();
+
+               //build unit vector of momentum from tlv_SV1
+               momentum_SV1.SetXYZ(tlv_SV1->Px(),tlv_SV1->Py(),tlv_SV1->Pz());
+               unit_momentum_SV1 = momentum_SV1.Unit();
+
+               double dot_product = unit_vec_primary_vertex_to_SV1.Dot(unit_momentum_SV1);
+               printf("dot product: %f \n", dot_product);
+
+               //check if dot product is larger than 0.8
+               if(dot_product<0.8){continue;}
+               
                radiusS = sqrt ( S_vertex_pos[0]*S_vertex_pos[0]+S_vertex_pos[1]*S_vertex_pos[1]+S_vertex_pos[2]*S_vertex_pos[2] ) ;
                if( fabs(radiusS) < 200 )
                {
@@ -357,8 +432,26 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                    histos_1D[4]->Fill(radiusS);
 
                    histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
+
+                   if(fabs(radiusS)>10)
+                   {
+                       histos_1D[5]->Fill(S_mass);
+                   }
+
+                   if(fabs(radiusS)>20)
+                   {
+                       histos_1D[6]->Fill(S_mass);
+                   }
                }
+
+
+               //printf("S mass: %f", S_mass);
+
+              
+
+
            }
+
 
     }
 
@@ -368,176 +461,10 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     //----------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------
 
-    //printf("N_TRD_tracklets_online: %d \n",N_TRD_tracklets_online);
 
     N_Tracks = NumTracks;
 
-   /* vec_track_info.clear();
-    vec_digit_track_info.clear();
-    for(Int_t i_det = 0; i_det < 540; i_det++)
-    {
-        vec_TV3_Tracklet_pos.clear();
-        vec_TV3_Tracklet_dir.clear();
-    } */
 
-   /* // Loop over all tracklets
-    Double_t scale_factor_length = 2.0;
-    for(UShort_t i_tracklet = 0; i_tracklet < N_TRD_tracklets_online; ++i_tracklet) // loop over all tracklets of the actual event
-    {
-        AS_Tracklet             = AS_Event    ->getTracklet( i_tracklet ); // take the track
-        TVector3 TV3_offset     = AS_Tracklet ->get_TV3_offset(); // online tracklets
-        TVector3 TV3_dir        = AS_Tracklet ->get_TV3_dir();    // online tracklets
-        Short_t  i_det_tracklet = AS_Tracklet ->get_detector();
-
-        vec_TV3_Tracklet_pos[i_det_tracklet].push_back(TV3_offset);
-        vec_TV3_Tracklet_dir[i_det_tracklet].push_back(TV3_dir);
-
-        Double_t impact_angle = TV3_dir.Angle(vec_TV3_TRD_center[i_det_tracklet][2]);
-        if(impact_angle > TMath::Pi()*0.5) impact_angle -= TMath::Pi();
-
-        //if(!(i_det_tracklet >= 114 && i_det_tracklet <= 119)) continue;
-        //if(!(i_det_tracklet >= 378 && i_det_tracklet <= 382)) continue;
-
-        Float_t points[6] =
-        {
-            (Float_t)(TV3_offset[0]),(Float_t)(TV3_offset[1]),(Float_t)(TV3_offset[2]),
-            (Float_t)(TV3_offset[0] + scale_factor_length*TV3_dir[0]),(Float_t)(TV3_offset[1] + scale_factor_length*TV3_dir[1]),(Float_t)(TV3_offset[2] + scale_factor_length*TV3_dir[2])
-        };
-        //printf("i_tracklet: %d, out of %d, impact_angle: %4.3f, offset: {%4.3f, %4.3f, %4.3f}, end: {%4.3f, %4.3f, %4.3f} \n",i_tracklet,N_TRD_tracklets_online,impact_angle*TMath::RadToDeg(),TV3_offset[0],TV3_offset[1],TV3_offset[2],TV3_offset[0] + TV3_dir[0],TV3_offset[1] + TV3_dir[1],TV3_offset[2] + TV3_dir[2]);
-
-        vec_TPL3D_tracklets.push_back(new TEveLine());
-        vec_TPL3D_tracklets[(Int_t)vec_TPL3D_tracklets.size()-1] ->SetNextPoint((Float_t)(TV3_offset[0]),(Float_t)(TV3_offset[1]),(Float_t)(TV3_offset[2]));
-        vec_TPL3D_tracklets[(Int_t)vec_TPL3D_tracklets.size()-1] ->SetNextPoint((Float_t)(TV3_offset[0] + scale_factor_length*TV3_dir[0]),(Float_t)(TV3_offset[1] + scale_factor_length*TV3_dir[1]),(Float_t)(TV3_offset[2] + scale_factor_length*TV3_dir[2]));
-    }   */
-
-    // Loop over all tracks
-   /* for(UShort_t i_track = 0; i_track < NumTracks; ++i_track) // loop over all tracks of the actual event
-    {
-        //cout << "i_track: " << i_track << ", of " << NumTracks << endl;
-        AS_Track      = AS_Event ->getTrack( i_track ); // take the track
-        Double_t nsigma_TPC_e   = AS_Track ->getnsigma_e_TPC();
-        Double_t nsigma_TPC_pi  = AS_Track ->getnsigma_pi_TPC();
-        Double_t nsigma_TPC_p   = AS_Track ->getnsigma_p_TPC();
-        Double_t nsigma_TOF_e   = AS_Track ->getnsigma_e_TOF();
-        Double_t nsigma_TOF_pi  = AS_Track ->getnsigma_pi_TOF();
-        Double_t TRD_signal     = AS_Track ->getTRDSignal();
-        Double_t TRDsumADC      = AS_Track ->getTRDsumADC();
-        Double_t dca            = AS_Track ->getdca();  // charge * distance of closest approach to the primary vertex
-        TLorentzVector TLV_part = AS_Track ->get_TLV_part();
-        UShort_t NTPCcls        = AS_Track ->getNTPCcls();
-        UShort_t NTRDcls        = AS_Track ->getNTRDcls();
-        UShort_t NITScls        = AS_Track ->getNITScls();
-        Float_t TPCchi2         = AS_Track ->getTPCchi2();
-        Float_t TPCdEdx         = AS_Track ->getTPCdEdx();
-        Float_t TOFsignal       = AS_Track ->getTOFsignal(); // in ps (1E-12 s)
-        Float_t Track_length    = AS_Track ->getTrack_length();
-
-        Float_t momentum        = TLV_part.P();
-        Float_t eta_track       = TLV_part.Eta();
-        Float_t pT_track        = TLV_part.Pt();
-        Float_t theta_track     = TLV_part.Theta();
-        Float_t phi_track       = TLV_part.Phi();
-
-        vec_track_single_info[0]  = dca;
-        vec_track_single_info[1]  = TPCdEdx;
-        vec_track_single_info[2]  = momentum;
-        vec_track_single_info[3]  = eta_track;
-        vec_track_single_info[4]  = pT_track;
-        vec_track_single_info[5]  = TOFsignal;
-        vec_track_single_info[6]  = Track_length;
-        vec_track_single_info[7]  = TRDsumADC;
-        vec_track_single_info[8]  = TRD_signal;
-        vec_track_single_info[9]  = nsigma_TPC_e;
-        vec_track_single_info[10] = nsigma_TPC_pi;
-        vec_track_single_info[11] = nsigma_TPC_p;
-        vec_track_info.push_back(vec_track_single_info);
-
-        //----------------------------------------------
-        // TRD digit information
-        UShort_t  fNumTRDdigits        = AS_Track ->getNumTRD_digits();
-        UShort_t  fNumOfflineTracklets = AS_Track ->getNumOfflineTracklets();
-        //--------------------------
-
-
-        //--------------------------
-        // Offline tracklet loop
-        for(Int_t i_tracklet = 0; i_tracklet < fNumOfflineTracklets; i_tracklet++) // layers
-        {
-            AS_offline_Tracklet     = AS_Track            ->getOfflineTracklet( i_tracklet ); // take the track
-            TVector3 TV3_offset     = AS_offline_Tracklet ->get_TV3_offset(); // offline tracklets
-            TVector3 TV3_dir        = AS_offline_Tracklet ->get_TV3_dir();    // offline tracklets
-            Short_t  i_det_tracklet = AS_offline_Tracklet ->get_detector();
-
-            printf("offline, i_tracklet: %d, offset: {%4.3f, %4.3f, %4.3f}, dir: {%4.3f, %4.3f, %4.3f} \n",i_tracklet,(Float_t)(TV3_offset[0]),(Float_t)(TV3_offset[1]),(Float_t)(TV3_offset[2]),(Float_t)TV3_dir[0],(Float_t)TV3_dir[1],(Float_t)TV3_dir[2]);
-
-            vec_TPL3D_offline_tracklets.push_back(new TEveLine());
-            vec_TPL3D_offline_tracklets[(Int_t)vec_TPL3D_offline_tracklets.size()-1] ->SetNextPoint((Float_t)(TV3_offset[0]),(Float_t)(TV3_offset[1]),(Float_t)(TV3_offset[2]));
-            vec_TPL3D_offline_tracklets[(Int_t)vec_TPL3D_offline_tracklets.size()-1] ->SetNextPoint((Float_t)(TV3_offset[0] + scale_factor_length*TV3_dir[0]),(Float_t)(TV3_offset[1] + scale_factor_length*TV3_dir[1]),(Float_t)(TV3_offset[2] + scale_factor_length*TV3_dir[2]));
-        }
-        //--------------------------
-
-
-        printf("i_track: %d, pT: %4.3f, phi: %4.3f, eta: %4.3f, N_off_trkl: %d \n",i_track,pT_track,phi_track,eta_track,fNumOfflineTracklets);
-
-        //printf("i_track: %d, fNumTRDdigits: %d \n",i_track,fNumTRDdigits);
-
-        vec_digit_info.clear();
-        for(UShort_t i_digits = 0; i_digits < fNumTRDdigits; i_digits++)
-        {
-            //cout << "i_digits: " << i_digits << ", of " << fNumTRDdigits << endl;
-            AS_Digit              = AS_Track ->getTRD_digit(i_digits);
-            Int_t    layer        = AS_Digit ->get_layer();
-            Int_t    sector       = AS_Digit ->get_sector();
-            Int_t    column       = AS_Digit ->get_column();
-            Int_t    stack        = AS_Digit ->get_stack();
-            Int_t    row          = AS_Digit ->get_row();
-            Int_t    detector     = AS_Digit ->get_detector(layer,stack,sector);
-            Float_t  dca_to_track = AS_Digit ->getdca_to_track();
-            Float_t  dca_x        = AS_Digit ->getdca_x();
-            Float_t  dca_y        = AS_Digit ->getdca_y();
-            Float_t  dca_z        = AS_Digit ->getdca_z();
-            Float_t  ImpactAngle  = AS_Digit ->getImpactAngle();
-
-            for(Int_t i_time = 0; i_time < 24; i_time++)
-            {
-                for(Int_t i_xyz = 0; i_xyz < 3; i_xyz++)
-                {
-                    digit_pos[i_xyz] = AS_Digit ->get_pos(i_time,i_xyz);
-                }
-                //printf("track: %d/%d, digit: %d/%d \n",i_track,NumTracks,i_digits,fNumTRDdigits);
-                //printf("pos: {%4.3f, %4.3f, %4.3f} \n,",digit_pos[0],digit_pos[1],digit_pos[2]);
-                vec_TPM3D_digits[layer] ->SetNextPoint(digit_pos[0],digit_pos[1],digit_pos[2]);
-
-                Float_t ADC = (Float_t)AS_Digit ->getADC_time_value(i_time);
-
-
-                // x,y,z,time,ADC,sector,stack,layer,row,column,dca
-                vec_digit_single_info[0]  = digit_pos[0];
-                vec_digit_single_info[1]  = digit_pos[1];
-                vec_digit_single_info[2]  = digit_pos[2];
-                vec_digit_single_info[3]  = i_time;
-                vec_digit_single_info[4]  = ADC;
-                vec_digit_single_info[5]  = sector;
-                vec_digit_single_info[6]  = stack;
-                vec_digit_single_info[7]  = layer;
-                vec_digit_single_info[8]  = row;
-                vec_digit_single_info[9]  = column;
-                vec_digit_single_info[10] = dca_to_track;
-                vec_digit_single_info[11] = dca_x;
-                vec_digit_single_info[12] = dca_y;
-                vec_digit_single_info[13] = dca_z;
-
-                //printf("dca_full: %4.3f, dca: {%4.3f, %4.3f, %4.3f} \n",dca_to_track,dca_x,dca_y,dca_z);
-                vec_digit_info.push_back(vec_digit_single_info);
-
-                N_Digits ++;
-            }
-
-        } // end of digits loop
-
-        vec_digit_track_info.push_back(vec_digit_info);
-
-    } // end of track loop */
     return 1;
 
     
