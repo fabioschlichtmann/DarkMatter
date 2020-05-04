@@ -33,6 +33,9 @@ void Macro_Loop_event()
     TH1D* histo_S_mass_r_larger_10 = new TH1D("histo S mass r>10","histo S mass r>10",200,0,20);
     TH1D* histo_S_mass_r_larger_20 = new TH1D("histo S mass r>20","histo S mass r>20",200,0,20);
 
+    TH1D* histo_num_tracks = new TH1D("histo number of tracks","histo number of tracks",200,0,1000);
+    TH1D* histo_vertex_z_pos = new TH1D("histo vertex z position","histo vertex z position",100,-30,30);
+
     vector<TH1D*> histos_1D;
     vector<TH2D*> histos_2D;
 
@@ -43,6 +46,8 @@ void Macro_Loop_event()
     histos_1D.push_back(histo_S_vertex_radius);
     histos_1D.push_back(histo_S_mass_r_larger_10);
     histos_1D.push_back(histo_S_mass_r_larger_20);
+    histos_1D.push_back(histo_num_tracks);      //7
+    histos_1D.push_back(histo_vertex_z_pos);      //87
 
     histos_2D.push_back(histo_lambda_x_and_y);
     histos_2D.push_back(histo_K0_x_and_y);
@@ -51,10 +56,10 @@ void Macro_Loop_event()
 
 
     //--------------------------------------------------------------------------------------------------
-    for(int i =0 ; i<numentries; i++)
-    //for(int i =0 ; i<1000; i++)
+    //for(int i =0 ; i<numentries; i++)
+    for(int i =0 ; i<100; i++)
     {
-        printf("eventcounter: %f",event_counter);
+        //printf("eventcounter: %f",event_counter);
         DM_Read ->Loop_event(i,histos_1D,histos_2D,event_counter);
     }
 
@@ -62,7 +67,7 @@ void Macro_Loop_event()
 
     printf("number of entries: %d, number of events: %f", numentries, event_counter);
 
-    TCanvas* a = new TCanvas();
+   /* TCanvas* a = new TCanvas();
     TCanvas* b = new TCanvas();
     TCanvas* c = new TCanvas();
     TCanvas* d = new TCanvas();
@@ -71,8 +76,11 @@ void Macro_Loop_event()
     TCanvas* g = new TCanvas();
     TCanvas* h = new TCanvas();
     TCanvas* i = new TCanvas();
-    TCanvas* j = new TCanvas();
+    TCanvas* j = new TCanvas(); */
+    TCanvas* k = new TCanvas();
+    TCanvas* l = new TCanvas();
 
+   /*
     a->cd();
     //histo_invariantmass_lambda->Draw();
    // histo_invariantmass_K0->Draw();
@@ -98,7 +106,15 @@ void Macro_Loop_event()
 
     j->cd();
     histo_S_mass_r_larger_20->Draw();
+    */
+    k->cd();
+    histo_num_tracks->Draw();
 
+    l->cd();
+    histo_vertex_z_pos->Draw();
+
+
+    /*
     outputfile ->cd();
     histo_invariantmass_lambda   ->Write();
     histo_invariantmass_K0       ->Write();
@@ -109,8 +125,10 @@ void Macro_Loop_event()
     histo_S_x_and_y              ->Write();
     histo_S_mass_r_larger_10     ->Write();
     histo_S_mass_r_larger_20     ->Write();
+    histo_num_tracks             ->Write();
+    histo_vertex_z_pos           ->Write();
 
     outputfile->Close();
-
+    */
 
 }

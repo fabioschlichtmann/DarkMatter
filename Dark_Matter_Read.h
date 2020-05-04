@@ -1,3 +1,5 @@
+
+
 #ifndef __TBASE_TRD_CALIB_H__
 #define __TBASE_TRD_CALIB_H__
 
@@ -100,7 +102,6 @@ Dark_Matter_Read::Dark_Matter_Read()
 void Dark_Matter_Read::Init_tree(TString SEList)
 {
     cout << "Initialize tree" << endl;
-    // TString pinputdir = "/misc/alidata120/alice_u/schmah/TRD_offline_calib/Data/";
     //TString pinputdir = "/home/ceres/schlichtmann/ESD_Analysis/";
     TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter/";
     //TString pinputdir = "/home/ceres/berdnikova/TRD-Run3-Calibration/";
@@ -177,6 +178,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     Int_t    N_TRD_tracklets_online = AS_Event ->getNumTracklets(); // online tracklet
     Float_t  V0MEq                = AS_Event ->getcent_class_V0MEq();
 
+    histos_1D[7]->Fill(NumTracks);
+    histos_1D[8]->Fill(EventVertexZ);
+
     //printf("Event vertex: %f", EventVertexX);
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
@@ -200,10 +204,56 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     TVector3 direction_SV2;
     TVector3 direction_SV3;
 
+
     vector<TVector3> vec_position_SV2;
     vector<TVector3> vec_position_SV3;
     vector<TVector3> vec_direction_SV2;
     vector<TVector3> vec_direction_SV3;
+
+    vector<vector<vector<TVector3>>> cat_direction_SV2;
+    vector<vector<vector<TVector3>>> cat_position_SV2;
+
+    vector<vector<vector<TVector3>>> cat_direction_SV3;
+    vector<vector<vector<TVector3>>> cat_position_SV3;
+
+    cat_direction_SV2.resize(4);
+    cat_direction_SV2[0].resize(4);
+    cat_direction_SV2[1].resize(4);
+    cat_direction_SV2[2].resize(4);
+    cat_direction_SV2[3].resize(4);
+
+    cat_direction_SV3.resize(4);
+    cat_direction_SV3[0].resize(4);
+    cat_direction_SV3[1].resize(4);
+    cat_direction_SV3[2].resize(4);
+    cat_direction_SV3[3].resize(4);
+
+    cat_position_SV2.resize(4);
+    cat_position_SV2[0].resize(4);
+    cat_position_SV2[1].resize(4);
+    cat_position_SV2[2].resize(4);
+    cat_position_SV2[3].resize(4);
+
+    cat_position_SV3.resize(4);
+    cat_position_SV3[0].resize(4);
+    cat_position_SV3[1].resize(4);
+    cat_position_SV3[2].resize(4);
+    cat_position_SV3[3].resize(4);
+   
+
+    vector<double> limits_num_tracks;
+    limits_num_tracks.push_back(0);
+    limits_num_tracks.push_back(47);
+    limits_num_tracks.push_back(67);
+    limits_num_tracks.push_back(87);
+    limits_num_tracks.push_back(1000);
+
+    vector<double> limits_z_vertex;
+    limits_z_vertex.push_back(-30);
+    limits_z_vertex.push_back(-3.3);
+    limits_z_vertex.push_back(1.5);
+    limits_z_vertex.push_back(5.7);
+    limits_z_vertex.push_back(30);
 
     const Float_t mass_proton = 0.938 ;  //in GeV?
     const Float_t mass_pion = 0.1396 ;  //in GeV?
@@ -215,6 +265,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
         //get position of V0
         pos = AS_V0 -> getxyz();
+        //cout<<"posx: "<<pos[0]<<endl;
         //position.SetXYZ(pos[0],pos[1],pos[2]);
         radius = sqrt( pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2] );
 
@@ -285,6 +336,29 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                 direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
                 vec_direction_SV3.push_back(direction_SV3);
+
+                for(int cat_track=0;cat_track<4;cat_track++)
+                {
+                    //cout<<cat_track<<endl;
+                    for(int cat_z=0;cat_z<4;cat_z++)
+                    {
+                        //cout<<cat_z<<endl;
+                        if(NumTracks>=limits_num_tracks[cat_track] && NumTracks<limits_num_tracks[cat_track+1])
+                        {
+                            if(EventVertexZ>=limits_z_vertex[cat_z] && EventVertexZ<limits_z_vertex[cat_z+1])
+                            {
+                               cat_direction_SV3[cat_track][cat_z].push_back(direction_SV3);
+                               cat_position_SV3[cat_track][cat_z].push_back(position_SV3);
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+
             }
         }
 
@@ -317,6 +391,24 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                 direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
                 vec_direction_SV3.push_back(direction_SV3);
+
+                 for(int cat_track=0;cat_track<4;cat_track++)
+                {
+                    for(int cat_z=0;cat_z<4;cat_z++)
+                    {
+                        if(NumTracks>=limits_num_tracks[cat_track] && NumTracks<limits_num_tracks[cat_track+1])
+                        {
+                            if(EventVertexZ>=limits_z_vertex[cat_z] && EventVertexZ<limits_z_vertex[cat_z+1])
+                            {
+                               cat_direction_SV3[cat_track][cat_z].push_back(direction_SV3);
+                               cat_position_SV3[cat_track][cat_z].push_back(position_SV3);
+
+                            }
+
+                        }
+
+                    }
+                }
             }
         }
 
@@ -324,7 +416,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         //check if pion+ and pion-
         if(fabs(sigma_pion_TPC[0])<2.5 && fabs(sigma_pion_TPC[1])<2.5)
         {
-           // printf("particles are pion+ and pion- \n");
+           //printf("particles are pion+ and pion- \n");
             Float_t energy_pion_plus = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
             Float_t energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
             //cout<<energy_proton<<endl;
@@ -344,12 +436,40 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
             //cut on mass
             if(invariantmass<0.4981+0.0042*2 && invariantmass > 0.4981-0.0042*2)
             {
+                printf("particles are pion+ and pion- \n");
 
                 position_SV2.SetXYZ(pos[0],pos[1],pos[2]);
                 vec_position_SV2.push_back(position_SV2);
 
                 direction_SV2.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
                 vec_direction_SV2.push_back(direction_SV2);
+
+                printf("position of vertex:  %f %f %f \n",pos[0],pos[1],pos[2]);
+                //cout<<""<<endl;
+                printf("momentum of pion + : %f %f %f \n",momP[0],momP[1],momP[2]);
+                printf("momentum of pion - : %f %f %f \n",momN[0],momN[1],momN[2]);
+                cout<<""<<endl;
+                //cout<<"direction SV2: "<<direction_SV2[0]<<endl;
+                //cout<<"positionSV2: "<<position_SV2[0]<<endl;
+                //cout<<"position SV2: "<<position_SV2[0]<<endl;
+
+                 for(int cat_track=0;cat_track<4;cat_track++)
+                {
+                    for(int cat_z=0;cat_z<4;cat_z++)
+                    {
+                        if(NumTracks>=limits_num_tracks[cat_track] && NumTracks<limits_num_tracks[cat_track+1])
+                        {
+                            if(EventVertexZ>=limits_z_vertex[cat_z] && EventVertexZ<limits_z_vertex[cat_z+1])
+                            {
+                               cat_direction_SV2[cat_track][cat_z].push_back(direction_SV2);
+                               cat_position_SV2[cat_track][cat_z].push_back(position_SV2);
+
+                            }
+
+                        }
+
+                    }
+                }
             }
         }
 
@@ -361,7 +481,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     float radiusS;
     TLorentzVector* tlv_SV2 = new TLorentzVector();  //kaon
     TLorentzVector* tlv_SV3 = new TLorentzVector();  //lambda
-    TLorentzVector* tlv_neutron = new TLorentzVector();  //lambda
+    TLorentzVector* tlv_neutron = new TLorentzVector();  //neutron
 
     TLorentzVector* tlv_SV1 = new TLorentzVector();  //tlv_SV2+tlv_SV3-tlv_neutron
 
@@ -420,7 +540,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                unit_momentum_SV1 = momentum_SV1.Unit();
 
                double dot_product = unit_vec_primary_vertex_to_SV1.Dot(unit_momentum_SV1);
-               printf("dot product: %f \n", dot_product);
+              // printf("dot product: %f \n", dot_product);
 
                //check if dot product is larger than 0.8
                if(dot_product<0.8){continue;}
@@ -454,7 +574,12 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
 
     }
-
+    for (int i = 0;i<3;i++)
+    {
+        //cout<<i<<endl;
+        if(cat_direction_SV2[0][0].size()==0 ){continue;}
+        //printf("2 direction SV2: %f \n",cat_direction_SV2[0][0][i][0]);
+    }
 
     //----------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------
