@@ -284,6 +284,9 @@ public:
         Float_t   getTrack_length() const           { return Track_length; }
         Float_t   getHelix_param(Int_t i_param) const              {return aliHelix_params[i_param]; }
 
+        void Evaluate(Double_t t, // helix evaluation, taken from AliHelix
+                     Double_t r[3]);  //radius vector
+
 
 	Float_t   getTRD_ADC(Int_t i_layer, Int_t i_time_bin) const
 	{
@@ -307,7 +310,7 @@ public:
 	{
 	    if (fNumOfflineTracklets == fOfflineTracklets->GetSize())
 		fOfflineTracklets->Expand( fNumOfflineTracklets + 10 );
-	    if (fNumOfflineTracklets >= 100000)
+	    if (fNumOfflineTracklets >= 10000)
 	    {
 		Fatal( "Ali_AS_Event::createOfflineTracklet()", "ERROR: Too many tracklets (>100000)!" );
 		exit( 2 );
@@ -369,6 +372,24 @@ public:
 //----------------------------------------------------------------------------------------
 
 
+//________________________________________________________________________
+void Ali_AS_Track::Evaluate(Double_t t,Double_t r[3])  //radius vector
+{
+  //--------------------------------------------------------------------
+  // Calculate position of a point on a track and some derivatives at given phase
+  //--------------------------------------------------------------------
+  float phase=aliHelix_params[4]*t+aliHelix_params[2];
+  Double_t sn=sinf(phase), cs=cosf(phase);
+  //  Double_t sn=TMath::Sin(phase), cs=TMath::Cos(phase);
+
+  r[0] = aliHelix_params[5] + sn/aliHelix_params[4];
+  r[1] = aliHelix_params[0] - cs/aliHelix_params[4];
+  r[2] = aliHelix_params[1] + aliHelix_params[3]*t;
+}
+//________________________________________________________________________
+
+
+
 
 //----------------------------------------------------------------------------------------
 class Ali_AS_Tracklet : public TObject
@@ -415,6 +436,8 @@ private:
     Float_t Ppy;
     Float_t Ppz;
 
+    Float_t pos[3];
+
     Int_t   N_tracks; // total number of tracks
    
 
@@ -426,7 +449,7 @@ private:
 
 public:
     Ali_AS_V0() :
-        x(-1),y(-1),z(-1),Npx(-1),Npy(-1),Npz(-1),Ppx(-1),Ppy(-1),Ppz(-1),N_tracks(0),fNumTracks(0)
+        x(-1),y(-1),z(-1),Npx(-1),Npy(-1),Npz(-1),Ppx(-1),Ppy(-1),Ppz(-1),pos(),N_tracks(0),fNumTracks(0)
 
         //brauchen wir auch nicht?
         /*         
@@ -451,10 +474,9 @@ public:
 
         //set and get functions ------------------------------------------------------------------
         //--------------------------------------------------------------------------------------------
-	void       setxyz(Float_t r, Float_t s, Float_t t)                    { x = r; y=s; z=t;}
-        Float_t*    getxyz() const
+	void       setxyz(Float_t r, Float_t s, Float_t t)                    { x = r; y = s; z = t;}
+        Float_t*    getxyz()
         {
-            Float_t* pos = new Float_t[3];
             pos[0] = x;
             pos[1] = y;
             pos[2] = z;
@@ -778,7 +800,7 @@ public:
 	{
 	    if (fNumTracklets == fTracklets->GetSize())
 		fTracklets->Expand( fNumTracklets + 10 );
-	    if (fNumTracklets >= 100000)
+	    if (fNumTracklets >= 10000)
 	    {
 		Fatal( "Ali_AS_Event::createTracklet()", "ERROR: Too many tracklets (>100000)!" );
 		exit( 2 );

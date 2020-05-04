@@ -26,6 +26,79 @@ ClassImp(Ali_AS_Event)
 
 
 
+
+//________________________________________________________________________
+void FindDCAHelixPoint(TVector3 space_vec, Ali_AS_Track* helixA, Float_t path_initA, Float_t path_initB, Float_t &pathA, Float_t &dcaAB)
+{
+    // V1.0
+    Float_t pA[2] = {path_initA,path_initB}; // the two start values for pathB, 0.0 is the origin of the helix at the first measured point
+    Float_t distarray[2];
+    TVector3 testA;
+    for(Int_t r = 0; r < 2; r++)
+    {
+	Double_t helix_point[3];
+	helixA->Evaluate(pA[r],helix_point);
+	testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]); // 3D-vector of helixA at path pA[r]
+	distarray[r] = (testA-space_vec).Mag(); // dca between helixA and helixB
+    }
+    Int_t loopcounter = 0;
+    Float_t scale = 1.0;
+    Float_t flip  = 1.0; // checks if the minimization direction changed
+    Float_t scale_length = 30.0;
+    while(fabs(scale_length) > 0.1 && loopcounter < 100) // stops when the length is too small
+    {
+	//cout << "n = " << loopcounter << ", pA[0] = " << pA[0]
+	//    << ", pA[1] = " << pA[1] << ", d[0] = " << distarray[0]
+	//    << ", d[1] = " << distarray[1] << ", flip = " << flip
+	//    << ", scale_length = " << scale_length << endl;
+	if(distarray[0] > distarray[1])
+	{
+	    if(loopcounter != 0)
+	    {
+		if(flip == 1.0) scale = 0.4; // if minimization direction changes -> go back, but only the way * 0.4
+		else scale = 0.7; // go on in this direction but only by the way * 0.7
+	    }
+	    scale_length = (pA[1]-pA[0])*scale; // the next length interval
+	    pA[0]     = pA[1] + scale_length; // the new path
+
+	    Double_t helix_point[3];
+	    helixA->Evaluate(pA[0],helix_point);
+	    testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]); // 3D-vector of helixA at path pA[0]
+	    distarray[0] = (testA-space_vec).Mag(); // new dca
+	    flip = 1.0;
+	}
+	else
+	{
+	    if(loopcounter != 0)
+	    {
+		if(flip == -1.0) scale = 0.4;
+		else scale = 0.7;
+	    }
+	    scale_length = (pA[0]-pA[1])*scale;
+	    pA[1]     = pA[0] + scale_length;
+
+	    Double_t helix_point[3];
+	    helixA->Evaluate(pA[1],helix_point);
+	    testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]); // 3D-vector of helixA at path pA[1]
+	    distarray[1] = (testA-space_vec).Mag();
+	    flip = -1.0;
+	}
+	loopcounter++;
+    }
+
+    if(loopcounter >= 100) cout << "WARNING: FindDCAHelixPoint exceeded maximum of 100 loops" << endl;
+
+    if(distarray[0] < distarray[1])
+    {
+	pathA = pA[0];
+	dcaAB = distarray[0];
+    }
+    else
+    {
+	pathA = pA[1];
+	dcaAB = distarray[1];
+    }
+}
 //----------------------------------------------------------------------------------------
 
 
@@ -567,7 +640,26 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                //printf("S mass: %f", S_mass);
 
-              
+
+               //------------------------------------------------------------
+               for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
+               {
+                   AS_Track = AS_Event->getTrack(i_track_A);
+
+                   // Do some PID here for pi+ and pi-
+
+                   Float_t path_closest_to_point = 0;
+                   Float_t dca_closest_to_point  = 0;
+                   Float_t path_initA = 0.0;
+                   Float_t path_initB = 30.0;
+                   FindDCAHelixPoint(S_vertex_pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+
+                   printf("i_track_A: %d, path_closest_to_point: %4.3f, dca_closest_to_point: %4.3f \n",i_track_A,path_closest_to_point,dca_closest_to_point);
+
+                   // if dca is good then calculate Lorentzvectors at vertex position, add them to the S and calculate invariant mass
+               }
+               //------------------------------------------------------------
+
 
 
            }
@@ -580,6 +672,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         if(cat_direction_SV2[0][0].size()==0 ){continue;}
         //printf("2 direction SV2: %f \n",cat_direction_SV2[0][0][i][0]);
     }
+
 
     //----------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------
