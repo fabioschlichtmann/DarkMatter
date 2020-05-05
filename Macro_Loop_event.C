@@ -57,7 +57,7 @@ void Macro_Loop_event()
 
     //--------------------------------------------------------------------------------------------------
     //for(int i =0 ; i<numentries; i++)
-    for(int i =0 ; i<1000; i++)
+    for(int i =0 ; i<100; i++)
     {
         //printf("eventcounter: %f",event_counter);
         DM_Read ->Loop_event(i,histos_1D,histos_2D,event_counter);

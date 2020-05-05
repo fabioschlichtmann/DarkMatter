@@ -205,13 +205,12 @@ private:
 
     TClonesArray* fTRD_digits;          //->
     TClonesArray* fOfflineTracklets;    //->
-    int track_id;
 
 public:
     Ali_AS_Track() :
 	nsigma_e_TPC(-1),nsigma_e_TOF(-1),nsigma_pi_TPC(-1),nsigma_pi_TOF(-1),nsigma_K_TPC(-1),nsigma_K_TOF(-1),nsigma_p_TPC(-1),nsigma_p_TOF(-1),TRD_signal(-1),
         TRDsumADC(-1),dca(-1),TLV_part(),NTPCcls(-1),NTRDcls(-1),NITScls(-1),status(-1),TPCchi2(-1),TRD_ADC_time_layer(),
-        impact_angle_on_TRD(-1),TPCdEdx(-1),TOFsignal(-1),Track_length(-1),aliHelix_params(),fNumTRDdigits(0),fNumOfflineTracklets(0),track_id(0)
+        impact_angle_on_TRD(-1),TPCdEdx(-1),TOFsignal(-1),Track_length(-1),aliHelix_params(),fNumTRDdigits(0),fNumOfflineTracklets(0)
     {
         fTRD_digits       = new TClonesArray( "Ali_AS_TRD_digit", 10 );
         fOfflineTracklets = new TClonesArray( "Ali_AS_offline_Tracklet", 10 );
@@ -259,7 +258,6 @@ public:
             aliHelix_params[7] = h;
             aliHelix_params[8] = i;
         }
-        void settrackid(int id) {track_id = id;}
 
 	// getters
 	Float_t getnsigma_e_TPC() const                     { return nsigma_e_TPC;         }
@@ -285,8 +283,6 @@ public:
 	Float_t   getTOFsignal() const              { return TOFsignal; }
         Float_t   getTrack_length() const           { return Track_length; }
         Float_t   getHelix_param(Int_t i_param) const              {return aliHelix_params[i_param]; }
-
-        int gettrackid() {return track_id;}
 
         void Evaluate(Double_t t, // helix evaluation, taken from AliHelix
                      Double_t r[3]);  //radius vector
