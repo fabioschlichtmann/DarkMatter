@@ -678,8 +678,51 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
     Int_t ncascades =  fESD-> GetNumberOfCascades();
     Int_t numberV0  =  fESD ->GetNumberOfV0s () ;
 
+    cout<<numberV0<<endl;
 
-    for (int V0_counter; V0_counter<numberV0; V0_counter++)
+
+    //printf("RunNum: %d, ncascades: %d , numberV0: %d /n ",RunNum,ncascades,numberV0);
+
+    Double_t Sign_magnetic_field = (magF/fabs(magF));
+    //cout << "Trigger: " <<  fESD->GetFiredTriggerClasses() << endl;
+
+    // Fill event information
+    AS_Event ->clearTrackList();
+    AS_Event ->clearTrackletList();
+    AS_Event ->clearV0List();
+    AS_Event ->setTriggerWord(fESD->GetFiredTriggerClasses());
+    AS_Event ->setx(PrimVertex->GetX());
+    AS_Event ->sety(PrimVertex->GetY());
+    AS_Event ->setz(PrimVertex->GetZ());
+    AS_Event ->setid(RunNum);
+    AS_Event ->setN_tracks(N_tracks);
+    AS_Event ->setN_TRD_tracklets(N_TRD_tracklets); // online
+    AS_Event ->setBeamIntAA(MeanBeamIntAA);
+    AS_Event ->setT0zVertex(T0zVertex);
+    AS_Event ->setN_V0s(numberV0);
+   
+
+    AliMultSelection *MultSelection = (AliMultSelection*) fESD->FindListObject("MultSelection");
+    if(MultSelection)
+    {
+	// V0MEq, V0AEq, V0CEq, SPDTracklets
+
+	AS_Event ->setcent_class_ZNA(MultSelection->GetMultiplicityPercentile("ZNA"));
+	AS_Event ->setcent_class_ZNC(MultSelection->GetMultiplicityPercentile("ZNC"));
+	AS_Event ->setcent_class_V0A(MultSelection->GetMultiplicityPercentile("V0A"));
+	AS_Event ->setcent_class_V0C(MultSelection->GetMultiplicityPercentile("V0C"));
+	AS_Event ->setcent_class_V0M(MultSelection->GetMultiplicityPercentile("V0M"));
+	AS_Event ->setcent_class_CL0(MultSelection->GetMultiplicityPercentile("CL0"));
+	AS_Event ->setcent_class_CL1(MultSelection->GetMultiplicityPercentile("CL1"));
+	AS_Event ->setcent_class_SPD(MultSelection->GetMultiplicityPercentile("SPDTracklets"));
+	AS_Event ->setcent_class_V0MEq(MultSelection->GetMultiplicityPercentile("V0MEq"));
+	AS_Event ->setcent_class_V0AEq(MultSelection->GetMultiplicityPercentile("V0AEq"));
+        AS_Event ->setcent_class_V0CEq(MultSelection->GetMultiplicityPercentile("V0CEq"));
+
+    }
+
+
+    for (int V0_counter=0; V0_counter<numberV0; V0_counter++)
     {
         //get position of V0-----------------------
         Double_t x=0;
@@ -687,6 +730,8 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         Double_t z=0;
         AliESDv0 *V0=fESD->GetV0(V0_counter);
         V0->AliESDv0::GetXYZ(x,y,z);
+
+        printf("x: %f,y: %f, z: %f \n",x,y,z);
         
         //-------------------------------
 
@@ -705,6 +750,7 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         //cout<<indexP<<endl;
         AliESDtrack* trackN = fESD->AliESDEvent::GetTrack(indexN);
         AliESDtrack* trackP = fESD->AliESDEvent::GetTrack(indexP);
+        printf("index N: %d, index P: %d \n",indexN, indexP);
         //----------------------------------------------------------------
 
         //get impulse vector by using AliESDtrack class-------------------------
@@ -828,46 +874,13 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         //end of filling for N particle track-------------------------------------------------------------------
 
     }
+    cout<<"end of V0 loop"<<endl;
+    cout<<""<<endl;
     //end of V0 loop
     //----------------------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------------------
 
 
-    //printf("RunNum: %d, ncascades: %d , numberV0: %d /n ",RunNum,ncascades,numberV0);
-
-    Double_t Sign_magnetic_field = (magF/fabs(magF));
-    //cout << "Trigger: " <<  fESD->GetFiredTriggerClasses() << endl;
-
-    // Fill event information
-    AS_Event ->clearTrackList();
-    AS_Event ->clearTrackletList();
-    AS_Event ->setTriggerWord(fESD->GetFiredTriggerClasses());
-    AS_Event ->setx(PrimVertex->GetX());
-    AS_Event ->sety(PrimVertex->GetY());
-    AS_Event ->setz(PrimVertex->GetZ());
-    AS_Event ->setid(RunNum);
-    AS_Event ->setN_tracks(N_tracks);
-    AS_Event ->setN_TRD_tracklets(N_TRD_tracklets); // online
-    AS_Event ->setBeamIntAA(MeanBeamIntAA);
-    AS_Event ->setT0zVertex(T0zVertex);
-
-    AliMultSelection *MultSelection = (AliMultSelection*) fESD->FindListObject("MultSelection");
-    if(MultSelection)
-    {
-	// V0MEq, V0AEq, V0CEq, SPDTracklets
-
-	AS_Event ->setcent_class_ZNA(MultSelection->GetMultiplicityPercentile("ZNA"));
-	AS_Event ->setcent_class_ZNC(MultSelection->GetMultiplicityPercentile("ZNC"));
-	AS_Event ->setcent_class_V0A(MultSelection->GetMultiplicityPercentile("V0A"));
-	AS_Event ->setcent_class_V0C(MultSelection->GetMultiplicityPercentile("V0C"));
-	AS_Event ->setcent_class_V0M(MultSelection->GetMultiplicityPercentile("V0M"));
-	AS_Event ->setcent_class_CL0(MultSelection->GetMultiplicityPercentile("CL0"));
-	AS_Event ->setcent_class_CL1(MultSelection->GetMultiplicityPercentile("CL1"));
-	AS_Event ->setcent_class_SPD(MultSelection->GetMultiplicityPercentile("SPDTracklets"));
-	AS_Event ->setcent_class_V0MEq(MultSelection->GetMultiplicityPercentile("V0MEq"));
-	AS_Event ->setcent_class_V0AEq(MultSelection->GetMultiplicityPercentile("V0AEq"));
-	AS_Event ->setcent_class_V0CEq(MultSelection->GetMultiplicityPercentile("V0CEq"));
-    }
 
 
     //-----------------------------------------------------------------

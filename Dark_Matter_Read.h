@@ -232,7 +232,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     printf("Loop event number: %lld \n",event);
     number_event_counter++;
     cout<<""<<endl;
-
+    
     
 
     Event_active = event;
@@ -254,6 +254,12 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     histos_1D[7]->Fill(NumTracks);
     histos_1D[8]->Fill(EventVertexZ);
 
+    /*
+    for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
+    {
+       cout<<i_track_A<<endl;
+       }
+       */
     //printf("Event vertex: %f", EventVertexX);
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
@@ -360,6 +366,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
         as_trackP = AS_V0 -> getTrack(0);
         as_trackN = AS_V0 -> getTrack(1);
+
 
         //------------------------------------------------------------------------------
         //------------------------------------------------------------------------------
@@ -509,7 +516,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
             //cut on mass
             if(invariantmass<0.4981+0.0042*2 && invariantmass > 0.4981-0.0042*2)
             {
-                printf("particles are pion+ and pion- \n");
+               // printf("particles are pion+ and pion- \n");
 
                 position_SV2.SetXYZ(pos[0],pos[1],pos[2]);
                 vec_position_SV2.push_back(position_SV2);
@@ -517,11 +524,11 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 direction_SV2.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
                 vec_direction_SV2.push_back(direction_SV2);
 
-                printf("position of vertex:  %f %f %f \n",pos[0],pos[1],pos[2]);
+               // printf("position of vertex:  %f %f %f \n",pos[0],pos[1],pos[2]);
                 //cout<<""<<endl;
-                printf("momentum of pion + : %f %f %f \n",momP[0],momP[1],momP[2]);
-                printf("momentum of pion - : %f %f %f \n",momN[0],momN[1],momN[2]);
-                cout<<""<<endl;
+               // printf("momentum of pion + : %f %f %f \n",momP[0],momP[1],momP[2]);
+               // printf("momentum of pion - : %f %f %f \n",momN[0],momN[1],momN[2]);
+               // cout<<""<<endl;
                 //cout<<"direction SV2: "<<direction_SV2[0]<<endl;
                 //cout<<"positionSV2: "<<position_SV2[0]<<endl;
                 //cout<<"position SV2: "<<position_SV2[0]<<endl;
@@ -579,6 +586,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
            {
                if(calculateMinimumDistance(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2])>1.){continue;}
 
+               //cout<<"S-vertex found"<<endl;
                TVector3 S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2]);
 
                //build lorentz vector of SV2 and SV3
@@ -617,8 +625,10 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                //check if dot product is larger than 0.8
                if(dot_product<0.8){continue;}
+               //printf("S-vertex position: %f %f %f \n",S_vertex_pos[0],S_vertex_pos[1],S_vertex_pos[2]);
+               radiusS = vec_primary_vertex_to_SV1.Mag();
+               //cout<<radiusS<<endl;
                
-               radiusS = sqrt ( S_vertex_pos[0]*S_vertex_pos[0]+S_vertex_pos[1]*S_vertex_pos[1]+S_vertex_pos[2]*S_vertex_pos[2] ) ;
                if( fabs(radiusS) < 200 )
                {
                    //cout<<S_vertex_pos[0]<<endl;
@@ -644,6 +654,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                //------------------------------------------------------------
                for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
                {
+                    // printf("track number: %d \n",i_track_A);
                    AS_Track = AS_Event->getTrack(i_track_A);
 
                    // Do some PID here for pi+ and pi-
@@ -654,8 +665,19 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                    Float_t path_initB = 30.0;
                    FindDCAHelixPoint(S_vertex_pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
-                   printf("i_track_A: %d, path_closest_to_point: %4.3f, dca_closest_to_point: %4.3f \n",i_track_A,path_closest_to_point,dca_closest_to_point);
+                   //printf("i_track_A: %d, path_closest_to_point: %4.3f, dca_closest_to_point: %4.3f \n",i_track_A,path_closest_to_point,dca_closest_to_point);
 
+                   if(dca_closest_to_point<1.)
+                   {
+                       //cout<<""<<endl;
+                       //printf("i_track_A ganz nah: %d \n",i_track_A);
+                       if(fabs(AS_Track -> getnsigma_pi_TPC())<2.5 && radiusS>5)
+                       {
+                           printf("S-vertex position: %f %f %f \n",S_vertex_pos[0],S_vertex_pos[1],S_vertex_pos[2]);
+                           printf("track nr. %d is <1cm from S-vertex and is pion \n",i_track_A);
+
+                       }
+                   }
                    // if dca is good then calculate Lorentzvectors at vertex position, add them to the S and calculate invariant mass
                }
                //------------------------------------------------------------
