@@ -229,9 +229,9 @@ void Dark_Matter_Read::Init_tree(TString SEList)
 //----------------------------------------------------------------------------------------
 Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vector<TH2D*> histos_2D,double& number_event_counter, double& counter_of_2pions_close_to_S_vertex)
 {
-    printf("Loop event number: %lld \n",event);
+    if(event%100==0) {printf("Loop event number: %lld \n",event);  }
     number_event_counter++;
-    cout<<""<<endl;
+    //cout<<""<<endl;
 
     
 
@@ -332,6 +332,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
     const Float_t mass_proton = 0.938 ;  //in GeV?
     const Float_t mass_pion = 0.1396 ;  //in GeV?
+    const double  mass_K = 0.493677 ;  //in GeV?
 
     //loop over V0s
     for(int V0counter=0; V0counter<NumV0s ; V0counter++)
@@ -377,6 +378,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
         sigma_pion_TPC[0]  = as_trackP -> getnsigma_pi_TPC();
         sigma_pion_TPC[1]  = as_trackN -> getnsigma_pi_TPC();
+
+        double sigma_K_plus_TPC = as_trackP -> getnsigma_K_TPC();
 
 
         //Lambda0 -> proton + pi-
@@ -548,6 +551,53 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
             }
         }
 
+
+        //search for V0 coming from anti-proton and K+
+        if ( fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_K_plus_TPC < 2.5))
+        {
+            //  cout<<"V0 from anti-proton and K+"<<endl;
+          double energy_K_plus = sqrt(mass_K * mass_K + (momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+          double energy_anti_proton = sqrt(mass_proton * mass_proton + (momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2])) ;
+
+          tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_K_plus);
+          tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_anti_proton);
+
+          TLorentzVector tlv_anti_p_and_K_plus = *tlv_pos + *tlv_neg;
+
+          invariantmass = tlv_anti_p_and_K_plus.M();
+
+          //assume position of V0 is also position of potential S-vertex
+          //loop over all other tracks in order to find K+ that comes from this position
+
+          for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
+          {
+
+              AS_Track = AS_Event->getTrack(i_track_A);
+
+              double sigma = AS_Track -> getnsigma_K_TPC();
+
+              // PID for Kaon
+              if(fabs(sigma)>2.5){continue;}
+              //initial parameters
+              Float_t path_closest_to_point = 0;
+              Float_t dca_closest_to_point  = 0;
+              Float_t path_initA = 0.0;
+              Float_t path_initB = 30.0;
+
+              //calculate dca from vertex to particle track
+              FindDCAHelixPoint(pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+
+              if(dca_closest_to_point>1.){continue;}
+
+              //cout<<"Found V0 of antiproton and K+ with another K+"<<endl;
+
+
+          }
+          //cout<<"invariantmass: "<<invariantmass<<endl;
+
+
+        }
+
         
     }     //end of V0 loop
 
@@ -605,8 +655,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                //calculate SV1
                *tlv_SV1 = *tlv_SV2 + *tlv_SV3 - *tlv_neutron;
-               S_mass = tlv_SV1->M();
 
+               //neglecting pions -> falsche Masse
+               S_mass = tlv_SV1->M();
 
                //check if SV1 vector is parallel to vertex from primary vertex to SV1 (s-vertex)
 
@@ -622,7 +673,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
               // printf("dot product: %f \n", dot_product);
 
                //check if dot product is larger than 0.8
-               if(dot_product<0.8){continue;}
+               //if(dot_product<0.8){continue;}
                
                radiusS = vec_primary_vertex_to_SV1.Mag();
                if( fabs(radiusS) < 200 )
@@ -632,6 +683,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                    histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
 
+                   //wrong mass filled!
                    if(fabs(radiusS)>10)
                    {
                        histos_1D[5]->Fill(S_mass);
@@ -695,7 +747,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                }
 
-               cout<<"number pions close to S-vertex: "<<counter_pions_close_to_S_vertex<<endl;
+               //cout<<"number pions close to S-vertex: "<<counter_pions_close_to_S_vertex<<endl;
 
                //if(tracks.size()<2){continue;}
                //cout<<tracks[0]<<"  "<<tracks[1]<<endl;
@@ -713,6 +765,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                    ASTrack1 = AS_Event->getTrack(tracks[0]);
                    ASTrack2 = AS_Event->getTrack(tracks[1]);
 
+
+                   //do all for pion 1--------------------------------------------------------------
+                   //---------------------------------------------------------------------------------
                    Float_t path_closest_to_point = 0;
                    Float_t dca_closest_to_point  = 0;
                    Float_t path_initA = 0.0;
@@ -727,23 +782,80 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                    TVector3 mom_dir_pion1;
                    TVector3 unit_mom_dir_pion1;
+                   TVector3 vec_momentum;
 
                    mom_dir_pion1.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
 
                    //unit vector in direction of pion 1
                    unit_mom_dir_pion1 = mom_dir_pion1.Unit();
 
-                   cout<<r1[0]<<endl;
-                   cout<<r2[0]<<endl;
+                   //cout<<r1[0]<<endl;
+                   //cout<<r2[0]<<endl;
+
+                   TLorentzVector tlv = ASTrack1->get_TLV_part();
+                   double momentum = tlv.P();
+
+                   vec_momentum.SetXYZ(unit_mom_dir_pion1[0]*momentum,unit_mom_dir_pion1[1]*momentum,unit_mom_dir_pion1[2]*momentum);
+
+                   //cout<<"momentum vec: "<<vec_momentum[0]<<endl;
+
+
+                   TLorentzVector tlv_pion1;
+                   double energy_pion1 = sqrt(mass_pion * mass_pion + momentum*momentum) ;
+
+                   tlv_pion1.SetPxPyPzE(vec_momentum[0],vec_momentum[1],vec_momentum[2],energy_pion1);
+
+                   *tlv_SV1+=tlv_pion1;
 
 
                    //-----------------------------------------------------------------------------------------------
                    //-----------------------------------------------------------------------------------------------
+                   //--------------------------------------------------------------------------------
                    //do the same for pion 2
+                   path_closest_to_point = 0;
+                   dca_closest_to_point  = 0;
+                   path_initA = 0.0;
+                   path_initB = 30.0;
 
+                   //calculate again path and dca
+                   FindDCAHelixPoint(S_vertex_pos,ASTrack2,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
+                   //find direction of pion 2
+                   ASTrack2->Evaluate(path_closest_to_point,r1);
+                   ASTrack2->Evaluate(path_closest_to_point+0.01,r2);
+
+                   TVector3 mom_dir_pion2;
+                   TVector3 unit_mom_dir_pion2;
+                   TVector3 vec_momentum_pion2;
+
+                   mom_dir_pion2.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
+
+                   //unit vector in direction of pion 1
+                   unit_mom_dir_pion2 = mom_dir_pion2.Unit();
+
+                   TLorentzVector tlv2 = ASTrack2->get_TLV_part();
+                   double momentum2 = tlv2.P();
+
+                   vec_momentum_pion2.SetXYZ(unit_mom_dir_pion2[0]*momentum2,unit_mom_dir_pion2[1]*momentum2,unit_mom_dir_pion2[2]*momentum2);
+
+                   TLorentzVector tlv_pion2;
+                   double energy_pion2 = sqrt(mass_pion * mass_pion + momentum2*momentum2) ;
+                   tlv_pion2.SetPxPyPzE(vec_momentum_pion2[0],vec_momentum_pion2[1],vec_momentum_pion2[2],energy_pion2);
+
+                   *tlv_SV1+=tlv_pion2;
+
+                   //--------------------------------------------------------------------------------------------------------------
+
+                   //calculate again S-mass----------------------------------------------
+                   double S_mass_correct = tlv_SV1->M();
+                   cout<<"falsche S-mass"<<S_mass<<endl;
+                   cout<<"korrekte S-mass"<<S_mass_correct<<endl;
              
                }
+
+               //for reaction anti S
+               //check if exactly 1 pion comes from S-vertex
+             
 
 
                //------------------------------------------------------------
