@@ -147,7 +147,7 @@ public:
     Dark_Matter_Read();
     ~Dark_Matter_Read();
     void Init_tree(TString SEList);
-    Int_t Loop_event(Long64_t event, vector<TH1D*> histos_1D, vector<TH2D*> histos_2D, double& number_event_counter, double& counter_of_2pions_close_to_S_vertex);
+    Int_t Loop_event(Long64_t event, vector<TH1D*> histos_1D, vector<TH2D*> histos_2D, vector<int> &counters);
     Long64_t getnumberentries(){return file_entries_total;};
    
 
@@ -227,10 +227,10 @@ void Dark_Matter_Read::Init_tree(TString SEList)
 
 
 //----------------------------------------------------------------------------------------
-Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vector<TH2D*> histos_2D,double& number_event_counter, double& counter_of_2pions_close_to_S_vertex)
+Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vector<TH2D*> histos_2D,vector<int> &counters)
 {
     if(event%100==0) {printf("Loop event number: %lld \n",event);  }
-    number_event_counter++;
+    counters[0]++;
     //cout<<""<<endl;
 
     
@@ -253,6 +253,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
     histos_1D[7]->Fill(NumTracks);
     histos_1D[8]->Fill(EventVertexZ);
+
+    TVector3 pos_primary_vertex;
+    pos_primary_vertex.SetXYZ(EventVertexX,EventVertexY,EventVertexZ);
 
     //printf("Event vertex: %f", EventVertexX);
     //-------------------------------------------------------------------------------
@@ -343,7 +346,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         pos = AS_V0 -> getxyz();
         //cout<<"posx: "<<pos[0]<<endl;
         //position.SetXYZ(pos[0],pos[1],pos[2]);
-        radius = sqrt( pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2] );
+        radius = sqrt( (pos[0]-EventVertexX) *(pos[0]-EventVertexX)+(pos[1]-EventVertexY)*(pos[1]-EventVertexY)+(pos[2]-EventVertexZ)*(pos[2]-EventVertexZ) );
 
         //printf("x %f,y %f, z %f \n",pos[0],pos[1],pos[2]);
 
@@ -364,6 +367,13 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         as_trackP = AS_V0 -> getTrack(0);
         as_trackN = AS_V0 -> getTrack(1);
 
+        UShort_t trackidP =-1;
+        trackidP = as_trackP->gettrackid();
+        UShort_t trackidN = as_trackN->gettrackid();
+
+       
+
+        //printf("trackidP %u, trackidN %u \n",trackidP,trackidN )  ;
         //------------------------------------------------------------------------------
         //------------------------------------------------------------------------------
 
@@ -551,7 +561,10 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
             }
         }
 
-
+       //-------------------------------------------------------------------------------------------------------------------------------------------------------
+       //-------------------------------------------------------------------------------------------------------------------------------------------------------
+       //-------------------------------------------------------------------------------------------------------------------------------------------------------
+       //-------------------------------------------------------------------------------------------------------------------------------------------------------
         //search for V0 coming from anti-proton and K+
         if ( fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_K_plus_TPC < 2.5))
         {
@@ -568,9 +581,11 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
           //assume position of V0 is also position of potential S-vertex
           //loop over all other tracks in order to find K+ that comes from this position
+          vector<int> save_track_ids;
 
           for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
           {
+
 
               AS_Track = AS_Event->getTrack(i_track_A);
 
@@ -588,20 +603,42 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
               FindDCAHelixPoint(pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
               if(dca_closest_to_point>1.){continue;}
+              if(radius<5) {continue;}
+
+              
+              //check dca of additional K+ to primary vertex
+              Float_t dca_to_primary_vertex = -1;
+              FindDCAHelixPoint(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dca_to_primary_vertex);
+              if(dca_to_primary_vertex<3){continue;}
 
               //cout<<"Found V0 of antiproton and K+ with another K+"<<endl;
+             
+              save_track_ids.push_back(i_track_A);
 
 
           }
-          //cout<<"invariantmass: "<<invariantmass<<endl;
 
+          if (save_track_ids.size()==1)
+          {
+               counters[2]++;
+
+          }
+
+          //cout<<"invariantmass: "<<invariantmass<<endl;
+          save_track_ids.clear();
 
         }
 
         
     }     //end of V0 loop
-
-
+     //-------------------------------------------------------------------------------------------------------------------------------------------------------
+     //-------------------------------------------------------------------------------------------------------------------------------------------------------
+     //-------------------------------------------------------------------------------------------------------------------------------------------------------
+     //-------------------------------------------------------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------
 
     float radiusS;
     TLorentzVector* tlv_SV2 = new TLorentzVector();  //kaon
@@ -676,6 +713,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                //if(dot_product<0.8){continue;}
                
                radiusS = vec_primary_vertex_to_SV1.Mag();
+
+               /*
                if( fabs(radiusS) < 200 )
                {
                    //cout<<S_vertex_pos[0]<<endl;
@@ -694,7 +733,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                        histos_1D[6]->Fill(S_mass);
                    }
                }
-
+               */
 
                //printf("S mass: %f", S_mass);
 
@@ -759,7 +798,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                    Double_t r2[3];
 
                    //count S-vertices with two 2 pions coming from there for all events
-                   counter_of_2pions_close_to_S_vertex++;
+                   counters[1]++;
 
                    //get tracks of 2 pions
                    ASTrack1 = AS_Event->getTrack(tracks[0]);
@@ -848,8 +887,30 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                    //calculate again S-mass----------------------------------------------
                    double S_mass_correct = tlv_SV1->M();
-                   cout<<"falsche S-mass"<<S_mass<<endl;
-                   cout<<"korrekte S-mass"<<S_mass_correct<<endl;
+                   cout<<"falsche S-mass: "<<S_mass<<endl;
+                   cout<<"korrekte S-mass: "<<S_mass_correct<<endl;
+
+                   if( fabs(radiusS) < 200 )
+                   {
+                   //cout<<S_vertex_pos[0]<<endl;
+                   histos_1D[4]->Fill(radiusS);
+
+                   histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
+
+                   if(fabs(radiusS)>10)
+                   {
+                       histos_1D[5]->Fill(S_mass_correct);
+                   }
+
+                   if(fabs(radiusS)>20)
+                   {
+                       histos_1D[6]->Fill(S_mass_correct);
+                   }
+               }
+
+               tracks.clear();
+
+                   
              
                }
 

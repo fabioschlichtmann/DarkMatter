@@ -827,6 +827,8 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
 	as_trackP  ->setnsigma_p_TPC(Track_PID_P[4]);
 	as_trackP  ->setnsigma_p_TOF(Track_PID_P[9]);
 
+        as_trackP ->settrackid(indexP);
+        as_trackN ->settrackid(indexN);
         //end of filling for P particle track-------------------------------------------------------------------
 
         //do the same for N particle track-----------------------------------------------------------------------
