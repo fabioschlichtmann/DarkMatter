@@ -804,13 +804,29 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         Ali_AS_Track* as_trackN = AS_V0->createTrack();
 
 
+        //fill tracks------------------------------------------------------------------
+        as_trackP  ->clearTRD_digit_list();
+        as_trackP  ->clearOfflineTrackletList();
 
-        //fill-----------------------------------------------------------------------------------------------------------------------
-        //as_trackP -> setnsigma_p_TPC(trackP->GetTPCsignalSigma());   //richtig?
-        //as_trackP -> setnsigma_p_TOF(-1);      //not found
+        TLorentzVector TL_vec;
+        Double_t Track_pT     = trackP ->Pt();
+        Double_t Track_eta    = trackP ->Eta();
+        Double_t Track_phi    = trackP ->Phi();
+        TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,-1);       //what to choose for M ?
+
+        as_trackP  ->set_TLV_part(TL_vec);
+
+        Float_t track_xy_impact,track_z_impact;
+	trackP ->GetImpactParameters(track_xy_impact,track_z_impact);
+        Double_t track_total_impact = TMath::Sqrt(track_xy_impact*track_xy_impact + track_z_impact*track_z_impact);
+        Int_t    charge       = trackP ->Charge();
+        as_trackP  ->setdca(((Double_t)charge)*track_total_impact);
+
         as_trackP -> setTRDSignal(trackP->GetTRDsignal());
-        as_trackP -> setTRDsumADC(-1);        //not found
-        as_trackP -> setdca(V0->GetDcaV0Daughters());               //richtig?
+        as_trackP -> setTRDsumADC(-1);        //not found ok?
+        //as_trackP  ->setStatus(-1);         //I dont get it
+        //as_trackP  ->setNITScls(N_ITS_cls);   //notwendig?
+	//as_trackP  ->setNITScls(N_ITS_cls);     //notwendig?
         as_trackP -> setTPCchi2(trackP->GetTPCchi2());
         as_trackP -> setTrack_length(trackP->GetIntegratedLength());
         as_trackP -> setNTPCcls(trackP ->GetTPCNcls());
@@ -819,7 +835,6 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
 
         FillHelix(trackP,magF);
         as_trackP ->setHelix(aliHelix.fHelix[0],aliHelix.fHelix[1],aliHelix.fHelix[2],aliHelix.fHelix[3],aliHelix.fHelix[4],aliHelix.fHelix[5],aliHelix.fHelix[6],aliHelix.fHelix[7],aliHelix.fHelix[8]);
-
 
         //track_PID
         // e = 0, muon = 1, pion = 2, kaon = 3, proton = 4
@@ -854,9 +869,26 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         //end of filling for P particle track-------------------------------------------------------------------
 
         //do the same for N particle track-----------------------------------------------------------------------
+        as_trackN  ->clearTRD_digit_list();
+        as_trackN  ->clearOfflineTrackletList();
 
-        as_trackN -> setTRDsumADC(-1);        //not found
-        as_trackN -> setdca(V0->GetDcaV0Daughters());               //richtig?
+        Track_pT     = trackN ->Pt();
+        Track_eta    = trackN ->Eta();
+        Track_phi             = trackN ->Phi();
+        TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,-1);       //what to choose for M ?
+
+        as_trackN  ->set_TLV_part(TL_vec);
+
+	trackN ->GetImpactParameters(track_xy_impact,track_z_impact);
+        track_total_impact = TMath::Sqrt(track_xy_impact*track_xy_impact + track_z_impact*track_z_impact);
+        charge       = trackN ->Charge();
+        as_trackN  ->setdca(((Double_t)charge)*track_total_impact);
+
+        as_trackN -> setTRDSignal(trackN->GetTRDsignal());
+        as_trackN -> setTRDsumADC(-1);        //not found ok?
+        //as_trackN  ->setStatus(-1);         //I dont get it
+        //as_trackN  ->setNITScls(N_ITS_cls);   //notwendig?
+	//as_trackN  ->setNITScls(N_ITS_cls);     //notwendig?
         as_trackN -> setTPCchi2(trackN->GetTPCchi2());
         as_trackN -> setTrack_length(trackN->GetIntegratedLength());
         as_trackN -> setNTPCcls(trackN ->GetTPCNcls());
