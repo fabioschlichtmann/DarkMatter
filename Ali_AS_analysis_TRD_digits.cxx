@@ -70,6 +70,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <algorithm>
 //------------------------
 
 #include "Ali_AS_analysis_TRD_digits.h"
@@ -190,6 +191,14 @@ TFile* Ali_AS_analysis_TRD_digits::OpenDigitsFile(TString inputfile,
     return dfile;
 }
 
+void print_int_vector(vector<int> vec)
+{
+    for(int i=0;i<vec.size();i++)
+    {
+        cout<<"Vektor  "<<i<<": "<<vec[i]<<endl;
+
+    }
+}
 
 //_______________________________________________________________________
 Bool_t Ali_AS_analysis_TRD_digits::UserNotify()
@@ -721,6 +730,9 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
 
     }
 
+    vector<int> all_positive_track_ids;
+    vector<int> all_negative_track_ids;
+
 
     for (int V0_counter=0; V0_counter<numberV0; V0_counter++)
     {
@@ -731,6 +743,8 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         AliESDv0 *V0=fESD->GetV0(V0_counter);
         V0->AliESDv0::GetXYZ(x,y,z);
 
+        cout<<""<<endl;
+        printf("V0 number: %d \n",V0_counter);
         printf("x: %f,y: %f, z: %f \n",x,y,z);
         
         //-------------------------------
@@ -746,11 +760,19 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         //get track (by using index)-----------------------------
         int indexN = V0->GetNindex();
         int indexP = V0->GetPindex();
+
+        all_positive_track_ids.push_back(indexP);
+        all_negative_track_ids.push_back(indexN);
         //cout<<indexN<<endl;
         //cout<<indexP<<endl;
         AliESDtrack* trackN = fESD->AliESDEvent::GetTrack(indexN);
         AliESDtrack* trackP = fESD->AliESDEvent::GetTrack(indexP);
-        printf("index N: %d, index P: %d \n",indexN, indexP);
+
+        double momentumP = sqrt(pxP*pxP + pyP*pyP + pzP*pzP);
+        double momentumN = sqrt(pxN*pxN + pyN*pyN + pzN*pzN);
+
+        printf("trackidP %d, trackidN %d \n",indexP,indexN)  ;
+        printf("momentum of positive particle: %f   momentum of negative particle: %f \n",momentumP,momentumN);
         //----------------------------------------------------------------
 
         //get impulse vector by using AliESDtrack class-------------------------
@@ -882,6 +904,10 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
     //----------------------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------------------
 
+    sort(all_positive_track_ids.begin(),all_positive_track_ids.end());
+    sort(all_negative_track_ids.begin(),all_negative_track_ids.end());
+    //print_int_vector(all_positive_track_ids);
+    //print_int_vector(all_negative_track_ids);
 
 
 
@@ -1381,7 +1407,15 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
                 pT_bin = i_pT;
                 break;
 	    }
-	}
+        }
+
+        double r[3];
+        double p[3];
+        track -> GetInnerXYZ(r);
+        track -> GetInnerPxPyPz(p);
+        double momentum = sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]);
+
+        printf("track number: %d, charge:  %d, momentum: %f \n",iTracks, charge, momentum);
 
 	TLorentzVector TLV_p_vec;
 	Double_t p_vec_energy = TMath::Sqrt(p_vec[0]*p_vec[0] + p_vec[1]*p_vec[1] + p_vec[2]*p_vec[2] + 0.938*0.938);
