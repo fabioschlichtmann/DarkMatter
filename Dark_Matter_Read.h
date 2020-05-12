@@ -367,6 +367,21 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     vector<int> all_used_positive_track_ids_for_V0s;
     vector<int> all_used_negative_track_ids_for_V0s;
 
+    double dcaP=-10000;
+    double dcaN=-10000;
+
+    Int_t trackidP,trackidN;
+
+    double momentumP,momentumN;
+
+    Double_t invariantmass = -1.;
+
+    double sigma_K_plus_TPC;
+
+    Float_t energy_proton,energy_pion,energy_antiproton,energy_pion_plus,energy_pion_minus, energy_K_plus,energy_anti_proton;
+
+    TLorentzVector tlv_anti_p_and_K_plus;
+
     //loop over V0s
     for(int V0counter=0; V0counter<NumV0s ; V0counter++)
     {
@@ -397,25 +412,28 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         as_trackP = AS_V0 -> getTrack(0);
         as_trackN = AS_V0 -> getTrack(1);
 
-        double dcaP = as_trackP->getdca();
-        double dcaN = as_trackN->getdca();
+        dcaP = as_trackP->getdca();
+        dcaN = as_trackN->getdca();
 
         //printf("dcaP: %f, dcaN: %f \n",dcaP,dcaN);
 
-        if(dcaP < 0 && dcaN > 0)
+        /*if(dcaP < 0 && dcaN > 0)
         {
             as_tracksave = as_trackP;
             as_trackP = as_trackN;
             as_trackN = as_tracksave;
 
         }
+        */
 
+        if(dcaP<0){continue;}
+        if(dcaN>0){continue;}
 
-        Int_t trackidP = as_trackP->gettrackid();
-        Int_t trackidN = as_trackN->gettrackid();
+        trackidP = as_trackP->gettrackid();
+        trackidN = as_trackN->gettrackid();
 
-        double momentumP = sqrt( momP[0]*momP[0] + momP[1]*momP[1]+ momP[2]*momP[2] );
-        double momentumN = sqrt( momN[0]*momN[0] + momN[1]*momN[1]+ momN[2]*momN[2] );
+        momentumP = sqrt( momP[0]*momP[0] + momP[1]*momP[1]+ momP[2]*momP[2] );
+        momentumN = sqrt( momN[0]*momN[0] + momN[1]*momN[1]+ momN[2]*momN[2] );
 
         //printf("trackidP %d, trackidN %d \n",trackidP,trackidN )  ;
         //printf("momentum of positive particle px: %f,py: %f,pz: %f   momentum of negative particle px: %f,py: %f,pz: %f \n",momP[0],momP[1],momP[2],momN[0],momN[1],momN[2]);
@@ -432,7 +450,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         //------------------------------------------------------------------------------
         //------------------------------------------------------------------------------
 
-        Double_t invariantmass = -1.;
+        
         //_____________________________________________________________________----
 
         sigma_proton_TPC[0] = as_trackP -> getnsigma_p_TPC();
@@ -444,7 +462,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         sigma_pion_TPC[0]  = as_trackP -> getnsigma_pi_TPC();
         sigma_pion_TPC[1]  = as_trackN -> getnsigma_pi_TPC();
 
-        double sigma_K_plus_TPC = as_trackP -> getnsigma_K_TPC();
+        sigma_K_plus_TPC = as_trackP -> getnsigma_K_TPC();
 
 
         //Lambda0 -> proton + pi-
@@ -453,8 +471,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         {
            // printf("particles are proton and pion- \n");
 
-            Float_t energy_proton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
-            Float_t energy_pion = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+            energy_proton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+            energy_pion = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
             //cout<<energy_proton<<endl;
             //cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_proton);
@@ -472,7 +490,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
             
 
             //cut on mass
-            if(invariantmass<1.1157+0.001495*2 && invariantmass > 1.1157-0.001495*2)
+            if(invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
             {
                 used_track_ids_of_pions.push_back(trackidN);
                 //printf(" proton and pi- ; trackidP %u, trackidN %u \n",trackidP,trackidN )  ;
@@ -482,6 +500,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
                 vec_direction_SV3.push_back(direction_SV3);
 
+                /*
                 //mixed event
                 for(int cat_track=0;cat_track<4;cat_track++)
                 {
@@ -502,7 +521,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                     }
 
-                }
+                } */
 
 
             }
@@ -512,8 +531,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         if(fabs(sigma_proton_TPC[1])<2.5 && fabs(sigma_pion_TPC[0])<2.5)
         {
            // printf("particles are antiproton and pion+ \n");
-            Float_t energy_antiproton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
-            Float_t energy_pion = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+            energy_antiproton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+            energy_pion = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
             //cout<<energy_proton<<endl;
             //cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion);
@@ -530,7 +549,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
 
             //cut on mass
-            if(invariantmass<1.1157+0.001495*2 && invariantmass > 1.1157-0.001495*2)
+            if(invariantmass< (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
             {
 
                 used_track_ids_of_pions.push_back(trackidP);
@@ -541,6 +560,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
                 vec_direction_SV3.push_back(direction_SV3);
 
+                /*
+                //mixed event
                  for(int cat_track=0;cat_track<4;cat_track++)
                 {
                     for(int cat_z=0;cat_z<4;cat_z++)
@@ -558,6 +579,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                     }
                 }
+                    */
             }
         }
 
@@ -566,8 +588,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         if(fabs(sigma_pion_TPC[0])<2.5 && fabs(sigma_pion_TPC[1])<2.5)
         {
            //printf("particles are pion+ and pion- \n");
-            Float_t energy_pion_plus = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
-            Float_t energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+            energy_pion_plus = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+            energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
             //cout<<energy_proton<<endl;
             //cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion_plus);
@@ -583,7 +605,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
             histos_2D[1]->Fill(pos[0],pos[1]);
 
             //cut on mass
-            if(invariantmass<0.4981+0.0042*2 && invariantmass > 0.4981-0.0042*2)
+            if(invariantmass< (0.4981+0.0042*2) && invariantmass > (0.4981-0.0042*2))
             {
 
                 used_track_ids_of_pions.push_back(trackidP);
@@ -605,6 +627,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 //cout<<"positionSV2: "<<position_SV2[0]<<endl;
                 //cout<<"position SV2: "<<position_SV2[0]<<endl;
 
+                /*
+                //mixed event
                  for(int cat_track=0;cat_track<4;cat_track++)
                 {
                     for(int cat_z=0;cat_z<4;cat_z++)
@@ -621,7 +645,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                         }
 
                     }
-                }
+                } */
             }
         }
 
@@ -633,13 +657,13 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         if ( fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_K_plus_TPC < 2.5))
         {
             //  cout<<"V0 from anti-proton and K+"<<endl;
-          double energy_K_plus = sqrt(mass_K * mass_K + (momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
-          double energy_anti_proton = sqrt(mass_proton * mass_proton + (momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2])) ;
+          energy_K_plus = sqrt(mass_K * mass_K + (momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+          energy_anti_proton = sqrt(mass_proton * mass_proton + (momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2])) ;
 
           tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_K_plus);
           tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_anti_proton);
 
-          TLorentzVector tlv_anti_p_and_K_plus = *tlv_pos + *tlv_neg;
+          tlv_anti_p_and_K_plus = *tlv_pos + *tlv_neg;
 
           invariantmass = tlv_anti_p_and_K_plus.M();
 
@@ -670,14 +694,14 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
               //calculate dca from vertex to particle track
               FindDCAHelixPoint(pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
-              if(dca_closest_to_point>1.){continue;}
-              if(radius<5) {continue;}
+              if(dca_closest_to_point>0.5){continue;}
+              //if(radius<5) {continue;}
 
               
               //check dca of additional K+ to primary vertex
               Float_t dca_to_primary_vertex = -1;
               FindDCAHelixPoint(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dca_to_primary_vertex);
-              if(dca_to_primary_vertex<3){continue;}
+              if(dca_to_primary_vertex<3.){continue;}
 
               //cout<<"Found V0 of antiproton and K+ with another K+"<<endl;
               
@@ -738,6 +762,13 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     TVector3 momentum_SV1;
     TVector3 unit_momentum_SV1;
 
+    TVector3 S_vertex_pos;
+
+    Float_t path_closest_to_point = 0;
+    Float_t dca_closest_to_point  = 0;
+    Float_t path_initA = 0.0;
+    Float_t path_initB = 30.0;
+
 
 
 
@@ -748,9 +779,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
            // printf("vector loop 1: %d, vector loop2: %d \n",vector_loop_1,vector_loop_2 ) ;
            if(vec_position_SV3.size()>0 && vec_position_SV2.size()>0 && vec_direction_SV3.size()>0 &&  vec_direction_SV2.size()>0)
            {
-               if(calculateMinimumDistance(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2])>1.){continue;}
+               if(calculateMinimumDistance(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2])>0.5){continue;}
 
-               TVector3 S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2]);
+               S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2]);
                counters[3]++;
                //build lorentz vector of SV2 and SV3
                //SV2
@@ -780,15 +811,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                vec_primary_vertex_to_SV1.SetXYZ(S_vertex_pos[0]-EventVertexX ,S_vertex_pos[1]-EventVertexY , S_vertex_pos[2]-EventVertexZ);
                unit_vec_primary_vertex_to_SV1 = vec_primary_vertex_to_SV1.Unit();
 
-               //build unit vector of momentum from tlv_SV1
-               momentum_SV1.SetXYZ(tlv_SV1->Px(),tlv_SV1->Py(),tlv_SV1->Pz());
-               unit_momentum_SV1 = momentum_SV1.Unit();
-
-               double dot_product = unit_vec_primary_vertex_to_SV1.Dot(unit_momentum_SV1);
-              // printf("dot product: %f \n", dot_product);
-
-               //check if dot product is larger than 0.8
-               //if(dot_product<0.8){continue;}
+               
                
                radiusS = vec_primary_vertex_to_SV1.Mag();
 
@@ -838,12 +861,6 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                    // Do some PID here for pi+ and pi-
                    if(fabs(sigma)>2.5){continue;}
 
-                   //initial parameters
-                   Float_t path_closest_to_point = 0;
-                   Float_t dca_closest_to_point  = 0;
-                   Float_t path_initA = 0.0;
-                   Float_t path_initB = 30.0;
-
                    //calculate dca from vertex to particle track
                    FindDCAHelixPoint(S_vertex_pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
@@ -853,7 +870,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                    //cut on dca and distance S vertex from primary vertex
                    //cut on r because otherwise many pions from primary vertex
-                   if(dca_closest_to_point<1 && radiusS>5)
+                   if(dca_closest_to_point<0.5 ) // && radiusS>5)
                    {
                        //printf("track: %d is pion and close to vertex \n",i_track_A);
                        counter_pions_close_to_S_vertex++;
@@ -890,10 +907,10 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                    //do all for pion 1--------------------------------------------------------------
                    //---------------------------------------------------------------------------------
-                   Float_t path_closest_to_point = 0;
-                   Float_t dca_closest_to_point  = 0;
-                   Float_t path_initA = 0.0;
-                   Float_t path_initB = 30.0;
+                   path_closest_to_point = 0;
+                   dca_closest_to_point  = 0;
+                   path_initA = 0.0;
+                   path_initB = 30.0;
 
                    //calculate again path and dca
                    FindDCAHelixPoint(S_vertex_pos,ASTrack1,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
@@ -966,6 +983,16 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                    *tlv_SV1+=tlv_pion2;
 
+                   //build unit vector of momentum from tlv_SV1
+                   momentum_SV1.SetXYZ(tlv_SV1->Px(),tlv_SV1->Py(),tlv_SV1->Pz());
+                   unit_momentum_SV1 = momentum_SV1.Unit();
+
+                   double dot_product = unit_vec_primary_vertex_to_SV1.Dot(unit_momentum_SV1);
+                   // printf("dot product: %f \n", dot_product);
+
+                   //check if dot product is larger than 0
+                   if(dot_product<0.){continue;}
+
                    //--------------------------------------------------------------------------------------------------------------
 
                    //calculate again S-mass----------------------------------------------
@@ -975,21 +1002,21 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                    if( fabs(radiusS) < 200 )
                    {
-                   //cout<<S_vertex_pos[0]<<endl;
-                   histos_1D[4]->Fill(radiusS);
+                       //cout<<S_vertex_pos[0]<<endl;
+                       histos_1D[4]->Fill(radiusS);
 
-                   histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
+                       histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
 
-                   if(fabs(radiusS)>10)
-                   {
-                       histos_1D[5]->Fill(S_mass_correct);
+                       if(fabs(radiusS)>10)
+                       {
+                           histos_1D[5]->Fill(S_mass_correct);
+                       }
+
+                       if(fabs(radiusS)>20)
+                       {
+                           histos_1D[6]->Fill(S_mass_correct);
+                       }
                    }
-
-                   if(fabs(radiusS)>20)
-                   {
-                       histos_1D[6]->Fill(S_mass_correct);
-                   }
-               }
 
                tracks.clear();
 
