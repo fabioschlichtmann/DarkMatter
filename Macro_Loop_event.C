@@ -24,6 +24,8 @@ void Macro_Loop_event()
     int binning2D = 200;
     TH2D* histo_lambda_x_and_y = new TH2D("histo lambda x and y ","histo lambda x and y ",binning2D,-200,200,binning2D,-200,200);
     TH2D* histo_K0_x_and_y = new TH2D("histo K0 x and y ","histo K0 x and y ",binning2D,-200,200,binning2D,-200,200);
+
+    TH2D* histo_V0_with_K_plus_x_and_y = new TH2D("histo V0 with K + x and y","histo V0 with K + x and y",binning2D,-200,200,binning2D,-200,200);
    
 
     TH1D* histo_S_vertex_radius = new TH1D("histo S vertex radius ","histo S vertex radius ",200,0,200);
@@ -36,52 +38,82 @@ void Macro_Loop_event()
     TH1D* histo_num_tracks = new TH1D("histo number of tracks","histo number of tracks",200,0,1000);
     TH1D* histo_vertex_z_pos = new TH1D("histo vertex z position","histo vertex z position",100,-30,30);
 
+    TH1D* histo_V0_with_K_plus_radius = new TH1D("histo V0 with K plus radius","histo V0 with K plus radius",100,0,200);
+
     vector<TH1D*> histos_1D;
     vector<TH2D*> histos_2D;
 
     histos_1D.push_back(histo_invariantmass_lambda);
     histos_1D.push_back(histo_invariantmass_K0);
-    histos_1D.push_back(histo_lambda_vertex_radius);
-    histos_1D.push_back(histo_K0_vertex_radius);
-    histos_1D.push_back(histo_S_vertex_radius);
-    histos_1D.push_back(histo_S_mass_r_larger_10);
-    histos_1D.push_back(histo_S_mass_r_larger_20);
+    histos_1D.push_back(histo_lambda_vertex_radius); //2
+    histos_1D.push_back(histo_K0_vertex_radius);     //3
+    histos_1D.push_back(histo_S_vertex_radius);      //4
+    histos_1D.push_back(histo_S_mass_r_larger_10);   //5
+    histos_1D.push_back(histo_S_mass_r_larger_20);   //6
     histos_1D.push_back(histo_num_tracks);      //7
-    histos_1D.push_back(histo_vertex_z_pos);      //87
+    histos_1D.push_back(histo_vertex_z_pos);      //8
+    histos_1D.push_back(histo_V0_with_K_plus_radius);      //9
 
     histos_2D.push_back(histo_lambda_x_and_y);
     histos_2D.push_back(histo_K0_x_and_y);
     histos_2D.push_back(histo_S_x_and_y);
-    double event_counter=0;
+    histos_2D.push_back(histo_V0_with_K_plus_x_and_y); //3
+
+    int event_counter=0;
+    int counter_of_2pions_close_to_S_vertex=0;
+    int counter_of_V0s_of_antiproton_and_K_plus_and_another_K=0;
+    int counter_of_S_vertices_without_pions=0;
+    int counter_1pion_close=0;
+    int counter_V0s_antiproton_and_K_plus=0;
+
+    vector<int> counters;
+    counters.push_back(event_counter);
+    counters.push_back(counter_of_2pions_close_to_S_vertex);
+    counters.push_back(counter_of_V0s_of_antiproton_and_K_plus_and_another_K);
+    counters.push_back(counter_of_S_vertices_without_pions);     //3
+    counters.push_back(counter_1pion_close);     //4
+    counters.push_back(counter_V0s_antiproton_and_K_plus);     //5
 
 
     //--------------------------------------------------------------------------------------------------
-    //for(int i =0 ; i<numentries; i++)
-    for(int i =0 ; i<100; i++)
+    for(int i =0 ; i<numentries; i++)
+    //for(int i =0 ; i<1000; i++)
     {
         //printf("eventcounter: %f",event_counter);
-        DM_Read ->Loop_event(i,histos_1D,histos_2D,event_counter);
+        DM_Read ->Loop_event(i,histos_1D,histos_2D,counters);
     }
 
 
 
-    printf("number of entries: %d, number of events: %f", numentries, event_counter);
+    printf("number of entries: %d, number of events over that we looped: %d \n", numentries, counters[0]);
+    cout<<""<<endl;
+    cout<<"considering reaction: anti-S + n -> K0s + anti-lambda + pi+ + pi- :"<<endl;
+    printf("number of S-vertices without 2 pions: %d \n", counters[3]);
+    printf("number of exactly 1 pion close to S-vertex: %d \n", counters[4]);
+    printf("number of exactly 2 pions close to S-vertex: %d \n", counters[1]);
+    
+    cout<<""<<endl;
+    cout<<"consindering reaction: anti-S + p -> anti-p + K+ + K+ " <<endl;
+    printf("number of V0s of antiproton and K+: %d \n",counters[5]);
+    printf("number of V0s of antiproton and K+ with another K+: %d \n", counters[2]);
 
-   /* TCanvas* a = new TCanvas();
+    TCanvas* a = new TCanvas();
     TCanvas* b = new TCanvas();
     TCanvas* c = new TCanvas();
     TCanvas* d = new TCanvas();
+
+    /*
     TCanvas* e = new TCanvas();
     TCanvas* f = new TCanvas();
     TCanvas* g = new TCanvas();
     TCanvas* h = new TCanvas();
     TCanvas* i = new TCanvas();
-    TCanvas* j = new TCanvas(); */
+    TCanvas* j = new TCanvas();
     TCanvas* k = new TCanvas();
     TCanvas* l = new TCanvas();
+    */
 
-   /*
-    a->cd();
+   /* a->cd();
     //histo_invariantmass_lambda->Draw();
    // histo_invariantmass_K0->Draw();
     histo_lambda_vertex_radius->Draw();
@@ -92,6 +124,7 @@ void Macro_Loop_event()
     histo_lambda_x_and_y->Draw("colz");
     d->cd();
     histo_K0_x_and_y->Draw("colz");
+
     e->cd();
     histo_S_vertex_radius->Draw();
     f->cd();
@@ -106,12 +139,21 @@ void Macro_Loop_event()
 
     j->cd();
     histo_S_mass_r_larger_20->Draw();
-    */
+
     k->cd();
     histo_num_tracks->Draw();
 
     l->cd();
     histo_vertex_z_pos->Draw();
+    */
+    a->cd();
+    histo_S_vertex_radius->Draw();
+    b->cd();
+    histo_S_x_and_y->Draw("colz");
+    c->cd();
+    histo_V0_with_K_plus_radius->Draw();
+    d->cd();
+    histo_V0_with_K_plus_x_and_y->Draw("colz");
 
 
     /*
