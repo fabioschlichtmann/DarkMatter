@@ -852,12 +852,13 @@ private:
     Int_t    N_V0s;
 
     UShort_t      fNumTracks; // number of tracks in event
+    UShort_t      fNumV0s; //
 
     TClonesArray* fTracks;   //->
 
 public:
     Ali_AS_DM_particle() :
-	primVertex(),S1Vertex(),S2Vertex(),S3Vertex(),DirSV1(),DirSV2(),DirSV3(),N_V0s(0),fNumTracks(0),fNumV0s(0),
+	primVertex(),S1Vertex(),S2Vertex(),S3Vertex(),DirSV1(),DirSV2(),DirSV3(),N_V0s(0),fNumTracks(0),fNumV0s(0)
     {
         fTracks         = new TClonesArray( "Ali_AS_Track", 10 );
     }

@@ -421,6 +421,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
     TLorentzVector tlv_anti_p_and_K_plus;
 
+    vector<Ali_AS_Track*> vec_SV2_tracks;
+    vector<Ali_AS_Track*> vec_SV3_tracks;
+
     //loop over V0s
     for(Int_t V0counter = 0; V0counter < NumV0s; V0counter++)
     {
@@ -538,6 +541,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
                 vec_direction_SV3.push_back(direction_SV3);
 
+                vec_SV3_tracks.push_back(as_trackP);
+                vec_SV3_tracks.push_back(as_trackN);
+
                 /*
                  //mixed event
                  for(int cat_track=0;cat_track<4;cat_track++)
@@ -598,6 +604,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
                 vec_direction_SV3.push_back(direction_SV3);
 
+                vec_SV3_tracks.push_back(as_trackP);
+                vec_SV3_tracks.push_back(as_trackN);
+
                 /*
                  //mixed event
                  for(int cat_track=0;cat_track<4;cat_track++)
@@ -656,6 +665,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 direction_SV2.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
                 vec_direction_SV2.push_back(direction_SV2);
 
+                vec_SV2_tracks.push_back(as_trackP);
+                vec_SV2_tracks.push_back(as_trackN);
+
                 //printf("position of vertex:  %f %f %f \n",pos[0],pos[1],pos[2]);
                 //cout<<""<<endl;
                 //printf("momentum of pion + : %f %f %f \n",momP[0],momP[1],momP[2]);
@@ -692,7 +704,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
         //search for V0 coming from anti-proton and K+
-        if fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_K_plus_TPC < 2.5))
+        if (fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_K_plus_TPC < 2.5))
         {
             //  cout<<"V0 from anti-proton and K+"<<endl;
             energy_K_plus      = sqrt(mass_K * mass_K + (momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
@@ -942,6 +954,11 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                     ASTrack1 = AS_Event->getTrack(tracks[0]);
                     ASTrack2 = AS_Event->getTrack(tracks[1]);
 
+                    double dca1 = ASTrack1->getdca();
+                    double dca2 = ASTrack2->getdca();
+
+                    //check if one is negative and one is positive
+                    if (dca1 * dca2 >0) {continue;}
 
                     //do all for pion 1--------------------------------------------------------------
                     //---------------------------------------------------------------------------------
@@ -1058,7 +1075,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                     tracks.clear();
 
-                    TVector3 TV3_S1(tlv_SV1.Px(),tlv_SV1.Py(),tlv_SV1.Pz());
+                    TVector3 TV3_S1(tlv_SV1->Px(),tlv_SV1->Py(),tlv_SV1->Pz());
 
 
                     //-------------------------
@@ -1067,17 +1084,23 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                     AS_DM_particle ->set_S1Vertex(S_vertex_pos);
                     AS_DM_particle ->set_S2Vertex(vec_position_SV2[vector_loop_SV2]);
                     AS_DM_particle ->set_S3Vertex(vec_position_SV3[vector_loop_SV3]);
-                    AS_DM_particle ->set_DirSV1(TVector3);
-                    AS_DM_particle ->set_DirSV2(direction_SV2[vector_loop_SV2]);
-                    AS_DM_particle ->set_DirSV3(direction_SV3[vector_loop_SV3]);
+                    AS_DM_particle ->set_DirSV1(TV3_S1);
+                    AS_DM_particle ->set_DirSV2(vec_direction_SV2[vector_loop_SV2]);
+                    AS_DM_particle ->set_DirSV3(vec_direction_SV3[vector_loop_SV3]);
                     AS_DM_particle ->setN_V0s(3);
                     AS_DM_particle ->clearTrackList();
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(ASTrack1,AS_DM_Track);
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(ASTrack2,AS_DM_Track);
-                    //ASTrack1; // pion which charge?
-                    //ASTrack2; // pion which charge?
+                    AS_DM_Track = AS_DM_particle ->createTrack();
+                    copy_track_params(vec_SV2_tracks[2*vector_loop_SV2],AS_DM_Track);
+                    AS_DM_Track = AS_DM_particle ->createTrack();
+                    copy_track_params(vec_SV2_tracks[2*vector_loop_SV2+1],AS_DM_Track);
+                    AS_DM_Track = AS_DM_particle ->createTrack();
+                    copy_track_params(vec_SV3_tracks[2*vector_loop_SV3],AS_DM_Track);
+                    AS_DM_Track = AS_DM_particle ->createTrack();
+                    copy_track_params(vec_SV3_tracks[2*vector_loop_SV3+1],AS_DM_Track);
 
                     Tree_AS_DM_particle ->Fill();
                     //-------------------------
