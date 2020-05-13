@@ -25,6 +25,7 @@ ClassImp(Ali_AS_V0)
 ClassImp(Ali_AS_Tracklet)
 ClassImp(Ali_AS_offline_Tracklet)
 ClassImp(Ali_AS_Event)
+ClassImp(Ali_AS_DM_particle);
 
 bool check_if_int_is_in_vector(int a, vector<int> vec)
 {
@@ -134,6 +135,9 @@ private:
     Ali_AS_Tracklet*  AS_Tracklet;
     Ali_AS_offline_Tracklet*  AS_offline_Tracklet;
     Ali_AS_TRD_digit* AS_Digit;
+    Ali_AS_DM_particle* AS_DM_particle;
+    Ali_AS_Track*     AS_DM_Track;
+    TTree       *Tree_AS_DM_particle;
 
 
     TFile* outputfile;
@@ -148,7 +152,6 @@ private:
 
 
     Long64_t Event_active = 0;
-    
 
     TChain* input_SE;
     TString JPsi_TREE   = "Tree_AS_Event";
@@ -170,7 +173,7 @@ public:
     void Init_tree(TString SEList);
     Int_t Loop_event(Long64_t event, vector<TH1D*> histos_1D, vector<TH2D*> histos_2D, vector<int> &counters);
     Long64_t getnumberentries(){return file_entries_total;};
-   
+    void copy_track_params(Ali_AS_Track* track_in, Ali_AS_Track* track_out);
 
     ClassDef(Dark_Matter_Read, 1)
 };
@@ -183,9 +186,14 @@ Dark_Matter_Read::Dark_Matter_Read()
 {
     //outputfile = new TFile("./TRD_Calib.root","RECREATE");
     outputfile = new TFile("./Results_Dark_Matter.root","RECREATE");
-   // outputfile_trkl = new TFile("./TRD_Calib_on_trkl.root","RECREATE");
+    // outputfile_trkl = new TFile("./TRD_Calib_on_trkl.root","RECREATE");
 
+    AS_DM_particle = new Ali_AS_DM_particle();
+    AS_DM_Track    = new Ali_AS_Track();
 
+    Tree_AS_DM_particle  = NULL;
+    Tree_AS_DM_particle  = new TTree("Tree_AS_DM_particle" , "Ali_AS_DM_particles" );
+    Tree_AS_DM_particle  ->Branch("Tree_AS_DM_branch"  , "Ali_AS_DM_particle", AS_DM_particle );
 
 }
 //----------------------------------------------------------------------------------------
@@ -249,6 +257,38 @@ void Dark_Matter_Read::Init_tree(TString SEList)
 
 
 //----------------------------------------------------------------------------------------
+void Dark_Matter_Read::copy_track_params(Ali_AS_Track* track_in, Ali_AS_Track* track_out)
+{
+    track_out ->setnsigma_e_TPC(track_in ->getnsigma_e_TPC());
+    track_out ->setnsigma_e_TOF(track_in ->getnsigma_e_TOF());
+    track_out ->setnsigma_pi_TPC(track_in ->getnsigma_pi_TPC());
+    track_out ->setnsigma_pi_TOF(track_in ->getnsigma_pi_TOF());
+    track_out ->setnsigma_K_TPC(track_in ->getnsigma_K_TPC());
+    track_out ->setnsigma_K_TOF(track_in ->getnsigma_K_TOF());
+    track_out ->setnsigma_p_TPC(track_in ->getnsigma_p_TPC());
+    track_out ->setnsigma_p_TOF(track_in ->getnsigma_p_TOF());
+    track_out ->setTRDSignal(track_in ->getTRDSignal());
+    track_out ->setTRDsumADC(track_in ->getTRDsumADC());
+    track_out ->setdca(track_in ->getdca());
+    track_out ->set_TLV_part(track_in ->get_TLV_part());
+    track_out ->setNTPCcls(track_in ->getNTPCcls());
+    track_out ->setNTRDcls(track_in ->getNTRDcls());
+    track_out ->setNITScls(track_in ->getNITScls());
+    track_out ->setStatus(track_in ->getStatus());
+    track_out ->setTPCchi2(track_in ->getTPCchi2());
+    for(Int_t i_layer = 0; i_layer < 6; i_layer++){track_out ->setTRD_layer(i_layer, track_in ->getTRD_layer(i_layer));}
+    track_out ->setimpact_angle_on_TRD(track_in ->getimpact_angle_on_TRD());
+    track_out ->setTPCdEdx(track_in ->getTPCdEdx());
+    track_out ->setTOFsignal(track_in ->getTOFsignal());
+    track_out ->setTrack_length(track_in ->getTrack_length());
+    track_out ->setHelix(track_in->getHelix_param(0),track_in->getHelix_param(1),track_in->getHelix_param(2),track_in->getHelix_param(3),track_in->getHelix_param(4),track_in->getHelix_param(5),track_in->getHelix_param(6),track_in->getHelix_param(7),track_in->getHelix_param(8));
+    track_out ->settrackid(track_in->gettrackid());
+}
+//----------------------------------------------------------------------------------------
+
+
+
+//----------------------------------------------------------------------------------------
 Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vector<TH2D*> histos_2D,vector<int> &counters)
 {
     if(event%100==0)
@@ -258,7 +298,6 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     counters[0]++;
     //cout<<""<<endl;
 
-    
 
     Event_active = event;
 
@@ -383,7 +422,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     TLorentzVector tlv_anti_p_and_K_plus;
 
     //loop over V0s
-    for(int V0counter=0; V0counter<NumV0s ; V0counter++)
+    for(Int_t V0counter = 0; V0counter < NumV0s; V0counter++)
     {
         AS_V0 = AS_Event -> getV0(V0counter);
 
@@ -398,10 +437,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         //get momentum of posititve particle
         momP = AS_V0 -> getPpxpypz();
 
-        
-
         //get momentum for negative particle
-      
+
         momN = AS_V0 -> getNpxpypz();
 
         //printf("momentum of negative particle px: %f,py: %f,pz: %f \n",momN[0],momN[1],momN[2]);
@@ -418,16 +455,17 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         //printf("dcaP: %f, dcaN: %f \n",dcaP,dcaN);
 
         /*if(dcaP < 0 && dcaN > 0)
-        {
-            as_tracksave = as_trackP;
-            as_trackP = as_trackN;
-            as_trackN = as_tracksave;
+         {
+         as_tracksave = as_trackP;
+         as_trackP = as_trackN;
+         as_trackN = as_tracksave;
 
-        }
-        */
+         }
+         */
 
-        if(dcaP<0){continue;}
-        if(dcaN>0){continue;}
+        // Double check that the charge is correct
+        if(dcaP < 0){continue;}
+        if(dcaN > 0){continue;}
 
         trackidP = as_trackP->gettrackid();
         trackidN = as_trackN->gettrackid();
@@ -443,14 +481,14 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         all_used_negative_track_ids_for_V0s.push_back(trackidN);
 
         ///if(event%100==0 && V0counter%10 ==0)
-       // {
-           // printf("trackidP %d, trackidN %d \n",trackidP,trackidN )  ;
-       // }
+        // {
+        // printf("trackidP %d, trackidN %d \n",trackidP,trackidN )  ;
+        // }
 
         //------------------------------------------------------------------------------
         //------------------------------------------------------------------------------
 
-        
+
         //_____________________________________________________________________----
 
         sigma_proton_TPC[0] = as_trackP -> getnsigma_p_TPC();
@@ -462,17 +500,17 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         sigma_pion_TPC[0]  = as_trackP -> getnsigma_pi_TPC();
         sigma_pion_TPC[1]  = as_trackN -> getnsigma_pi_TPC();
 
-        sigma_K_plus_TPC = as_trackP -> getnsigma_K_TPC();
+        sigma_K_plus_TPC   = as_trackP -> getnsigma_K_TPC();
 
 
         //Lambda0 -> proton + pi-
         //check if positive particle is proton and if negative particle is pion-
-        if(fabs(sigma_proton_TPC[0])<2.5 && fabs(sigma_pion_TPC[1])<2.5)
+        if(fabs(sigma_proton_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
         {
-           // printf("particles are proton and pion- \n");
+            // printf("particles are proton and pion- \n");
 
             energy_proton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
-            energy_pion = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+            energy_pion   = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
             //cout<<energy_proton<<endl;
             //cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_proton);
@@ -487,7 +525,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
             histos_2D[0]->Fill(pos[0],pos[1]);
 
-            
+
 
             //cut on mass
             if(invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
@@ -501,38 +539,38 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 vec_direction_SV3.push_back(direction_SV3);
 
                 /*
-                //mixed event
-                for(int cat_track=0;cat_track<4;cat_track++)
-                {
-                    //cout<<cat_track<<endl;
-                    for(int cat_z=0;cat_z<4;cat_z++)
-                    {
-                        //cout<<cat_z<<endl;
-                        if(NumTracks>=limits_num_tracks[cat_track] && NumTracks<limits_num_tracks[cat_track+1])
-                        {
-                            if(EventVertexZ>=limits_z_vertex[cat_z] && EventVertexZ<limits_z_vertex[cat_z+1])
-                            {
-                               cat_direction_SV3[cat_track][cat_z].push_back(direction_SV3);
-                               cat_position_SV3[cat_track][cat_z].push_back(position_SV3);
+                 //mixed event
+                 for(int cat_track=0;cat_track<4;cat_track++)
+                 {
+                 //cout<<cat_track<<endl;
+                 for(int cat_z=0;cat_z<4;cat_z++)
+                 {
+                 //cout<<cat_z<<endl;
+                 if(NumTracks>=limits_num_tracks[cat_track] && NumTracks<limits_num_tracks[cat_track+1])
+                 {
+                 if(EventVertexZ>=limits_z_vertex[cat_z] && EventVertexZ<limits_z_vertex[cat_z+1])
+                 {
+                 cat_direction_SV3[cat_track][cat_z].push_back(direction_SV3);
+                 cat_position_SV3[cat_track][cat_z].push_back(position_SV3);
 
-                            }
+                 }
 
-                        }
+                 }
 
-                    }
+                 }
 
-                } */
+                 } */
 
 
             }
         }
 
         //check if negative particle is antiproton and if positive particle is pion+
-        if(fabs(sigma_proton_TPC[1])<2.5 && fabs(sigma_pion_TPC[0])<2.5)
+        if(fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_pion_TPC[0]) < 2.5)
         {
-           // printf("particles are antiproton and pion+ \n");
+            // printf("particles are antiproton and pion+ \n");
             energy_antiproton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
-            energy_pion = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+            energy_pion       = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
             //cout<<energy_proton<<endl;
             //cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion);
@@ -540,7 +578,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
             *tlv_Lambda = *tlv_pos + *tlv_neg;
             invariantmass = tlv_Lambda->M();
-           // cout<<invariantmass<<endl;
+            // cout<<invariantmass<<endl;
             histos_1D[0]->Fill(invariantmass);
 
             histos_1D[2]->Fill(radius);
@@ -561,34 +599,34 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 vec_direction_SV3.push_back(direction_SV3);
 
                 /*
-                //mixed event
+                 //mixed event
                  for(int cat_track=0;cat_track<4;cat_track++)
-                {
-                    for(int cat_z=0;cat_z<4;cat_z++)
-                    {
-                        if(NumTracks>=limits_num_tracks[cat_track] && NumTracks<limits_num_tracks[cat_track+1])
-                        {
-                            if(EventVertexZ>=limits_z_vertex[cat_z] && EventVertexZ<limits_z_vertex[cat_z+1])
-                            {
-                               cat_direction_SV3[cat_track][cat_z].push_back(direction_SV3);
-                               cat_position_SV3[cat_track][cat_z].push_back(position_SV3);
+                 {
+                 for(int cat_z=0;cat_z<4;cat_z++)
+                 {
+                 if(NumTracks>=limits_num_tracks[cat_track] && NumTracks<limits_num_tracks[cat_track+1])
+                 {
+                 if(EventVertexZ>=limits_z_vertex[cat_z] && EventVertexZ<limits_z_vertex[cat_z+1])
+                 {
+                 cat_direction_SV3[cat_track][cat_z].push_back(direction_SV3);
+                 cat_position_SV3[cat_track][cat_z].push_back(position_SV3);
 
-                            }
+                 }
 
-                        }
+                 }
 
-                    }
-                }
-                    */
+                 }
+                 }
+                 */
             }
         }
 
         //K0 - > pi+ and pi-
         //check if pion+ and pion-
-        if(fabs(sigma_pion_TPC[0])<2.5 && fabs(sigma_pion_TPC[1])<2.5)
+        if(fabs(sigma_pion_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
         {
-           //printf("particles are pion+ and pion- \n");
-            energy_pion_plus = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+            //printf("particles are pion+ and pion- \n");
+            energy_pion_plus  = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
             energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
             //cout<<energy_proton<<endl;
             //cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
@@ -628,108 +666,108 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 //cout<<"position SV2: "<<position_SV2[0]<<endl;
 
                 /*
-                //mixed event
+                 //mixed event
                  for(int cat_track=0;cat_track<4;cat_track++)
-                {
-                    for(int cat_z=0;cat_z<4;cat_z++)
-                    {
-                        if(NumTracks>=limits_num_tracks[cat_track] && NumTracks<limits_num_tracks[cat_track+1])
-                        {
-                            if(EventVertexZ>=limits_z_vertex[cat_z] && EventVertexZ<limits_z_vertex[cat_z+1])
-                            {
-                               cat_direction_SV2[cat_track][cat_z].push_back(direction_SV2);
-                               cat_position_SV2[cat_track][cat_z].push_back(position_SV2);
+                 {
+                 for(int cat_z=0;cat_z<4;cat_z++)
+                 {
+                 if(NumTracks>=limits_num_tracks[cat_track] && NumTracks<limits_num_tracks[cat_track+1])
+                 {
+                 if(EventVertexZ>=limits_z_vertex[cat_z] && EventVertexZ<limits_z_vertex[cat_z+1])
+                 {
+                 cat_direction_SV2[cat_track][cat_z].push_back(direction_SV2);
+                 cat_position_SV2[cat_track][cat_z].push_back(position_SV2);
 
-                            }
+                 }
 
-                        }
+                 }
 
-                    }
-                } */
+                 }
+                 } */
             }
         }
 
-       //-------------------------------------------------------------------------------------------------------------------------------------------------------
-       //-------------------------------------------------------------------------------------------------------------------------------------------------------
-       //-------------------------------------------------------------------------------------------------------------------------------------------------------
-       //-------------------------------------------------------------------------------------------------------------------------------------------------------
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------
         //search for V0 coming from anti-proton and K+
-        if ( fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_K_plus_TPC < 2.5))
+        if fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_K_plus_TPC < 2.5))
         {
             //  cout<<"V0 from anti-proton and K+"<<endl;
-          energy_K_plus = sqrt(mass_K * mass_K + (momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
-          energy_anti_proton = sqrt(mass_proton * mass_proton + (momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2])) ;
+            energy_K_plus      = sqrt(mass_K * mass_K + (momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+            energy_anti_proton = sqrt(mass_proton * mass_proton + (momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2])) ;
 
-          tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_K_plus);
-          tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_anti_proton);
+            tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_K_plus);
+            tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_anti_proton);
 
-          tlv_anti_p_and_K_plus = *tlv_pos + *tlv_neg;
+            tlv_anti_p_and_K_plus = *tlv_pos + *tlv_neg;
 
-          invariantmass = tlv_anti_p_and_K_plus.M();
+            invariantmass = tlv_anti_p_and_K_plus.M();
 
-          used_track_ids_of_pions.push_back(trackidP);
+            used_track_ids_of_pions.push_back(trackidP);
 
-          counters[5]++;
-          
-          //assume position of V0 is also position of potential S-vertex
-          //loop over all other tracks in order to find K+ that comes from this position
-          vector<int> save_track_ids;
+            counters[5]++;
 
-          for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
-          {
-              if( check_if_int_is_in_vector(i_track_A,used_track_ids_of_pions) ==1 ){continue;}
+            //assume position of V0 is also position of potential S-vertex
+            //loop over all other tracks in order to find K+ that comes from this position
+            vector<int> save_track_ids;
 
-              AS_Track = AS_Event->getTrack(i_track_A);
+            for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
+            {
+                if( check_if_int_is_in_vector(i_track_A,used_track_ids_of_pions) == 1 ){continue;}
 
-              double sigma = AS_Track -> getnsigma_K_TPC();
+                AS_Track = AS_Event->getTrack(i_track_A);
 
-              // PID for Kaon
-              if(fabs(sigma)>2.5){continue;}
-              //initial parameters
-              Float_t path_closest_to_point = 0;
-              Float_t dca_closest_to_point  = 0;
-              Float_t path_initA = 0.0;
-              Float_t path_initB = 30.0;
+                double sigma = AS_Track -> getnsigma_K_TPC();
 
-              //calculate dca from vertex to particle track
-              FindDCAHelixPoint(pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+                // PID for Kaon
+                if(fabs(sigma) > 2.5) {continue;}
+                //initial parameters
+                Float_t path_closest_to_point = 0;
+                Float_t dca_closest_to_point  = 0;
+                Float_t path_initA = 0.0;
+                Float_t path_initB = 30.0;
 
-              if(dca_closest_to_point>0.5){continue;}
-              //if(radius<5) {continue;}
+                //calculate dca from vertex to particle track
+                FindDCAHelixPoint(pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
-              
-              //check dca of additional K+ to primary vertex
-              Float_t dca_to_primary_vertex = -1;
-              FindDCAHelixPoint(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dca_to_primary_vertex);
-              if(dca_to_primary_vertex<3.){continue;}
-
-              //cout<<"Found V0 of antiproton and K+ with another K+"<<endl;
-              
-              save_track_ids.push_back(i_track_A);
+                if(dca_closest_to_point > 0.5) {continue;}
+                //if(radius<5) {continue;}
 
 
+                //check dca of additional K+ to primary vertex
+                Float_t dca_to_primary_vertex = -1;
+                FindDCAHelixPoint(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dca_to_primary_vertex);
+                if(dca_to_primary_vertex<3.){continue;}
 
-          }
+                //cout<<"Found V0 of antiproton and K+ with another K+"<<endl;
 
-          if (save_track_ids.size()==1)
-          {
-              counters[2]++;
-              histos_1D[9]->Fill(radius);
-              histos_2D[3]->Fill(pos[0],pos[1]);
+                save_track_ids.push_back(i_track_A);
 
-          }
 
-          //cout<<"invariantmass: "<<invariantmass<<endl;
-          save_track_ids.clear();
+
+            }
+
+            if (save_track_ids.size()==1)
+            {
+                counters[2]++;
+                histos_1D[9]->Fill(radius);
+                histos_2D[3]->Fill(pos[0],pos[1]);
+
+            }
+
+            //cout<<"invariantmass: "<<invariantmass<<endl;
+            save_track_ids.clear();
 
         }
 
-        
+
     }     //end of V0 loop
-     //-------------------------------------------------------------------------------------------------------------------------------------------------------
-     //-------------------------------------------------------------------------------------------------------------------------------------------------------
-     //-------------------------------------------------------------------------------------------------------------------------------------------------------
-     //-------------------------------------------------------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -772,268 +810,290 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
 
 
-    for (int vector_loop_1=0; vector_loop_1<vec_position_SV3.size();vector_loop_1++)
+    for(Int_t vector_loop_SV3 = 0; vector_loop_SV3 < vec_position_SV3.size(); vector_loop_SV3++)
     {
-        for( int vector_loop_2=0; vector_loop_2<vec_position_SV2.size();vector_loop_2++)
+        for(Int_t vector_loop_SV2 = 0; vector_loop_SV2 < vec_position_SV2.size(); vector_loop_SV2++)
         {
-           // printf("vector loop 1: %d, vector loop2: %d \n",vector_loop_1,vector_loop_2 ) ;
-           if(vec_position_SV3.size()>0 && vec_position_SV2.size()>0 && vec_direction_SV3.size()>0 &&  vec_direction_SV2.size()>0)
-           {
-               if(calculateMinimumDistance(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2])>0.5){continue;}
-
-               S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_1],vec_direction_SV3[vector_loop_1],vec_position_SV2[vector_loop_2],vec_direction_SV2[vector_loop_2]);
-               counters[3]++;
-               //build lorentz vector of SV2 and SV3
-               //SV2
-               double px,py,pz,E;
-               px = vec_direction_SV2[vector_loop_2][0];
-               py = vec_direction_SV2[vector_loop_2][1];
-               pz = vec_direction_SV2[vector_loop_2][2];
-               E = (sqrt(px*px+py*py+pz*pz)+(mass_K0*mass_K0));
-               tlv_SV2 -> SetPxPyPzE(px,py,pz,E);
-
-               //SV3
-               px = vec_direction_SV3[vector_loop_1][0];
-               py = vec_direction_SV3[vector_loop_1][1];
-               pz = vec_direction_SV3[vector_loop_1][2];
-               E = (sqrt(px*px+py*py+pz*pz)+(mass_Lambda*mass_Lambda));
-               tlv_SV3 -> SetPxPyPzE(px,py,pz,E);
-
-               //calculate SV1
-               *tlv_SV1 = *tlv_SV2 + *tlv_SV3 - *tlv_neutron;
-
-               //neglecting pions -> falsche Masse
-               S_mass = tlv_SV1->M();
-
-               //check if SV1 vector is parallel to vertex from primary vertex to SV1 (s-vertex)
-
-               // vector from primary vertex to SV1 (S-vertex)
-               vec_primary_vertex_to_SV1.SetXYZ(S_vertex_pos[0]-EventVertexX ,S_vertex_pos[1]-EventVertexY , S_vertex_pos[2]-EventVertexZ);
-               unit_vec_primary_vertex_to_SV1 = vec_primary_vertex_to_SV1.Unit();
-
-               
-               
-               radiusS = vec_primary_vertex_to_SV1.Mag();
-
-               /*
-               if( fabs(radiusS) < 200 )
-               {
-                   //cout<<S_vertex_pos[0]<<endl;
-                   histos_1D[4]->Fill(radiusS);
-
-                   histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
-
-                   //wrong mass filled!
-                   if(fabs(radiusS)>10)
-                   {
-                       histos_1D[5]->Fill(S_mass);
-                   }
+            // printf("vector loop 1: %d, vector loop2: %d \n",vector_loop_SV3,vector_loop_SV2 ) ;
+            if(vec_position_SV3.size() > 0 && vec_position_SV2.size() > 0 && vec_direction_SV3.size() > 0 &&  vec_direction_SV2.size() > 0)
+            {
+                if(calculateMinimumDistance(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]) > 0.5){ continue;}
 
-                   if(fabs(radiusS)>20)
-                   {
-                       histos_1D[6]->Fill(S_mass);
-                   }
-               }
-               */
+                S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]);
+                counters[3]++;
+                //build lorentz vector of SV2 and SV3
+                //SV2
+                double px,py,pz,E;
+                px = vec_direction_SV2[vector_loop_SV2][0];
+                py = vec_direction_SV2[vector_loop_SV2][1];
+                pz = vec_direction_SV2[vector_loop_SV2][2];
+                E = (sqrt(px*px+py*py+pz*pz)+(mass_K0*mass_K0));
+                tlv_SV2 -> SetPxPyPzE(px,py,pz,E);
 
-               //printf("S mass: %f", S_mass);
+                //SV3
+                px = vec_direction_SV3[vector_loop_SV3][0];
+                py = vec_direction_SV3[vector_loop_SV3][1];
+                pz = vec_direction_SV3[vector_loop_SV3][2];
+                E = (sqrt(px*px+py*py+pz*pz)+(mass_Lambda*mass_Lambda));
+                tlv_SV3 -> SetPxPyPzE(px,py,pz,E);
 
-               //------------------------------------------------------------------------------------
-               //search for two pions coming from S-vertex------------------------------------------------------
-               //------------------------------------------------------------------------------------
+                //calculate SV1
+                *tlv_SV1 = *tlv_SV2 + *tlv_SV3 - *tlv_neutron;
 
-               //set to zero for each vertex
-               int counter_pions_close_to_S_vertex = 0;
+                //neglecting pions -> wrong mass
+                S_mass = tlv_SV1->M();
 
-               //store tracks of all pions that come from S-vertex
-               vector<int> tracks;
-              
-               //------------------------------------------------------------
-               //for each S-vertex loop over all tracks of event
-               for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
-               {
-                   if( check_if_int_is_in_vector(i_track_A,used_track_ids_of_pions) == 1 ) {continue;};
+                //check if SV1 vector is parallel to vertex from primary vertex to SV1 (s-vertex)
 
-                   AS_Track = AS_Event->getTrack(i_track_A);
+                // vector from primary vertex to SV1 (S-vertex)
+                vec_primary_vertex_to_SV1.SetXYZ(S_vertex_pos[0]-EventVertexX ,S_vertex_pos[1]-EventVertexY , S_vertex_pos[2]-EventVertexZ);
+                unit_vec_primary_vertex_to_SV1 = vec_primary_vertex_to_SV1.Unit();
 
-                   double sigma = AS_Track -> getnsigma_pi_TPC();
 
-                   // Do some PID here for pi+ and pi-
-                   if(fabs(sigma)>2.5){continue;}
 
-                   //calculate dca from vertex to particle track
-                   FindDCAHelixPoint(S_vertex_pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+                radiusS = vec_primary_vertex_to_SV1.Mag();
 
-                   //printf("i_track_A: %d, path_closest_to_point: %4.3f, dca_closest_to_point: %4.3f \n",i_track_A,path_closest_to_point,dca_closest_to_point);
+                /*
+                 if( fabs(radiusS) < 200 )
+                 {
+                 //cout<<S_vertex_pos[0]<<endl;
+                 histos_1D[4]->Fill(radiusS);
 
-                   // if dca is good then calculate Lorentzvectors at vertex position, add them to the S and calculate invariant mass
+                 histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
 
-                   //cut on dca and distance S vertex from primary vertex
-                   //cut on r because otherwise many pions from primary vertex
-                   if(dca_closest_to_point<0.5 ) // && radiusS>5)
-                   {
-                       //printf("track: %d is pion and close to vertex \n",i_track_A);
-                       counter_pions_close_to_S_vertex++;
-                       //save track number for tracks that are close to S-vertex
-                       tracks.push_back(i_track_A);
+                 //wrong mass filled!
+                 if(fabs(radiusS)>10)
+                 {
+                 histos_1D[5]->Fill(S_mass);
+                 }
 
-                   }
+                 if(fabs(radiusS)>20)
+                 {
+                 histos_1D[6]->Fill(S_mass);
+                 }
+                 }
+                 */
 
+                //printf("S mass: %f", S_mass);
 
-               }
+                //------------------------------------------------------------------------------------
+                //search for two pions coming from S-vertex------------------------------------------------------
+                //------------------------------------------------------------------------------------
 
-               //cout<<"number pions close to S-vertex: "<<counter_pions_close_to_S_vertex<<endl;
+                //set to zero for each vertex
+                Int_t counter_pions_close_to_S_vertex = 0;
 
-               //if(tracks.size()<2){continue;}
-               //cout<<tracks[0]<<"  "<<tracks[1]<<endl;
-               if(tracks.size()==1)
-               {
-                   counters[4]++;
-               }
+                //store tracks of all pions that come from S-vertex
+                vector<int> tracks;
 
-               //check if exactly 2 pions come from S-vertex
-               if(tracks.size()==2)
-               {
-                   Double_t r1[3];
-                   Double_t r2[3];
+                //------------------------------------------------------------
+                //for each S-vertex loop over all tracks of event
+                for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
+                {
+                    if( check_if_int_is_in_vector(i_track_A,used_track_ids_of_pions) == 1 ) {continue;};
 
-                   //count S-vertices with two 2 pions coming from there for all events
-                   counters[1]++;
+                    AS_Track = AS_Event->getTrack(i_track_A);
 
-                   //get tracks of 2 pions
-                   ASTrack1 = AS_Event->getTrack(tracks[0]);
-                   ASTrack2 = AS_Event->getTrack(tracks[1]);
+                    double sigma = AS_Track -> getnsigma_pi_TPC();
 
+                    // Do some PID here for pi+ and pi-
+                    if(fabs(sigma)>2.5){continue;}
 
-                   //do all for pion 1--------------------------------------------------------------
-                   //---------------------------------------------------------------------------------
-                   path_closest_to_point = 0;
-                   dca_closest_to_point  = 0;
-                   path_initA = 0.0;
-                   path_initB = 30.0;
+                    //calculate dca from vertex to particle track
+                    FindDCAHelixPoint(S_vertex_pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
-                   //calculate again path and dca
-                   FindDCAHelixPoint(S_vertex_pos,ASTrack1,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+                    //printf("i_track_A: %d, path_closest_to_point: %4.3f, dca_closest_to_point: %4.3f \n",i_track_A,path_closest_to_point,dca_closest_to_point);
 
-                   //find direction of pion 1
-                   ASTrack1->Evaluate(path_closest_to_point,r1);
-                   ASTrack1->Evaluate(path_closest_to_point+0.01,r2);
+                    // if dca is good then calculate Lorentzvectors at vertex position, add them to the S and calculate invariant mass
 
-                   TVector3 mom_dir_pion1;
-                   TVector3 unit_mom_dir_pion1;
-                   TVector3 vec_momentum;
+                    //cut on dca and distance S vertex from primary vertex
+                    //cut on r because otherwise many pions from primary vertex
+                    if(dca_closest_to_point < 0.5) // && radiusS>5)
+                    {
+                        //printf("track: %d is pion and close to vertex \n",i_track_A);
+                        counter_pions_close_to_S_vertex++;
+                        //save track number for tracks that are close to S-vertex
+                        tracks.push_back(i_track_A);
 
-                   mom_dir_pion1.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
+                    }
 
-                   //unit vector in direction of pion 1
-                   unit_mom_dir_pion1 = mom_dir_pion1.Unit();
 
-                   //cout<<r1[0]<<endl;
-                   //cout<<r2[0]<<endl;
+                }
 
-                   TLorentzVector tlv = ASTrack1->get_TLV_part();
-                   double momentum = tlv.P();
+                //cout<<"number pions close to S-vertex: "<<counter_pions_close_to_S_vertex<<endl;
 
-                   vec_momentum.SetXYZ(unit_mom_dir_pion1[0]*momentum,unit_mom_dir_pion1[1]*momentum,unit_mom_dir_pion1[2]*momentum);
+                //if(tracks.size()<2){continue;}
+                //cout<<tracks[0]<<"  "<<tracks[1]<<endl;
+                if(tracks.size()==1)
+                {
+                    counters[4]++;
+                }
 
-                   //cout<<"momentum vec: "<<vec_momentum[0]<<endl;
+                //check if exactly 2 pions come from S-vertex
+                if(tracks.size()==2)
+                {
+                    Double_t r1[3];
+                    Double_t r2[3];
 
+                    //count S-vertices with two 2 pions coming from there for all events
+                    counters[1]++;
 
-                   TLorentzVector tlv_pion1;
-                   double energy_pion1 = sqrt(mass_pion * mass_pion + momentum*momentum) ;
+                    //get tracks of 2 pions
+                    ASTrack1 = AS_Event->getTrack(tracks[0]);
+                    ASTrack2 = AS_Event->getTrack(tracks[1]);
 
-                   tlv_pion1.SetPxPyPzE(vec_momentum[0],vec_momentum[1],vec_momentum[2],energy_pion1);
 
-                   *tlv_SV1+=tlv_pion1;
+                    //do all for pion 1--------------------------------------------------------------
+                    //---------------------------------------------------------------------------------
+                    path_closest_to_point = 0;
+                    dca_closest_to_point  = 0;
+                    path_initA = 0.0;
+                    path_initB = 30.0;
 
+                    //calculate again path and dca
+                    FindDCAHelixPoint(S_vertex_pos,ASTrack1,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
-                   //-----------------------------------------------------------------------------------------------
-                   //-----------------------------------------------------------------------------------------------
-                   //--------------------------------------------------------------------------------
-                   //do the same for pion 2
-                   path_closest_to_point = 0;
-                   dca_closest_to_point  = 0;
-                   path_initA = 0.0;
-                   path_initB = 30.0;
+                    //find direction of pion 1
+                    ASTrack1->Evaluate(path_closest_to_point,r1);
+                    ASTrack1->Evaluate(path_closest_to_point+0.01,r2);
 
-                   //calculate again path and dca
-                   FindDCAHelixPoint(S_vertex_pos,ASTrack2,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+                    TVector3 mom_dir_pion1;
+                    TVector3 unit_mom_dir_pion1;
+                    TVector3 vec_momentum;
 
-                   //find direction of pion 2
-                   ASTrack2->Evaluate(path_closest_to_point,r1);
-                   ASTrack2->Evaluate(path_closest_to_point+0.01,r2);
+                    mom_dir_pion1.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
 
-                   TVector3 mom_dir_pion2;
-                   TVector3 unit_mom_dir_pion2;
-                   TVector3 vec_momentum_pion2;
+                    //unit vector in direction of pion 1
+                    unit_mom_dir_pion1 = mom_dir_pion1.Unit();
 
-                   mom_dir_pion2.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
+                    //cout<<r1[0]<<endl;
+                    //cout<<r2[0]<<endl;
 
-                   //unit vector in direction of pion 1
-                   unit_mom_dir_pion2 = mom_dir_pion2.Unit();
+                    TLorentzVector tlv = ASTrack1->get_TLV_part();
+                    double momentum = tlv.P();
 
-                   TLorentzVector tlv2 = ASTrack2->get_TLV_part();
-                   double momentum2 = tlv2.P();
+                    vec_momentum.SetXYZ(unit_mom_dir_pion1[0]*momentum,unit_mom_dir_pion1[1]*momentum,unit_mom_dir_pion1[2]*momentum);
 
-                   vec_momentum_pion2.SetXYZ(unit_mom_dir_pion2[0]*momentum2,unit_mom_dir_pion2[1]*momentum2,unit_mom_dir_pion2[2]*momentum2);
+                    //cout<<"momentum vec: "<<vec_momentum[0]<<endl;
 
-                   TLorentzVector tlv_pion2;
-                   double energy_pion2 = sqrt(mass_pion * mass_pion + momentum2*momentum2) ;
-                   tlv_pion2.SetPxPyPzE(vec_momentum_pion2[0],vec_momentum_pion2[1],vec_momentum_pion2[2],energy_pion2);
 
-                   *tlv_SV1+=tlv_pion2;
+                    TLorentzVector tlv_pion1;
+                    double energy_pion1 = sqrt(mass_pion * mass_pion + momentum*momentum) ;
 
-                   //build unit vector of momentum from tlv_SV1
-                   momentum_SV1.SetXYZ(tlv_SV1->Px(),tlv_SV1->Py(),tlv_SV1->Pz());
-                   unit_momentum_SV1 = momentum_SV1.Unit();
+                    tlv_pion1.SetPxPyPzE(vec_momentum[0],vec_momentum[1],vec_momentum[2],energy_pion1);
 
-                   double dot_product = unit_vec_primary_vertex_to_SV1.Dot(unit_momentum_SV1);
-                   // printf("dot product: %f \n", dot_product);
+                    *tlv_SV1+=tlv_pion1;
 
-                   //check if dot product is larger than 0
-                   if(dot_product<0.){continue;}
 
-                   //--------------------------------------------------------------------------------------------------------------
+                    //-----------------------------------------------------------------------------------------------
+                    //-----------------------------------------------------------------------------------------------
+                    //--------------------------------------------------------------------------------
+                    //do the same for pion 2
+                    path_closest_to_point = 0;
+                    dca_closest_to_point  = 0;
+                    path_initA = 0.0;
+                    path_initB = 30.0;
 
-                   //calculate again S-mass----------------------------------------------
-                   double S_mass_correct = tlv_SV1->M();
-                   //cout<<"falsche S-mass: "<<S_mass<<endl;
-                   //cout<<"korrekte S-mass: "<<S_mass_correct<<endl;
+                    //calculate again path and dca
+                    FindDCAHelixPoint(S_vertex_pos,ASTrack2,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
-                   if( fabs(radiusS) < 200 )
-                   {
-                       //cout<<S_vertex_pos[0]<<endl;
-                       histos_1D[4]->Fill(radiusS);
+                    //find direction of pion 2
+                    ASTrack2->Evaluate(path_closest_to_point,r1);
+                    ASTrack2->Evaluate(path_closest_to_point+0.01,r2);
 
-                       histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
+                    TVector3 mom_dir_pion2;
+                    TVector3 unit_mom_dir_pion2;
+                    TVector3 vec_momentum_pion2;
 
-                       if(fabs(radiusS)>10)
-                       {
-                           histos_1D[5]->Fill(S_mass_correct);
-                       }
+                    mom_dir_pion2.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
 
-                       if(fabs(radiusS)>20)
-                       {
-                           histos_1D[6]->Fill(S_mass_correct);
-                       }
-                   }
+                    //unit vector in direction of pion 1
+                    unit_mom_dir_pion2 = mom_dir_pion2.Unit();
 
-               tracks.clear();
+                    TLorentzVector tlv2 = ASTrack2->get_TLV_part();
+                    double momentum2 = tlv2.P();
 
-                   
-             
-               }
+                    vec_momentum_pion2.SetXYZ(unit_mom_dir_pion2[0]*momentum2,unit_mom_dir_pion2[1]*momentum2,unit_mom_dir_pion2[2]*momentum2);
 
-               //for reaction anti S
-               //check if exactly 1 pion comes from S-vertex
-             
+                    TLorentzVector tlv_pion2;
+                    double energy_pion2 = sqrt(mass_pion * mass_pion + momentum2*momentum2) ;
+                    tlv_pion2.SetPxPyPzE(vec_momentum_pion2[0],vec_momentum_pion2[1],vec_momentum_pion2[2],energy_pion2);
 
+                    *tlv_SV1+=tlv_pion2;
 
-               //------------------------------------------------------------
+                    //build unit vector of momentum from tlv_SV1
+                    momentum_SV1.SetXYZ(tlv_SV1->Px(),tlv_SV1->Py(),tlv_SV1->Pz());
+                    unit_momentum_SV1 = momentum_SV1.Unit();
 
+                    double dot_product = unit_vec_primary_vertex_to_SV1.Dot(unit_momentum_SV1);
+                    // printf("dot product: %f \n", dot_product);
 
+                    //check if dot product is larger than 0
+                    if(dot_product<0.){continue;}
 
-           }
+                    //--------------------------------------------------------------------------------------------------------------
+
+                    //calculate again S-mass----------------------------------------------
+                    double S_mass_correct = tlv_SV1->M();
+                    //cout<<"falsche S-mass: "<<S_mass<<endl;
+                    //cout<<"korrekte S-mass: "<<S_mass_correct<<endl;
+
+                    if( fabs(radiusS) < 200 )
+                    {
+                        //cout<<S_vertex_pos[0]<<endl;
+                        histos_1D[4]->Fill(radiusS);
+
+                        histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
+
+                        if(fabs(radiusS)>10)
+                        {
+                            histos_1D[5]->Fill(S_mass_correct);
+                        }
+
+                        if(fabs(radiusS)>20)
+                        {
+                            histos_1D[6]->Fill(S_mass_correct);
+                        }
+                    }
+
+                    tracks.clear();
+
+                    TVector3 TV3_S1(tlv_SV1.Px(),tlv_SV1.Py(),tlv_SV1.Pz());
+
+
+                    //-------------------------
+                    // Store the S information in the output tree
+                    AS_DM_particle ->set_primVertex(pos_primary_vertex);
+                    AS_DM_particle ->set_S1Vertex(S_vertex_pos);
+                    AS_DM_particle ->set_S2Vertex(vec_position_SV2[vector_loop_SV2]);
+                    AS_DM_particle ->set_S3Vertex(vec_position_SV3[vector_loop_SV3]);
+                    AS_DM_particle ->set_DirSV1(TVector3);
+                    AS_DM_particle ->set_DirSV2(direction_SV2[vector_loop_SV2]);
+                    AS_DM_particle ->set_DirSV3(direction_SV3[vector_loop_SV3]);
+                    AS_DM_particle ->setN_V0s(3);
+                    AS_DM_particle ->clearTrackList();
+                    AS_DM_Track = AS_DM_particle ->createTrack();
+                    copy_track_params(ASTrack1,AS_DM_Track);
+                    AS_DM_Track = AS_DM_particle ->createTrack();
+                    copy_track_params(ASTrack2,AS_DM_Track);
+                    //ASTrack1; // pion which charge?
+                    //ASTrack2; // pion which charge?
+
+                    Tree_AS_DM_particle ->Fill();
+                    //-------------------------
+
+                }
+
+                //for reaction anti S
+                //check if exactly 1 pion comes from S-vertex
+
+
+
+                //------------------------------------------------------------
+
+
+
+            }
         }
 
 
@@ -1041,12 +1101,12 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
 
     /*for (int i = 0;i<3;i++)
-    {
-        //cout<<i<<endl;
-        if(cat_direction_SV2[0][0].size()==0 ){continue;}
-        //printf("2 direction SV2: %f \n",cat_direction_SV2[0][0][i][0]);
-    }
-    */
+     {
+     //cout<<i<<endl;
+     if(cat_direction_SV2[0][0].size()==0 ){continue;}
+     //printf("2 direction SV2: %f \n",cat_direction_SV2[0][0][i][0]);
+     }
+     */
 
     //----------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------
@@ -1059,7 +1119,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
     return 1;
 
-    
+
 }
 
 

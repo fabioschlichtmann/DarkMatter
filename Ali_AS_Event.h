@@ -838,4 +838,93 @@ ClassDef(Ali_AS_Event,1);  // A simple event compiled of tracks
 
 
 
+//----------------------------------------------------------------------------------------
+class Ali_AS_DM_particle : public TObject
+{
+private:
+    TVector3 primVertex;
+    TVector3 S1Vertex;
+    TVector3 S2Vertex;
+    TVector3 S3Vertex;
+    TVector3 DirSV1;
+    TVector3 DirSV2;
+    TVector3 DirSV3;
+    Int_t    N_V0s;
+
+    UShort_t      fNumTracks; // number of tracks in event
+
+    TClonesArray* fTracks;   //->
+
+public:
+    Ali_AS_DM_particle() :
+	primVertex(),S1Vertex(),S2Vertex(),S3Vertex(),DirSV1(),DirSV2(),DirSV3(),N_V0s(0),fNumTracks(0),fNumV0s(0),
+    {
+        fTracks         = new TClonesArray( "Ali_AS_Track", 10 );
+    }
+	~Ali_AS_DM_particle()
+	{
+	    delete fTracks;
+            fTracks = NULL;
+        }
+
+
+        // setters
+        void set_primVertex(TVector3 tv3)                { primVertex = tv3;     }
+        void set_S1Vertex(TVector3 tv3)                  { S1Vertex   = tv3;     }
+        void set_S2Vertex(TVector3 tv3)                  { S2Vertex   = tv3;     }
+        void set_S3Vertex(TVector3 tv3)                  { S3Vertex   = tv3;     }
+        void set_DirSV1(TVector3 tv3)                    { DirSV1     = tv3;     }
+        void set_DirSV2(TVector3 tv3)                    { DirSV2     = tv3;     }
+        void set_DirSV3(TVector3 tv3)                    { DirSV3     = tv3;     }
+        void setN_V0s(Int_t r)                           { N_V0s = r;            }
+
+	// getters
+        TVector3 get_primVertex() const                  { return primVertex;    }
+        TVector3 get_S1Vertex()   const                  { return S1Vertex;      }
+        TVector3 get_S2Vertex()   const                  { return S2Vertex;      }
+        TVector3 get_S3Vertex()   const                  { return S3Vertex;      }
+        TVector3 get_DirSV1()     const                  { return DirSV1;        }
+        TVector3 get_DirSV2()     const                  { return DirSV2;        }
+        TVector3 get_DirSV3()     const                  { return DirSV3;        }
+	Int_t    getN_V0s()       const                  { return N_V0s;         }
+
+
+        //----------------------------
+	Ali_AS_Track* createTrack()
+	{
+	    if (fNumTracks == fTracks->GetSize())
+		fTracks->Expand( fNumTracks + 10 );
+	    if (fNumTracks >= 10000)
+	    {
+		Fatal( "Ali_AS_Event::createTrack()", "ERROR: Too many tracks (>10000)!" );
+		exit( 2 );
+	    }
+
+	    new((*fTracks)[fNumTracks++]) Ali_AS_Track;
+	    return (Ali_AS_Track*)((*fTracks)[fNumTracks - 1]);
+        }
+
+	void clearTrackList()
+	{
+	    fNumTracks   = 0;
+	    fTracks      ->Clear();
+        }
+
+	UShort_t getNumTracks() const
+	{
+	    return fNumTracks;
+        }
+
+	Ali_AS_Track* getTrack(UShort_t i) const
+	{
+	    return i < fNumTracks ? (Ali_AS_Track*)((*fTracks)[i]) : NULL;
+        }
+        //----------------------------
+
+ClassDef(Ali_AS_DM_particle,1);  // A simple event compiled of tracks
+};
+//----------------------------------------------------------------------------------------
+
+
+
 #endif // __ALI_AS_EVENT_H__

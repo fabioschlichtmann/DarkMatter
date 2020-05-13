@@ -7,6 +7,7 @@
 #pragma link C++ class Ali_AS_Tracklet;
 #pragma link C++ class Ali_AS_V0;
 #pragma link C++ class Ali_AS_Event;
+#pragma link C++ class Ali_AS_DM_particle;
 
 
 #endif
