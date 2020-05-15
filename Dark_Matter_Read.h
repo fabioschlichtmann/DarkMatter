@@ -800,9 +800,11 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
             for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
             {
-                if( check_if_int_is_in_vector(i_track_A,used_track_ids_of_pions) == 1 ){continue;}
 
                 AS_Track = AS_Event->getTrack(i_track_A);
+                int Trackid = AS_Track->gettrackid();
+
+                if( check_if_int_is_in_vector(Trackid,used_track_ids_of_pions) == 1 ){continue;}
 
                 double sigma = AS_Track -> getnsigma_K_TPC();
 
@@ -828,7 +830,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                 //cout<<"Found V0 of antiproton and K+ with another K+"<<endl;
 
-                save_track_ids.push_back(i_track_A);
+                save_track_ids.push_back(Trackid);
 
 
 
@@ -975,9 +977,12 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 //for each S-vertex loop over all tracks of event
                 for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
                 {
-                    if( check_if_int_is_in_vector(i_track_A,used_track_ids_of_pions) == 1 ) {continue;};
-
                     AS_Track = AS_Event->getTrack(i_track_A);
+                    int trackid2 = AS_Track->gettrackid();
+
+                    if( check_if_int_is_in_vector(trackid2,used_track_ids_of_pions) == 1 ) {continue;};
+
+                   
 
                     double sigma = AS_Track -> getnsigma_pi_TPC();
 
@@ -998,7 +1003,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                         //printf("track: %d is pion and close to vertex \n",i_track_A);
                         counter_pions_close_to_S_vertex++;
                         //save track number for tracks that are close to S-vertex
-                        tracks.push_back(i_track_A);
+                        tracks.push_back(trackid2);
 
                     }
 
@@ -1195,16 +1200,23 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                     AS_DM_particle ->clearTrackList();
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(ASTrack1,AS_DM_Track);
+                    cout<<ASTrack1->gettrackid()<<endl;
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(ASTrack2,AS_DM_Track);
+                    cout<<ASTrack2->gettrackid()<<endl;
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(vec_SV2_tracks[2*vector_loop_SV2],AS_DM_Track);
+                    cout<<vec_SV2_tracks[2*vector_loop_SV2]->gettrackid()<<endl;
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(vec_SV2_tracks[2*vector_loop_SV2+1],AS_DM_Track);
+                    cout<<vec_SV2_tracks[2*vector_loop_SV2+1]->gettrackid()<<endl;
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(vec_SV3_tracks[2*vector_loop_SV3],AS_DM_Track);
+                    cout<<vec_SV3_tracks[2*vector_loop_SV3]->gettrackid()<<endl;
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(vec_SV3_tracks[2*vector_loop_SV3+1],AS_DM_Track);
+                    cout<<vec_SV3_tracks[2*vector_loop_SV3+1]->gettrackid()<<endl;
+                    cout<<""<<endl;
 
                     Tree_AS_DM_particle ->Fill();
                     //-------------------------
