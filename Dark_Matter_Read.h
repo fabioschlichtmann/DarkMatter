@@ -139,6 +139,8 @@ private:
     Ali_AS_Track*     AS_DM_Track;
     TTree       *Tree_AS_DM_particle;
 
+    TGraph* gr = new TGraph();
+
 
     TFile* outputfile;
     TFile* outputfile_trkl;
@@ -174,6 +176,7 @@ public:
     Int_t Loop_event(Long64_t event, vector<TH1D*> histos_1D, vector<TH2D*> histos_2D, vector<int> &counters);
     Long64_t getnumberentries(){return file_entries_total;};
     void copy_track_params(Ali_AS_Track* track_in, Ali_AS_Track* track_out);
+    void Save();
 
     ClassDef(Dark_Matter_Read, 1)
 };
@@ -339,6 +342,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     Ali_AS_Track* as_tracksave = new Ali_AS_Track;
     Ali_AS_Track* ASTrack1 = new Ali_AS_Track;
     Ali_AS_Track* ASTrack2 = new Ali_AS_Track;
+    Ali_AS_Track* track_in_loop  =  new Ali_AS_Track;
     Float_t* sigma_proton_TPC = new Float_t[2];
     Float_t* sigma_pion_TPC = new Float_t[2];
     Float_t radius;
@@ -346,6 +350,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     TVector3 position_SV3;
     TVector3 direction_SV2;
     TVector3 direction_SV3;
+
+    TLorentzVector tlv_in_loop;
 
 
     vector<TVector3> vec_position_SV2;
@@ -424,9 +430,59 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     vector<Ali_AS_Track*> vec_SV2_tracks;
     vector<Ali_AS_Track*> vec_SV3_tracks;
 
+    vector<int> vec_SV2_track_numbers;
+    vector<int> vec_SV3_track_numbers;
+
+
+    vector<int> brute_force;
+
+    //-------------------------------------------------------------------------------------------------------------------------------
+    //loop over all tracks of event in order to make Bethe Bloch plot: dEdx as function of charge*momentum
+
+    for(Int_t i_track = 0; i_track < NumTracks; i_track++)
+    {
+        track_in_loop = AS_Event -> getTrack(i_track);
+
+        Float_t TPCdEdx   = track_in_loop->getTPCdEdx();
+        Float_t tofsignal = track_in_loop->getTOFsignal();
+        Float_t dca       = track_in_loop->getdca();
+        Float_t tracklength = track_in_loop->getTrack_length();
+        int charge;
+
+        if(dca>0){charge = 1;}
+        else {charge = -1;}
+
+        tlv_in_loop = track_in_loop->get_TLV_part();
+        double momentum = tlv_in_loop.P();
+
+        //printf("dEdx: %f, momentum: %f, dca: %f, charge: %d, tofsignal: %f \n"
+              // ,TPCdEdx, momentum,dca, charge, tofsignal);
+
+        int num_points = gr ->GetN();
+        gr ->SetPoint(num_points,charge * momentum, TPCdEdx);
+
+        if(tofsignal>99990){continue;}
+        double velocity = tracklength/tofsignal;
+
+        velocity = velocity * 1e10;
+        //double speed_of_light_SI =
+        //printf("velocity: %f \n", velocity);    //which unit??
+
+        double gamma = 1. / (1- sqrt (1-(velocity/1.)*(velocity/1.)) );
+
+
+
+    }
+    //-------------------------------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------------------------------
+
+    bool V0_is_used = 0;
+
     //loop over V0s
     for(Int_t V0counter = 0; V0counter < NumV0s; V0counter++)
     {
+        V0_is_used =0;
+
         AS_V0 = AS_Event -> getV0(V0counter);
 
         //get position of V0
@@ -533,6 +589,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
             //cut on mass
             if(invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
             {
+                V0_is_used = 1;
+
                 used_track_ids_of_pions.push_back(trackidN);
                 //printf(" proton and pi- ; trackidP %u, trackidN %u \n",trackidP,trackidN )  ;
                 position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
@@ -543,6 +601,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                 vec_SV3_tracks.push_back(as_trackP);
                 vec_SV3_tracks.push_back(as_trackN);
+
+                vec_SV3_track_numbers.push_back(trackidP);
+                vec_SV3_track_numbers.push_back(trackidN);
 
                 /*
                  //mixed event
@@ -571,6 +632,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
             }
         }
 
+        if (V0_is_used ==1 )  {continue;}
+
         //check if negative particle is antiproton and if positive particle is pion+
         if(fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_pion_TPC[0]) < 2.5)
         {
@@ -595,7 +658,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
             //cut on mass
             if(invariantmass< (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
             {
-
+                V0_is_used = 1;
                 used_track_ids_of_pions.push_back(trackidP);
                 //printf(" antiproton and pi+ ; trackidP %u, trackidN %u \n",trackidP,trackidN )  ;
                 position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
@@ -606,6 +669,10 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                 vec_SV3_tracks.push_back(as_trackP);
                 vec_SV3_tracks.push_back(as_trackN);
+
+                vec_SV3_track_numbers.push_back(trackidP);
+                vec_SV3_track_numbers.push_back(trackidN);
+
 
                 /*
                  //mixed event
@@ -629,6 +696,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                  */
             }
         }
+
+        if(V0_is_used==1){continue;}
 
         //K0 - > pi+ and pi-
         //check if pion+ and pion-
@@ -668,6 +737,9 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 vec_SV2_tracks.push_back(as_trackP);
                 vec_SV2_tracks.push_back(as_trackN);
 
+                vec_SV2_track_numbers.push_back(trackidP);
+                vec_SV2_track_numbers.push_back(trackidN);
+
                 //printf("position of vertex:  %f %f %f \n",pos[0],pos[1],pos[2]);
                 //cout<<""<<endl;
                 //printf("momentum of pion + : %f %f %f \n",momP[0],momP[1],momP[2]);
@@ -698,6 +770,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                  } */
             }
         }
+        if(V0_is_used==1){continue;}
 
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -944,6 +1017,21 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 //check if exactly 2 pions come from S-vertex
                 if(tracks.size()==2)
                 {
+
+                    //check all tracks if one of them is already used:
+                    int a = check_if_int_is_in_vector(tracks[0],brute_force);
+                    int b = check_if_int_is_in_vector(tracks[1],brute_force);
+                    int c = check_if_int_is_in_vector(vec_SV2_track_numbers[2*vector_loop_SV2],brute_force);
+                    int d = check_if_int_is_in_vector(vec_SV2_track_numbers[2*vector_loop_SV2+1],brute_force);
+                    int e = check_if_int_is_in_vector(vec_SV3_track_numbers[2*vector_loop_SV3],brute_force);
+                    int f = check_if_int_is_in_vector(vec_SV3_track_numbers[2*vector_loop_SV3+1],brute_force);
+
+                    int check = a+b+c+d+e+f;
+
+                    if(check>=1){continue;}
+
+
+
                     Double_t r1[3];
                     Double_t r2[3];
 
@@ -1048,6 +1136,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                     //check if dot product is larger than 0
                     if(dot_product<0.){continue;}
 
+                   
+
                     //--------------------------------------------------------------------------------------------------------------
 
                     //calculate again S-mass----------------------------------------------
@@ -1078,8 +1168,22 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                     TVector3 TV3_S1(tlv_SV1->Px(),tlv_SV1->Py(),tlv_SV1->Pz());
 
 
+                    
+                    if(radiusS<15){continue;}
+                    counters[6]++;
+
+
+                    //after all cuts store all 6 tracks in brute force
+                    brute_force.push_back(tracks[0]);   //pion1
+                    brute_force.push_back(tracks[1]);   //pion2
+                    brute_force.push_back(vec_SV2_track_numbers[2*vector_loop_SV2]);   //tracks of SV2
+                    brute_force.push_back(vec_SV2_track_numbers[2*vector_loop_SV2+1]);   //tracks of SV2
+                    brute_force.push_back(vec_SV3_track_numbers[2*vector_loop_SV3]);   //tracks of SV3
+                    brute_force.push_back(vec_SV3_track_numbers[2*vector_loop_SV3+1]);   //tracks of SV3
+
                     //-------------------------
                     // Store the S information in the output tree
+
                     AS_DM_particle ->set_primVertex(pos_primary_vertex);
                     AS_DM_particle ->set_S1Vertex(S_vertex_pos);
                     AS_DM_particle ->set_S2Vertex(vec_position_SV2[vector_loop_SV2]);
@@ -1138,11 +1242,25 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
 
     N_Tracks = NumTracks;
-
+    //Tree_AS_DM_particle->Write();
 
     return 1;
 
 
+}
+
+void Dark_Matter_Read::Save()
+{
+    outputfile->cd();
+    Tree_AS_DM_particle->Write();
+
+     TCanvas* can = new TCanvas;
+    can->cd();
+    gr->SetMarkerColor(kBlack);
+    gr->SetMarkerSize(0.5);
+    gr->SetLineWidth(0);
+    gr->SetMarkerStyle(20);
+    gr->Draw("");
 }
 
 
