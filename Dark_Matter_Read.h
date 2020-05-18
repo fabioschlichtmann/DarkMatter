@@ -140,7 +140,22 @@ private:
     TTree       *Tree_AS_DM_particle;
 
     TGraph* gr = new TGraph();
+    TGraph* gr2 = new TGraph();
 
+    TH2D* mass_squared_vs_charge_dot_momentum = new TH2D("mass_squared_vs_charge_dot_momentum","mass_squared_vs_charge_dot_momentum",
+                                                         200,-8,8,200,-0.5,0.5);
+    TH2D* dEdx_vs_charge_dot_momentum = new TH2D("dEdx_vs_charge_dot_momentum","dEdx_vs_charge_dot_momentum",
+                                                         200,-10,10,200,0,4000);
+    TH2D* mass_squared_vs_charge_dot_momentum_kaons = new TH2D("mass_squared_vs_charge_dot_momentum_kaons","mass_squared_vs_charge_dot_momentum_kaons",
+                                                         200,-8,8,200,-0.5,0.5);
+
+    TH1D* mass_squared_no_pions = new TH1D("mass squared no pions", "mass squared no pions",100,-0.1,0.1);
+
+    TH1D* histo_reference_vertex_radius_3_pionen = new TH1D("histo_reference_vertex_radius_3_pionen","histo_reference_vertex_radius_3_pionen",50*5,0,200);
+    TH1D* histo_reference_vertex_radius_4_pionen = new TH1D("histo_reference_vertex_radius_4_pionen","histo_reference_vertex_radius_4_pionen",50*5,0,200);
+
+    TH2D* histo_reference_x_and_y_3_pionen = new TH2D("histo_reference_x_and_y_3_pionen ","histo_reference_x_and_y_3_pionen ",200,-100,100,200,-100,100);
+    TH2D* histo_reference_x_and_y_4_pionen = new TH2D("histo_reference_x_and_y_4_pionen ","histo_reference_x_and_y_4_pionen ",200,-100,100,200,-100,100);
 
     TFile* outputfile;
     TFile* outputfile_trkl;
@@ -167,6 +182,8 @@ private:
 
     TString HistName;
     char NoP[50];
+
+    double counter =0;
 
 
 public:
@@ -456,19 +473,53 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         double momentum = tlv_in_loop.P();
 
         //printf("dEdx: %f, momentum: %f, dca: %f, charge: %d, tofsignal: %f \n"
-              // ,TPCdEdx, momentum,dca, charge, tofsignal);
+          //     ,TPCdEdx, momentum,dca, charge, tofsignal);
 
         int num_points = gr ->GetN();
         gr ->SetPoint(num_points,charge * momentum, TPCdEdx);
+        dEdx_vs_charge_dot_momentum->Fill(charge * momentum, TPCdEdx);
 
         if(tofsignal>99990){continue;}
         double velocity = tracklength/tofsignal;
 
-        velocity = velocity * 1e10;
-        //double speed_of_light_SI =
-        //printf("velocity: %f \n", velocity);    //which unit??
+        //printf("velocity: %f \n", velocity);
 
-        double gamma = 1. / (1- sqrt (1-(velocity/1.)*(velocity/1.)) );
+        velocity = velocity * 1e10;
+
+         //printf("velocity: %f \n", velocity);
+
+        double speed_of_light_SI = 299792458.;
+
+        velocity = velocity /speed_of_light_SI;  //now in units of c
+
+        // printf("velocity: %f \n", velocity);
+
+        double gamma_squared = 1. / (1-velocity*velocity) ;
+        //printf("momentum: %f, gamma: %f, velocity: %f \n",momentum,gamma,velocity);
+
+        //m^2 =  ( p/ (gamma * v) )^2
+        double m_squared = ( momentum / velocity)  *  ( momentum /velocity) * 1./gamma_squared ;
+
+        //if(m_squared<0){printf("mass squared: %f \n", m_squared);}
+        if(isnan(m_squared)) {continue;}
+
+        int num_points2 = gr2 ->GetN();
+        gr2 ->SetPoint(num_points,charge * momentum, m_squared);
+
+        mass_squared_vs_charge_dot_momentum->Fill( charge * momentum , m_squared);
+
+        if ( fabs( track_in_loop -> getnsigma_K_TPC()) < 1.0 )
+        {
+            mass_squared_vs_charge_dot_momentum_kaons->Fill(charge * momentum , m_squared);
+        }
+
+        //cut auf pi - und momentum<0.4
+
+        
+        if( momentum<0.4 && fabs( track_in_loop -> getnsigma_pi_TPC()) > 1.5 )
+        {
+          mass_squared_no_pions->Fill(m_squared);
+        }
 
 
 
@@ -561,6 +612,10 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
         sigma_K_plus_TPC   = as_trackP -> getnsigma_K_TPC();
 
+        Float_t path_closest_to_point = 0;
+        Float_t dca_closest_to_point  = 0;
+        Float_t path_initA = 0.0;
+        Float_t path_initB = 30.0;
 
         //Lambda0 -> proton + pi-
         //check if positive particle is proton and if negative particle is pion-
@@ -703,6 +758,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         //check if pion+ and pion-
         if(fabs(sigma_pion_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
         {
+            V0_is_used=1;
             //printf("particles are pion+ and pion- \n");
             energy_pion_plus  = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
             energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
@@ -770,7 +826,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                  } */
             }
         }
-        if(V0_is_used==1){continue;}
+        //if(V0_is_used==1){continue;}
 
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -848,6 +904,67 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
             save_track_ids.clear();
 
         }
+
+        ///-----------------------------------------------------------------------------------
+        //reference by looking at antineutron annhihilation
+        //searching for V0 coming from pi+ and pi-  (K0-vertex)
+        //then looking for 2 or 3 pions also from that vertex
+
+        int num_of_pions =0; //total number of pions
+        vector<int> tracks_of_pions;
+
+        if(fabs(sigma_pion_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
+        {
+            tracks_of_pions.push_back(trackidP);
+            tracks_of_pions.push_back(trackidN);
+
+            counter++;
+            num_of_pions = 2;
+
+            for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
+            {
+                AS_Track = AS_Event->getTrack(i_track_A);
+                int trackid2 = AS_Track->gettrackid();
+
+                if( check_if_int_is_in_vector(trackid2,tracks_of_pions) ){continue;}
+
+                double sigma = AS_Track -> getnsigma_pi_TPC();
+
+                if(sigma>2.5){continue;}
+
+                FindDCAHelixPoint(pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+
+                if(dca_closest_to_point>0.5){continue;}
+
+                num_of_pions++;
+
+            }
+            //printf("num of pions: %d \n",num_of_pions);
+
+            if(num_of_pions == 3)
+            {
+                //if(radius<15){continue;}
+
+                histo_reference_vertex_radius_3_pionen->Fill(radius);
+                histo_reference_x_and_y_3_pionen->Fill(pos[0],pos[1]);
+
+            }
+
+            if(num_of_pions == 4)
+            {
+                //if(radius<15){continue;}
+
+                histo_reference_vertex_radius_4_pionen->Fill(radius);
+                histo_reference_x_and_y_4_pionen->Fill(pos[0],pos[1]);
+
+            }
+
+
+
+
+        }
+        tracks_of_pions.clear();
+
 
 
     }     //end of V0 loop
@@ -1266,13 +1383,62 @@ void Dark_Matter_Read::Save()
     outputfile->cd();
     Tree_AS_DM_particle->Write();
 
-     TCanvas* can = new TCanvas;
+    TCanvas* can = new TCanvas;
+    TCanvas* can2 = new TCanvas;
+
+    TCanvas* can3 = new TCanvas;
+    TCanvas* can4 = new TCanvas;
+    /*
+    TCanvas* can5 = new TCanvas;
+    TCanvas* can6 = new TCanvas;
+
+
     can->cd();
     gr->SetMarkerColor(kBlack);
     gr->SetMarkerSize(0.5);
     gr->SetLineWidth(0);
     gr->SetMarkerStyle(20);
     gr->Draw("");
+
+    can2->cd();
+    gr2->SetMarkerColor(kBlack);
+    gr2->SetMarkerSize(0.5);
+    gr2->SetLineWidth(0);
+    gr2->SetMarkerStyle(20);
+    gr2->Draw("");
+
+    can3->cd();
+    gPad->SetLogz();
+    mass_squared_vs_charge_dot_momentum->GetXaxis()->SetTitle("charge * momentum");
+    mass_squared_vs_charge_dot_momentum->GetYaxis()->SetTitle("mass squared");
+    mass_squared_vs_charge_dot_momentum->Draw("colz");
+
+    can4->cd();
+    dEdx_vs_charge_dot_momentum->Draw("colz");
+    dEdx_vs_charge_dot_momentum->GetXaxis()->SetTitle("charge * momentum");
+    dEdx_vs_charge_dot_momentum->GetYaxis()->SetTitle("dEdx");
+
+    can5->cd();
+    gPad->SetLogz();
+    mass_squared_vs_charge_dot_momentum_kaons->Draw("colz");
+
+    can6->cd();
+    mass_squared_no_pions->Draw();
+    */
+
+    cout<<"counter: "<<counter<<endl;
+
+    can->cd();
+    histo_reference_vertex_radius_3_pionen->Draw();
+
+    can2->cd();
+    histo_reference_vertex_radius_4_pionen->Draw();
+
+    can3->cd();
+    histo_reference_x_and_y_3_pionen->Draw("colz");
+
+    can4->cd();
+    histo_reference_x_and_y_4_pionen->Draw("colz");
 }
 
 
