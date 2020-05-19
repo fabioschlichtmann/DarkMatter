@@ -160,6 +160,8 @@ private:
     TFile* outputfile;
     TFile* outputfile_trkl;
 
+    TFile* ofile = new TFile("ntuple.root","RECREATE");
+
     TFile* calibration_params;
 
 
@@ -184,6 +186,8 @@ private:
     char NoP[50];
 
     double counter =0;
+
+    TNtuple* tpl = new TNtuple ("ntuple","ntuple","x:y:z:dcaA:dcaB:dcaC:dcaD:pA:pB:pC:pD:dcaAprim:dcaBprim:dcaCprim:dcaDprim");
 
 
 public:
@@ -271,6 +275,8 @@ void Dark_Matter_Read::Init_tree(TString SEList)
     file_entries_total = input_SE->GetEntries();
     N_Events = file_entries_total;
     cout << "Total number of events in tree: " << file_entries_total << endl;
+
+    
 }
 //----------------------------------------------------------------------------------------
 
@@ -306,7 +312,10 @@ void Dark_Matter_Read::copy_track_params(Ali_AS_Track* track_in, Ali_AS_Track* t
 }
 //----------------------------------------------------------------------------------------
 
-
+float calc_momentum(float* mom)
+{
+     return sqrt( mom[0]*mom[0]+mom[1]*mom[1]+mom[2]*mom[2] );
+}
 
 //----------------------------------------------------------------------------------------
 Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vector<TH2D*> histos_2D,vector<int> &counters)
@@ -359,6 +368,10 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
     Ali_AS_Track* as_tracksave = new Ali_AS_Track;
     Ali_AS_Track* ASTrack1 = new Ali_AS_Track;
     Ali_AS_Track* ASTrack2 = new Ali_AS_Track;
+    Ali_AS_Track* AS_TrackA = new Ali_AS_Track;
+    Ali_AS_Track* AS_TrackB = new Ali_AS_Track;
+    Ali_AS_Track* AS_TrackC = new Ali_AS_Track;
+    Ali_AS_Track* AS_TrackD = new Ali_AS_Track;
     Ali_AS_Track* track_in_loop  =  new Ali_AS_Track;
     Float_t* sigma_proton_TPC = new Float_t[2];
     Float_t* sigma_pion_TPC = new Float_t[2];
@@ -911,12 +924,17 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
         //then looking for 2 or 3 pions also from that vertex
 
         int num_of_pions =0; //total number of pions
-        vector<int> tracks_of_pions;
+        vector<int> tracks_of_V0;
+        vector<int> all_tracks_of_pions;
+
 
         if(fabs(sigma_pion_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
         {
-            tracks_of_pions.push_back(trackidP);
-            tracks_of_pions.push_back(trackidN);
+            tracks_of_V0.push_back(trackidP);
+            tracks_of_V0.push_back(trackidN);
+
+            all_tracks_of_pions.push_back(trackidP);
+            all_tracks_of_pions.push_back(trackidN);
 
             counter++;
             num_of_pions = 2;
@@ -926,7 +944,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 AS_Track = AS_Event->getTrack(i_track_A);
                 int trackid2 = AS_Track->gettrackid();
 
-                if( check_if_int_is_in_vector(trackid2,tracks_of_pions) ){continue;}
+                if( check_if_int_is_in_vector(trackid2,tracks_of_V0) ){continue;}
 
                 double sigma = AS_Track -> getnsigma_pi_TPC();
 
@@ -938,13 +956,15 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                 num_of_pions++;
 
+                all_tracks_of_pions.push_back(trackid2);
+
             }
             //printf("num of pions: %d \n",num_of_pions);
 
             if(num_of_pions == 3)
             {
                 //if(radius<15){continue;}
-
+                //cout<<"filled"<<endl;
                 histo_reference_vertex_radius_3_pionen->Fill(radius);
                 histo_reference_x_and_y_3_pionen->Fill(pos[0],pos[1]);
 
@@ -957,13 +977,61 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                 histo_reference_vertex_radius_4_pionen->Fill(radius);
                 histo_reference_x_and_y_4_pionen->Fill(pos[0],pos[1]);
 
+                //pion A is first V0 particle (positive)
+                //pion B is second V0 particle (negative)
+                //pion C is first extra pion
+                //pion D is second extra pion
+
+                //dca A is dca of particle A to V0
+
+
+                AS_TrackA = AS_Event->getTrack(all_tracks_of_pions[0]);
+                AS_TrackB = AS_Event->getTrack(all_tracks_of_pions[1]);
+                AS_TrackC = AS_Event->getTrack(all_tracks_of_pions[2]);
+                AS_TrackD = AS_Event->getTrack(all_tracks_of_pions[3]);
+
+                if(!AS_TrackA || !AS_TrackB || !AS_TrackC || !AS_TrackD){continue;}
+
+                float dcaA,dcaB,dcaC,dcaD;
+                FindDCAHelixPoint(pos,AS_TrackA,path_initA,path_initB,path_closest_to_point,dcaA);
+                FindDCAHelixPoint(pos,AS_TrackB,path_initA,path_initB,path_closest_to_point,dcaB);
+                FindDCAHelixPoint(pos,AS_TrackC,path_initA,path_initB,path_closest_to_point,dcaC);
+                FindDCAHelixPoint(pos,AS_TrackD,path_initA,path_initB,path_closest_to_point,dcaD);
+
+
+                //pA is momentum of particle A
+                float pA,pB,pC,pD;
+                TLorentzVector tl_vec = AS_TrackA->get_TLV_part();
+                pA = tl_vec.P();
+
+                tl_vec = AS_TrackB->get_TLV_part();
+                pB = tl_vec.P();
+
+                tl_vec = AS_TrackC->get_TLV_part();
+                pC= tl_vec.P();
+
+                tl_vec = AS_TrackD->get_TLV_part();
+                pD = tl_vec.P();
+
+                //dcaAprim is dca of particle A to primary vertex
+                float dcaAprim,dcaBprim,dcaCprim,dcaDprim;
+                FindDCAHelixPoint(pos_primary_vertex,AS_TrackA,path_initA,path_initB,path_closest_to_point,dcaAprim);
+                FindDCAHelixPoint(pos_primary_vertex,AS_TrackB,path_initA,path_initB,path_closest_to_point,dcaBprim);
+                FindDCAHelixPoint(pos_primary_vertex,AS_TrackC,path_initA,path_initB,path_closest_to_point,dcaCprim);
+                FindDCAHelixPoint(pos_primary_vertex,AS_TrackD,path_initA,path_initB,path_closest_to_point,dcaDprim);
+
+                //("ntuple","ntuple","x:y:z:dcaA:dcaB:dcaC:dcaD:pA:pB:pC:pD:dcaAprim:dcaBprim:dcaCprim:dcaDprim");
+                tpl->Fill(pos[0],pos[1],pos[2],dcaA,dcaB,dcaC,dcaD,pA,pB,pC,pD,dcaAprim,dcaBprim,dcaCprim,dcaDprim);
+                //cout<<"filled ntuple"<<endl;
+
             }
 
 
 
 
         }
-        tracks_of_pions.clear();
+        all_tracks_of_pions.clear();
+        tracks_of_V0.clear();
 
 
 
@@ -1380,8 +1448,8 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
 void Dark_Matter_Read::Save()
 {
-    outputfile->cd();
-    Tree_AS_DM_particle->Write();
+    //outputfile->cd();
+    //Tree_AS_DM_particle->Write();
 
     TCanvas* can = new TCanvas;
     TCanvas* can2 = new TCanvas;
@@ -1439,6 +1507,9 @@ void Dark_Matter_Read::Save()
 
     can4->cd();
     histo_reference_x_and_y_4_pionen->Draw("colz");
+
+    ofile->cd();
+    tpl->Write();
 }
 
 
