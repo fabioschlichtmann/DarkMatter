@@ -270,6 +270,9 @@ private:
     int counter_path_trackB_negativ = 0;
     int counter_path_trackC_negativ = 0;
 
+    int count_lambdas = 0;
+    int count_anti_lambdas = 0;
+
     TH2D* mass_squared_vs_charge_dot_momentum = new TH2D("mass_squared_vs_charge_dot_momentum","mass_squared_vs_charge_dot_momentum",
                                                          200,-8,8,200,-0.5,0.5);
 
@@ -283,7 +286,52 @@ private:
     for(int i=0;i<vals.size(),i++)
     {
         x_vals[i]=vals[i]
-    }    */
+        }    */
+
+    //histos from Macro
+    TH1D* histo_invariantmass_lambda = new TH1D("histo inv mass lambda","histo inv mass lambda",50*2,1.1,1.13);
+    TH1D* histo_invariantmass_K0 = new TH1D("histo inv mass K0","histo inv mass K0",50*3,0.4,0.6);
+
+    TH1D* histo_lambda_vertex_radius = new TH1D("histo lambda vertex radius ","histo lambda vertex radius ",50,0,200);
+    TH1D* histo_K0_vertex_radius = new TH1D("histo K0 vertex radius ","histo K0 vertex radius ",50,0,200);
+    
+
+    int binning2D = 400;
+    TH2D* histo_lambda_x_and_y = new TH2D("histo lambda x and y ","histo lambda x and y ",binning2D,-200,200,binning2D,-200,200);
+    TH2D* histo_K0_x_and_y = new TH2D("histo K0 x and y ","histo K0 x and y ",binning2D,-200,200,binning2D,-200,200);
+
+    TH2D* histo_V0_with_K_plus_x_and_y = new TH2D("histo V0 with K + x and y","histo V0 with K + x and y",binning2D,-100,100,binning2D,-100,100);
+   
+
+    TH1D* histo_S_vertex_radius = new TH1D("histo S vertex radius ","histo S vertex radius ",200,0,200);
+    
+    TH2D* histo_S_x_and_y = new TH2D("histo S x and y ","histo S x and y ",binning2D,-100,100,binning2D,-100,100);
+
+    TH1D* histo_S_mass_r_larger_10 = new TH1D("histo S mass r>10","histo S mass r>10",200,0,20);
+    TH1D* histo_S_mass_r_larger_20 = new TH1D("histo S mass r>20","histo S mass r>20",200,0,20);
+
+    TH1D* histo_num_tracks = new TH1D("histo number of tracks","histo number of tracks",200,0,1000);
+    TH1D* histo_vertex_z_pos = new TH1D("histo vertex z position","histo vertex z position",100,-30,30);
+
+    TH1D* histo_V0_with_K_plus_radius = new TH1D("histo V0 with K plus radius","histo V0 with K plus radius",100,0,200);
+
+    vector<TH1D*> histos_1D;
+    vector<TH2D*> histos_2D;
+    //--------------------------------------------------------------
+
+    //counters----------------------------------------------------
+    int event_counter=0;
+    int counter_of_2pions_close_to_S_vertex=0;
+    int counter_of_V0s_of_antiproton_and_K_plus_and_another_K=0;
+    int counter_of_S_vertices_without_pions=0;
+    int counter_1pion_close=0;
+    int counter_V0s_antiproton_and_K_plus=0;
+    int counter_correct_S_vertices=0;
+
+    vector<int> counters;
+
+    //-----------------------------------------------------------------
+
 
     TH2D* dEdx_vs_charge_dot_momentum;
     //TH2D* mass_squared_vs_charge_dot_momentum_kaons;
@@ -343,7 +391,7 @@ public:
     Dark_Matter_Read();
     ~Dark_Matter_Read();
     void Init_tree(TString SEList);
-    Int_t Loop_event(Long64_t event, vector<TH1D*> histos_1D, vector<TH2D*> histos_2D, vector<int> &counters);
+    Int_t Loop_event(Long64_t event );
     Long64_t getnumberentries(){return file_entries_total;};
     void copy_track_params(Ali_AS_Track* track_in, Ali_AS_Track* track_out);
     void Save();
@@ -457,7 +505,31 @@ void Dark_Matter_Read::Init_tree(TString SEList)
 
    
     dEdx_vs_charge_dot_momentum = new TH2D("dEdx_vs_charge_dot_momentum","dEdx_vs_charge_dot_momentum",
-                                                         199,x_vals,199,y_vals);
+                                           199,x_vals,199,y_vals);
+
+    histos_1D.push_back(histo_invariantmass_lambda);
+    histos_1D.push_back(histo_invariantmass_K0);
+    histos_1D.push_back(histo_lambda_vertex_radius); //2
+    histos_1D.push_back(histo_K0_vertex_radius);     //3
+    histos_1D.push_back(histo_S_vertex_radius);      //4
+    histos_1D.push_back(histo_S_mass_r_larger_10);   //5
+    histos_1D.push_back(histo_S_mass_r_larger_20);   //6
+    histos_1D.push_back(histo_num_tracks);      //7
+    histos_1D.push_back(histo_vertex_z_pos);      //8
+    histos_1D.push_back(histo_V0_with_K_plus_radius);      //9
+
+    histos_2D.push_back(histo_lambda_x_and_y);
+    histos_2D.push_back(histo_K0_x_and_y);
+    histos_2D.push_back(histo_S_x_and_y);
+    histos_2D.push_back(histo_V0_with_K_plus_x_and_y); //3
+
+    counters.push_back(event_counter);
+    counters.push_back(counter_of_2pions_close_to_S_vertex);
+    counters.push_back(counter_of_V0s_of_antiproton_and_K_plus_and_another_K);
+    counters.push_back(counter_of_S_vertices_without_pions);     //3
+    counters.push_back(counter_1pion_close);     //4
+    counters.push_back(counter_V0s_antiproton_and_K_plus);     //5
+    counters.push_back(counter_correct_S_vertices);     //6
 
     
 }
@@ -501,7 +573,7 @@ float calc_momentum(float* mom)
 }
 
 //----------------------------------------------------------------------------------------
-Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vector<TH2D*> histos_2D,vector<int> &counters)
+Int_t Dark_Matter_Read::Loop_event(Long64_t event)
 {
     if(event%100==0)
     {
@@ -897,6 +969,10 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                     fHelixAtoLinedca(direction_SV3, position_SV3, AS_Track, pathA, pathB, dcaAB);
                     if(dcaAB>0.5){continue;}
 
+                    float dcaprim;
+                    FindDCAHelixPoint(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dcaprim);
+                    if(dcaprim<2.){continue;}
+
                     //if(charge>0){continue;}
 
                     double sigma_pi = AS_Track->getnsigma_pi_TPC();
@@ -934,7 +1010,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                         double xi_mass = tlv_xi.M();
 
                         if(charge==-1) {histo_invariantmass_xi_minus_baryon->Fill(xi_mass);}
-                        if(charge==1) {histo_invariantmass_xi_plus_baryon->Fill(xi_mass);}
+                        //if(charge==1) {histo_invariantmass_xi_plus_baryon->Fill(xi_mass);cout<<"filledminus"<<endl;}
 
                     }
 
@@ -969,7 +1045,7 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
                         double omega_mass = tlv_omega.M();
 
                         if(charge==-1) {histo_invariantmass_omega_minus_baryon->Fill(omega_mass);}
-                        if(charge==1) {histo_invariantmass_omega_plus_baryon->Fill(omega_mass);}
+                        //if(charge==1) {histo_invariantmass_omega_plus_baryon->Fill(omega_mass);}
 
                     }
 
@@ -1027,9 +1103,10 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
 
         //check if negative particle is antiproton and if positive particle is pion+
+        //antilambda
         if(fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_pion_TPC[0]) < 2.5)
         {
-            // printf("particles are antiproton and pion+ \n");
+            //printf("particles are antiproton and pion+ \n");
             energy_antiproton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
             energy_pion       = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
             //cout<<energy_proton<<endl;
@@ -1064,6 +1141,110 @@ Int_t Dark_Matter_Read::Loop_event(Long64_t event, vector<TH1D*> histos_1D,vecto
 
                 vec_SV3_track_ids.push_back(trackidP);
                 vec_SV3_track_ids.push_back(trackidN);
+
+                //search for Xi-baryons xi- -> pi- + lambda ; lambda -> proton + pi-
+                //search for Xi-baryons xi+ -> pi+ + lambda ; lambda -> proton + pi-
+                //search for Omega-baryons omega- -> K- + lambda ; lambda -> proton + pi-
+                //search for Omega-baryons omega+ -> K+ + lambda ; lambda -> proton + pi-
+                for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
+                {
+                    AS_Track = AS_Event->getTrack(i_track_A);
+                    Int_t trackid  = AS_Track->gettrackid();
+                    float dca = AS_Track->getdca();
+                    int charge;
+                    if(dca>0) {charge=1;}
+                    else {charge = -1;}
+
+                    if(trackid==trackidP || trackid==trackidN){continue;}
+
+                    Float_t pathA,pathB,dcaAB;
+
+                    float dcaprim;
+                    FindDCAHelixPoint(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dcaprim);
+                    if(dcaprim<2.){continue;}
+
+                    fHelixAtoLinedca(direction_SV3, position_SV3, AS_Track, pathA, pathB, dcaAB);
+                    if(dcaAB>0.5){continue;}
+
+                    //if(charge>0){continue;}
+
+                    double sigma_pi = AS_Track->getnsigma_pi_TPC();
+                    double sigma_K = AS_Track->getnsigma_K_TPC();
+
+                    //xi- and x+
+                    if(fabs(sigma_pi)<2.5)
+                    {
+                        if(radius<10){continue;}
+                        TLorentzVector tlv;
+                        TLorentzVector tlv_pion;
+                        TLorentzVector tlv_xi;
+
+                        tlv = AS_Track->get_TLV_part();
+                        double mom_pion = tlv.P();
+                        double energy_pion = sqrt( mass_pion*mass_pion +  mom_pion*mom_pion );
+                        Double_t r1[3];
+                        Double_t r2[3];
+
+                        AS_Track->Evaluate(pathA,r1);
+                        AS_Track->Evaluate(pathA+0.01,r2);
+
+                        TVector3 mom_dir_pion;
+                        TVector3 unit_mom_dir_pion;
+                        TVector3 vec_momentum;
+
+                        mom_dir_pion.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
+                        unit_mom_dir_pion = mom_dir_pion.Unit();
+                        vec_momentum.SetXYZ(unit_mom_dir_pion[0]*mom_pion,unit_mom_dir_pion[1]*mom_pion,unit_mom_dir_pion[2]*mom_pion);
+
+                        tlv_pion.SetPxPyPzE(vec_momentum[0],vec_momentum[1],vec_momentum[2],energy_pion);
+
+                        tlv_xi = *tlv_Lambda + tlv_pion;
+
+                        double xi_mass = tlv_xi.M();
+
+                        //if(charge==-1) {histo_invariantmass_xi_minus_baryon->Fill(xi_mass); cout<<"filledplus"<<endl;}
+                        if(charge==1) {histo_invariantmass_xi_plus_baryon->Fill(xi_mass); cout<<"filledminus"<<endl;}
+
+                    }
+
+                    //omega + and omega-
+                    if(fabs(sigma_K)<2.5)
+                    {
+                        if(radius<8){continue;}
+                        TLorentzVector tlv;
+                        TLorentzVector tlv_kaon;
+                        TLorentzVector tlv_omega;
+
+                        tlv = AS_Track->get_TLV_part();
+                        double mom_kaon = tlv.P();
+                        double energy_kaon = sqrt( mass_K*mass_K +  mom_kaon*mom_kaon );
+                        Double_t r1[3];
+                        Double_t r2[3];
+
+                        AS_Track->Evaluate(pathA,r1);
+                        AS_Track->Evaluate(pathA+0.01,r2);
+
+                        TVector3 mom_dir_kaon;
+                        TVector3 unit_mom_dir_kaon;
+                        TVector3 vec_momentum_kaon;
+
+                        mom_dir_kaon.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
+                        unit_mom_dir_kaon = mom_dir_kaon.Unit();
+                        vec_momentum_kaon.SetXYZ(unit_mom_dir_kaon[0]*mom_kaon,unit_mom_dir_kaon[1]*mom_kaon,unit_mom_dir_kaon[2]*mom_kaon);
+
+                        tlv_kaon.SetPxPyPzE(vec_momentum_kaon[0],vec_momentum_kaon[1],vec_momentum_kaon[2],energy_kaon);
+
+                        tlv_omega = *tlv_Lambda + tlv_kaon;
+
+                        double omega_mass = tlv_omega.M();
+
+                        //if(charge==-1) {histo_invariantmass_omega_minus_baryon->Fill(omega_mass);}
+                        if(charge==1) {histo_invariantmass_omega_plus_baryon->Fill(omega_mass);}
+
+                    }
+                }
+
+                
 
 
                 /*
@@ -2304,7 +2485,118 @@ void Dark_Matter_Read::Save()
 
     can6->cd();
     mass_squared_no_pions->Draw();
+
+
+
+    /*
+     printf("number of entries: %d, number of events over that we looped: %d \n", numentries, counters[0]);
+    cout<<""<<endl;
+    cout<<"considering reaction: anti-S + n -> K0s + anti-lambda + pi+ + pi- :"<<endl;
+    printf("number of S-vertices without 2 pions: %d \n", counters[3]);
+    printf("number of exactly 1 pion close to S-vertex: %d \n", counters[4]);
+    printf("number of exactly 2 pions close to S-vertex: %d \n", counters[1]);
+    printf("number of S vertices that fullfill all cuts: %d \n", counters[6]);
+    
+    cout<<""<<endl;
+    cout<<"consindering reaction: anti-S + p -> anti-p + K+ + K+ " <<endl;
+    printf("number of V0s of antiproton and K+: %d \n",counters[5]);
+    printf("number of V0s of antiproton and K+ with another K+: %d \n", counters[2]);
     */
+
+    /*TCanvas* a = new TCanvas();
+    TCanvas* b = new TCanvas();
+    TCanvas* c = new TCanvas();
+    TCanvas* d = new TCanvas();
+
+    /*
+    TCanvas* e = new TCanvas();
+    TCanvas* f = new TCanvas();
+    TCanvas* g = new TCanvas();
+    TCanvas* h = new TCanvas();
+    TCanvas* i = new TCanvas();
+    TCanvas* j = new TCanvas();
+    TCanvas* k = new TCanvas();
+    TCanvas* l = new TCanvas();
+    */
+
+   /* a->cd();
+    //histo_invariantmass_lambda->Draw();
+   // histo_invariantmass_K0->Draw();
+    histo_lambda_vertex_radius->Draw();
+    b->cd();
+    histo_K0_vertex_radius->Draw();
+
+    c->cd();
+    histo_lambda_x_and_y->Draw("colz");
+    d->cd();
+    histo_K0_x_and_y->Draw("colz");
+
+    e->cd();
+    histo_S_vertex_radius->Draw();
+    f->cd();
+    histo_S_x_and_y->Draw("colz");
+    g->cd();
+    histo_invariantmass_lambda->Draw();
+    h->cd();
+    histo_invariantmass_K0->Draw();
+
+    i->cd();
+    histo_S_mass_r_larger_10->Draw();
+
+    j->cd();
+    histo_S_mass_r_larger_20->Draw();
+
+    k->cd();
+    histo_num_tracks->Draw();
+
+    l->cd();
+    histo_vertex_z_pos->Draw();
+
+    a->cd();
+    histo_S_vertex_radius->Draw();
+    b->cd();
+    histo_S_x_and_y->Draw("colz");
+    c->cd();
+    histo_V0_with_K_plus_radius->Draw();
+    d->cd();
+    histo_V0_with_K_plus_x_and_y->Draw("colz");
+     */
+
+    /*
+    outputfile ->cd();
+    histo_invariantmass_lambda   ->Write();
+    histo_invariantmass_K0       ->Write();
+    histo_lambda_vertex_radius   ->Write();
+    histo_lambda_x_and_y         ->Write();
+    histo_K0_x_and_y             ->Write();
+    histo_S_vertex_radius        ->Write();
+    histo_S_x_and_y              ->Write();
+    histo_S_mass_r_larger_10     ->Write();
+    histo_S_mass_r_larger_20     ->Write();
+    histo_num_tracks             ->Write();
+    histo_vertex_z_pos           ->Write();
+
+    outputfile->Close();
+   
+
+    outputfile ->cd();
+    */
+
+
+
+    //printf("number of entries: %d, number of events over that we looped: %d \n", numentries, counters[0]);
+    cout<<""<<endl;
+    cout<<"considering reaction: anti-S + n -> K0s + anti-lambda + pi+ + pi- :"<<endl;
+    printf("number of S-vertices without 2 pions: %d \n", counters[3]);
+    printf("number of exactly 1 pion close to S-vertex: %d \n", counters[4]);
+    printf("number of exactly 2 pions close to S-vertex: %d \n", counters[1]);
+    printf("number of S vertices that fullfill all cuts: %d \n", counters[6]);
+    
+    cout<<""<<endl;
+    cout<<"consindering reaction: anti-S + p -> anti-p + K+ + K+ " <<endl;
+    printf("number of V0s of antiproton and K+: %d \n",counters[5]);
+    printf("number of V0s of antiproton and K+ with another K+: %d \n", counters[2]);
+
 
     cout<<"counter: "<<counter<<endl;
 
