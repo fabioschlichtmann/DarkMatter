@@ -5,14 +5,14 @@ class  AliAnalysisAlien;
 // modes: "test" to run over a small set of files (requires alien connection but everything stored locally),
 //        "full" to run over everything on the grid,
 //        "terminate" to merge results after "full"
-void runGridESD(TString mode="terminate",Int_t sub=702, TString fname="Ali_AS_analysis_TRD_digits", Int_t alien=1)
+void runGridESD(TString mode="terminate",Int_t sub=702, TString fname="Ali_DarkMatter_ESD_analysis", Int_t alien=1)
 {
     // Use root 5
 
-    // aliroot runGridESD.C\(\"test\",702,\"Ali_AS_analysis_TRD_digits\",0\)
-    // aliroot runGridESD.C\(\"test\",702,\"Ali_AS_analysis_TRD_digits\",1\)
-    // aliroot runGridESD.C\(\"full\",702,\"Ali_AS_analysis_TRD_digits\",1\)
-    // aliroot runGridESD.C\(\"terminate\",702,\"Ali_AS_analysis_TRD_digits\",1\)
+    // aliroot runGridESD.C\(\"test\",702,\"Ali_DarkMatter_ESD_analysis\",0\)
+    // aliroot runGridESD.C\(\"test\",702,\"Ali_DarkMatter_ESD_analysis\",1\)
+    // aliroot runGridESD.C\(\"full\",702,\"Ali_DarkMatter_ESD_analysis\",1\)
+    // aliroot runGridESD.C\(\"terminate\",702,\"Ali_DarkMatter_ESD_analysis\",1\)
 
     cout << "Start macro runGridESD, alien: " << alien << endl;
 
@@ -75,8 +75,8 @@ void runGridESD(TString mode="terminate",Int_t sub=702, TString fname="Ali_AS_an
     cout << "----------------------- Load analysis macros -----------------------" << endl;
     cout << "-------------------------------------------------------------------------------------------------------------------" << endl;
     cout << "" << endl;
-    gROOT->LoadMacro("Ali_AS_analysis_TRD_digits.cxx+g");
-    cout << "Loaded macro Ali_AS_analysis_TRD_digits.cxx" << endl;
+    gROOT->LoadMacro("Ali_DarkMatter_ESD_analysis.cxx+g");
+    cout << "Loaded macro Ali_DarkMatter_ESD_analysis.cxx" << endl;
     gROOT->LoadMacro("AddTask_aschmah.C");
     cout << "Loaded macro AddTask_aschmah.C" << endl;
     AddTask_aschmah();
@@ -166,7 +166,7 @@ AliAnalysisGrid* CreateAlienHandler(TString mode="test",Int_t sub=0,TString fnam
         Int_t runnumbers[] = {265338, 265525, 265521, 265501, 265500, 265499, 265435, 265427, 265426, 265425, 265424, // OK
 	265422, 265421, 265420, 265419, 265388, 265387, 265385, 265384, 265383, 265381, 265378, 265377,
 	265344, 265343, 265342, 265339, 265336, 265334, 265332, 265309}; // 32 runs in total
-	for(Int_t irun = 0; irun < 1; irun++)
+	for(Int_t irun = 0; irun < 3; irun++)
 	{
 	    Printf("%d %d",irun,runnumbers[irun]);
 	    plugin->AddRunNumber(runnumbers[irun]);
@@ -196,13 +196,13 @@ AliAnalysisGrid* CreateAlienHandler(TString mode="test",Int_t sub=0,TString fnam
     TString extraLibs;
     plugin->AddIncludePath("-I. -I$ROOTSYS/include -I$ALICE_ROOT/include -I$ALICE_PHYSICS/include");
 
-    //plugin->SetAdditionalLibs("Ali_AS_Event.cxx Ali_AS_Event.h Ali_AS_analysis_TRD_digits.cxx Ali_AS_analysis_TRD_digits.h");
-    //plugin->SetAdditionalLibs("Ali_AS_Event.h Ali_AS_Event.cxx Ali_AS_analysis_TRD_digits.h Ali_AS_analysis_TRD_digits.cxx");
-    plugin->SetAdditionalLibs("Ali_AS_Event.h Ali_AS_EventLinkDef.h Ali_AS_analysis_TRD_digits.h Ali_AS_analysis_TRD_digits.cxx");
-    //plugin->SetAdditionalLibs("Ali_AS_analysis_TRD_digits.h Ali_AS_analysis_TRD_digits.cxx");
-    //plugin->SetAdditionalLibs("Ali_AS_Event_cxx.so Ali_AS_analysis_TRD_digits_cxx.so"); // doesn't work at all
+    //plugin->SetAdditionalLibs("Ali_AS_Event.cxx Ali_AS_Event.h Ali_DarkMatter_ESD_analysis.cxx Ali_DarkMatter_ESD_analysis.h");
+    //plugin->SetAdditionalLibs("Ali_AS_Event.h Ali_AS_Event.cxx Ali_DarkMatter_ESD_analysis.h Ali_DarkMatter_ESD_analysis.cxx");
+    plugin->SetAdditionalLibs("Ali_AS_Event.h Ali_AS_EventLinkDef.h AliAnalysis_DarkMatter.h AliAnalysis_DarkMatter.cxx");
+    //plugin->SetAdditionalLibs("AliAnalysis_DarkMatter.h AliAnalysis_DarkMatter.cxx");
+    //plugin->SetAdditionalLibs("Ali_AS_Event_cxx.so AliAnalysis_DarkMatter_cxx.so"); // doesn't work at all
     // needed if running over a local task, comment out if the task is in AliPhysics
-    plugin->SetAnalysisSource("Ali_AS_analysis_TRD_digits.cxx");
+    plugin->SetAnalysisSource("Ali_DarkMatter_ESD_analysis.cxx");
 
     plugin->SetGridOutputDir("output"); // In this case will be $HOME/work/output
 

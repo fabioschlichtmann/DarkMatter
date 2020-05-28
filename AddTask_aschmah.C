@@ -11,7 +11,7 @@ AliAnalysisTask *AddTask_aschmah(Int_t trigger = 0)
     }
 
     //========= Add task to the ANALYSIS manager =====
-    Ali_AS_analysis_TRD_digits *task = new Ali_AS_analysis_TRD_digits("DigitsTask");
+    Ali_DarkMatter_ESD_analysis *task = new Ali_DarkMatter_ESD_analysis("DigitsTask");
     mgr->AddTask(task); // <-
     TString outputFileName = AliAnalysisManager::GetCommonFileName();
     outputFileName += ":TRD_analysis_hists";
