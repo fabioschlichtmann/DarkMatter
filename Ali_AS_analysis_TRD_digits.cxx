@@ -734,6 +734,8 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
     vector<int> all_negative_track_ids;
 
 
+
+
     for (int V0_counter=0; V0_counter<numberV0; V0_counter++)
     {
         //get position of V0-----------------------
@@ -771,7 +773,7 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         double momentumP = sqrt(pxP*pxP + pyP*pyP + pzP*pzP);
         double momentumN = sqrt(pxN*pxN + pyN*pyN + pzN*pzN);
 
-        printf("trackidP %d, trackidN %d \n",indexP,indexN)  ;
+        printf("trackidP %d, trackidN %d \n",indexP,indexN);
         printf("momentum of positive particle: %f   momentum of negative particle: %f \n",momentumP,momentumN);
         //----------------------------------------------------------------
 
@@ -798,6 +800,8 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         AS_V0 -> setNpxpypz(pxN,pyN,pzN);
         AS_V0 -> setPpxpypz(pxP,pyP,pzP);
 
+        AS_V0 -> setdcaV0( V0->GetDcaV0Daughters() );
+
 
         //create tracks for positive and negative particle
         Ali_AS_Track* as_trackP = AS_V0->createTrack();
@@ -812,7 +816,7 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
         Double_t Track_pT     = trackP ->Pt();
         Double_t Track_eta    = trackP ->Eta();
         Double_t Track_phi    = trackP ->Phi();
-        TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,-1);       //what to choose for M ?
+        TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,0.1349766);       //what to choose for M ?
 
         as_trackP  ->set_TLV_part(TL_vec);
 
@@ -824,9 +828,8 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
 
         as_trackP -> setTRDSignal(trackP->GetTRDsignal());
         as_trackP -> setTRDsumADC(-1);        //not found ok?
-        //as_trackP  ->setStatus(-1);         //I dont get it
-        //as_trackP  ->setNITScls(N_ITS_cls);   //notwendig?
-	//as_trackP  ->setNITScls(N_ITS_cls);     //notwendig?
+        as_trackP  ->setStatus(trackP->GetStatus());
+        as_trackP  ->setNITScls(trackP->GetITSNcls());   
         as_trackP -> setTPCchi2(trackP->GetTPCchi2());
         as_trackP -> setTrack_length(trackP->GetIntegratedLength());
         as_trackP -> setNTPCcls(trackP ->GetTPCNcls());
@@ -874,8 +877,8 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
 
         Track_pT     = trackN ->Pt();
         Track_eta    = trackN ->Eta();
-        Track_phi             = trackN ->Phi();
-        TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,-1);       //what to choose for M ?
+        Track_phi    = trackN ->Phi();
+        TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,0.1349766);       //what to choose for M ?
 
         as_trackN  ->set_TLV_part(TL_vec);
 
@@ -886,9 +889,8 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
 
         as_trackN -> setTRDSignal(trackN->GetTRDsignal());
         as_trackN -> setTRDsumADC(-1);        //not found ok?
-        //as_trackN  ->setStatus(-1);         //I dont get it
-        //as_trackN  ->setNITScls(N_ITS_cls);   //notwendig?
-	//as_trackN  ->setNITScls(N_ITS_cls);     //notwendig?
+        as_trackN  ->setStatus(trackN->GetStatus());
+        as_trackN  ->setNITScls(trackN->GetITSNcls());
         as_trackN -> setTPCchi2(trackN->GetTPCchi2());
         as_trackN -> setTrack_length(trackN->GetIntegratedLength());
         as_trackN -> setNTPCcls(trackN ->GetTPCNcls());
@@ -1429,7 +1431,8 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
 	Double_t TPC_signal   = track ->GetTPCsignal(); // dE/dx?
 	Double_t TOF_signal   = track ->GetTOFsignal(); // time-of-flight?
         Double_t Track_length = track ->GetIntegratedLength();
-	UShort_t N_TPC_cls    = track ->GetTPCNcls();
+        UShort_t N_TPC_cls    = track ->GetTPCNcls();
+        Int_t   trackid       = track ->GetID();
 
         Int_t pT_bin;
 	for(Int_t i_pT = 0; i_pT < N_pT_bins; i_pT++)
@@ -1531,6 +1534,7 @@ void Ali_AS_analysis_TRD_digits::UserExec(Option_t *)
 	AS_Track  ->setTPCdEdx(TPC_signal);
 	AS_Track  ->setTOFsignal(TOF_signal);
         AS_Track  ->setTrack_length(Track_length);
+        AS_Track  ->settrackid(trackid);
 
 
 
