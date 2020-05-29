@@ -455,6 +455,7 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
         cout << "Alignment file from database loaded" << endl;
     }
 
+    /*
     cout << "Open calibration file" << endl;
     TRD_calibration_file_AA = TFile::Open("alien::///alice/cern.ch/user/a/aschmah/Data/TRD_Calib_vDfit_and_LAfit.root");
     tg_v_fit_vs_det         = (TGraph*)TRD_calibration_file_AA ->Get("tg_v_fit_vs_det");
@@ -471,6 +472,8 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     }
     tg_LA_factor_fit_vs_det = (TGraph*)TRD_calibration_file_AA ->Get("tg_LA_factor_fit_vs_det");
     h_LA_factor_fit_vs_det = new TH1D("h_LA_factor_fit_vs_det","h_LA_factor_fit_vs_det",540,0,540);
+    */
+    /*
     for(Int_t i_det = 0; i_det < 540; i_det++)
     {
          h_LA_factor_fit_vs_det->SetBinContent(i_det+1,-1.0);
@@ -482,13 +485,13 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
         h_LA_factor_fit_vs_det ->SetBinContent(det,LA);
     }
     cout << "Calibration file opened" << endl;
+    */
 
-
-    AliCDBEntry* align_cdb = (AliCDBEntry*)TRD_alignment_file->Get("AliCDBEntry");
-    TClonesArray* TRD_align_array = (TClonesArray*)align_cdb->GetObject();
+    //AliCDBEntry* align_cdb = (AliCDBEntry*)TRD_alignment_file->Get("AliCDBEntry");
+    //TClonesArray* TRD_align_array = (TClonesArray*)align_cdb->GetObject();
     // Alignment is stored for every INSTALLED chamber. Array does NOT got to 540!
     // First do the alignment per sector, then per chamber
-    for(Int_t i_entry = 0; i_entry < TRD_align_array->GetEntries(); i_entry++)
+    /*for(Int_t i_entry = 0; i_entry < TRD_align_array->GetEntries(); i_entry++)
     {
 	AliAlignObjParams* Align_test = (AliAlignObjParams*)TRD_align_array->At(i_entry);
 	char* name = (char*)Align_test->GetSymName();
@@ -527,10 +530,10 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
 	}
     }
     cout << "TRD_align_array entries: " << TRD_align_array->GetEntries() << endl;
+    */
 
 
-
-    cout << "End of UserNotify" << endl;
+    //cout << "End of UserNotify" << endl;
     return kTRUE;
 }
 
@@ -730,8 +733,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     }
 
-    vector<int> all_positive_track_ids;
-    vector<int> all_negative_track_ids;
+    //vector<int> all_positive_track_ids;
+    //vector<int> all_negative_track_ids;
 
 
 
@@ -763,8 +766,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         int indexN = V0->GetNindex();
         int indexP = V0->GetPindex();
 
-        all_positive_track_ids.push_back(indexP);
-        all_negative_track_ids.push_back(indexN);
+        //all_positive_track_ids.push_back(indexP);
+        //all_negative_track_ids.push_back(indexN);
         //cout<<indexN<<endl;
         //cout<<indexP<<endl;
         AliESDtrack* trackN = fESD->AliESDEvent::GetTrack(indexN);
@@ -938,8 +941,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //----------------------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------------------
 
-    sort(all_positive_track_ids.begin(),all_positive_track_ids.end());
-    sort(all_negative_track_ids.begin(),all_negative_track_ids.end());
+    //sort(all_positive_track_ids.begin(),all_positive_track_ids.end());
+    //sort(all_negative_track_ids.begin(),all_negative_track_ids.end());
     //print_int_vector(all_positive_track_ids);
     //print_int_vector(all_negative_track_ids);
 
@@ -977,6 +980,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     //-----------------------------------------------------------------
     // TRD online tracklet loop
+
+    /*
     for(Int_t iTracklet = 0; iTracklet < N_TRD_tracklets; iTracklet++)
     {
 	AliESDTrdTracklet* tracklet = fESD->GetTrdTracklet(iTracklet);
@@ -1046,12 +1051,12 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     }
     //-----------------------------------------------------------------
 
-
+     */
 
 
     Int_t N_good_tracks = 0;
 
-
+    /*
     //-----------------------------------------------------------------
     // Loop over all TRD channels
     std::vector<TVector3> TV3_TRD_hits;
@@ -1384,11 +1389,12 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 	    } // end of row loop
 	} // end of column loop
     } // end of detector loop
+    */
 
-    for(Int_t i_det = 0; i_det < 540; i_det++)
-    {
-        AS_Event ->setADC_sum_det(i_det,sum_full_ADC_digit_det[i_det]);
-    }
+    //for(Int_t i_det = 0; i_det < 540; i_det++)
+    //{
+      //  AS_Event ->setADC_sum_det(i_det,sum_full_ADC_digit_det[i_det]);
+   // }
     //cout << "max_N_columns: " << max_N_columns << ", max_N_rows: " << max_N_rows << endl;
     //-----------------------------------------------------------------
 
@@ -1869,7 +1875,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
             //cout << "Test A, fEventNoInFile: " << fEventNoInFile <<  ", N_good_tracks: " << N_good_tracks << ", iTracks: " << iTracks << endl;
 
-	    for(Int_t i_TRD_hit = 0; i_TRD_hit < TV3_TRD_hits_middle.size(); i_TRD_hit++) // ADC (average for all time bins) hit for a single pad
+            /*
+            for(Int_t i_TRD_hit = 0; i_TRD_hit < TV3_TRD_hits_middle.size(); i_TRD_hit++) // ADC (average for all time bins) hit for a single pad
 	    {
 		Double_t dx = helix_point_search[0] - TV3_TRD_hits_middle[i_TRD_hit].X();
 		Double_t dy = helix_point_search[1] - TV3_TRD_hits_middle[i_TRD_hit].Y();
@@ -1997,7 +2004,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 		} // end of matched hit
 
-	    } // End of TRD hit loop
+            } // End of TRD hit loop
+                */
 	    AS_Track  ->setimpact_angle_on_TRD(Impact_angle_first);
 
             //cout << "Test B" << endl;
