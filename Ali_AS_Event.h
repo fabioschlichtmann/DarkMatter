@@ -441,6 +441,9 @@ private:
     Float_t Ppy;
     Float_t Ppz;
 
+    Float_t dca_V0;
+
+
     Float_t pos[3];
 
     Int_t   N_tracks; // total number of tracks
@@ -454,7 +457,7 @@ private:
 
 public:
     Ali_AS_V0() :
-        x(-1),y(-1),z(-1),Npx(-1),Npy(-1),Npz(-1),Ppx(-1),Ppy(-1),Ppz(-1),pos(),N_tracks(0),fNumTracks(0)
+        x(-1),y(-1),z(-1),Npx(-1),Npy(-1),Npz(-1),Ppx(-1),Ppy(-1),Ppz(-1),pos(),N_tracks(0),fNumTracks(0),dca_V0(0)
 
         //brauchen wir auch nicht?
         /*         
@@ -519,6 +522,10 @@ public:
             return mom;
 
         }
+
+        void setdcaV0(Float_t dca) {dca_V0 = dca;}
+
+        Float_t getdcaV0() {return dca_V0;}
 
         //-----------------------------------------------------------------------------
         //--------------------------------------------------------------------------------
