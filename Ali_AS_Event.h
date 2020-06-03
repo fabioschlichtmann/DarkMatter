@@ -3,6 +3,8 @@
 
 #include "TObject.h"
 #include "TClonesArray.h"
+#include "TVector3.h"
+#include "TLorentzVector.h"
 
 //----------------------------------------------------------------------------------------
 class Ali_AS_TRD_digit : public TObject
