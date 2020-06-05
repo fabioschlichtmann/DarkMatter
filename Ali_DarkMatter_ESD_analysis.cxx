@@ -557,6 +557,21 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         AliESDtrack* trackN = fESD->AliESDEvent::GetTrack(indexN);
         AliESDtrack* trackP = fESD->AliESDEvent::GetTrack(indexP);
 
+        /*TBits tbit = trackN->GetTPCFitMap();
+        int countbits = tbit.CountBits();
+        cout<<"bits1 fit: : "<<countbits<<endl;
+        int nbits = tbit.GetNbits();
+        cout<<"nbits fit: : "<<nbits<<endl;
+
+        TBits shared = trackN->GetTPCSharedMap();
+        int countbits_sh = shared.CountBits();
+        cout<<"bits1 shared:: "<<countbits_sh<<endl;
+        int nbits_sh = shared.GetNbits();
+        cout<<"nbits shared:: "<<nbits_sh<<endl;
+        */
+
+      
+
         double momentumP = sqrt(pxP*pxP + pyP*pyP + pzP*pzP);
         double momentumN = sqrt(pxN*pxN + pyN*pyN + pzN*pzN);
 
@@ -790,6 +805,17 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
         if(!EsdTrackCuts->AcceptTrack(track)) continue;
 
+        TBits tbits_fit  = track->GetTPCFitMap();
+        //int countbits = tbit.CountBits();
+        //cout<<"bits1 fit: : "<<countbits<<endl;
+        //int nbits = tbit.GetNbits();
+        //cout<<"nbits fit: : "<<nbits<<endl;
+
+        TBits tbits_shared = track->GetTPCSharedMap();
+        //int countbits_sh = shared.CountBits();
+        //cout<<"bits1 shared:: "<<countbits_sh<<endl;
+        //int nbits_sh = shared.GetNbits();
+        //cout<<"nbits shared:: "<<nbits_sh<<endl;
 
         Double_t TRD_signal   = track ->GetTRDsignal(); // truncated mean signal?
         Double_t Track_pT     = track ->Pt();
@@ -908,6 +934,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 	AS_Track  ->setTOFsignal(TOF_signal);
         AS_Track  ->setTrack_length(Track_length);
         AS_Track  ->settrackid(trackid);
+
+        AS_Track -> settbitsfit(tbits_fit);
+        AS_Track -> settbitsshared(tbits_shared);
 
 
 

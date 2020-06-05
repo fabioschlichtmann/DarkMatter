@@ -210,6 +210,9 @@ private:
     TClonesArray* fTRD_digits;          //->
     TClonesArray* fOfflineTracklets;    //->
 
+    TBits tbits_fit;
+    TBits tbits_shared;
+
 public:
     Ali_AS_Track() :
 	nsigma_e_TPC(-1),nsigma_e_TOF(-1),nsigma_pi_TPC(-1),nsigma_pi_TOF(-1),nsigma_K_TPC(-1),nsigma_K_TOF(-1),nsigma_p_TPC(-1),nsigma_p_TOF(-1),TRD_signal(-1),
@@ -263,7 +266,10 @@ public:
             aliHelix_params[8] = i;
         }
 
-        void settrackid(Int_t id)  {track_id = id;};
+        void settrackid(Int_t id)  {track_id = id;}
+
+        void settbitsfit(TBits bits) {tbits_fit=bits;}
+        void settbitsshared(TBits bits) {tbits_shared=bits;}
 
 	// getters
 	Float_t getnsigma_e_TPC() const                     { return nsigma_e_TPC;         }
@@ -292,7 +298,10 @@ public:
 
         Int_t gettrackid()  {return track_id;}
         void Evaluate(Double_t t, // helix evaluation, taken from AliHelix
-                     Double_t r[3]);  //radius vector
+                      Double_t r[3]);  //radius vector
+
+        TBits getbitsfit() {return tbits_fit;}
+        TBits getbitsshared() {return tbits_shared;}
 
 
 	Float_t   getTRD_ADC(Int_t i_layer, Int_t i_time_bin) const
