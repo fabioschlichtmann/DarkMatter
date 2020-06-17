@@ -389,7 +389,8 @@ Bool_t Ali_DarkMatter_ESD_analysis::NextEvent(Bool_t preload)
     if(preload)
     {
 	//cout << "Preload"  << endl;
-	return ReadDigits();
+        //return ReadDigits();
+        return kTRUE;
     }
     else
     {
@@ -427,7 +428,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     //-----------------------------------------------------------------
     // Check if TRD digits (raw data) are available for this ESD event
-    if(!ReadDigits()) return;
+    //if(!ReadDigits()) return;
     //-----------------------------------------------------------------
 
 
@@ -1376,7 +1377,8 @@ Bool_t Ali_DarkMatter_ESD_analysis::ReadDigits()
     if(!fDigitsInputFile)
     {
 	AliError("digits file not available");
-	return kFALSE;
+        return kFALSE;
+        //return kTRUE;
     }
 
 
@@ -1389,7 +1391,7 @@ Bool_t Ali_DarkMatter_ESD_analysis::ReadDigits()
 	//AliWarning(Form("digits tree for event %d not found", fEventNoInFile));
 	return kFALSE;
     }
-
+    /*
     fDigMan->ReadDigits(tr);
     delete tr;
 
@@ -1401,6 +1403,7 @@ Bool_t Ali_DarkMatter_ESD_analysis::ReadDigits()
 	    fDigMan->GetDigits(det)->Expand();
 	}
     }
+    */
 
     fDigitsLoadedFlag = kTRUE;
     return kTRUE;
