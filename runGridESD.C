@@ -166,7 +166,7 @@ AliAnalysisGrid* CreateAlienHandler(TString mode="test",Int_t sub=0,TString fnam
         Int_t runnumbers[] = {265338, 265525, 265521, 265501, 265500, 265499, 265435, 265427, 265426, 265425, 265424, // OK
 	265422, 265421, 265420, 265419, 265388, 265387, 265385, 265384, 265383, 265381, 265378, 265377,
 	265344, 265343, 265342, 265339, 265336, 265334, 265332, 265309}; // 32 runs in total
-	for(Int_t irun = 0; irun < 3; irun++)
+	for(Int_t irun = 0; irun < 1; irun++)
 	{
 	    Printf("%d %d",irun,runnumbers[irun]);
 	    plugin->AddRunNumber(runnumbers[irun]);
