@@ -249,7 +249,7 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     N_good_events  = 0;
 
 
-    fDigitsInputFile = OpenDigitsFile(fname,fDigitsInputFileName,""); // <-
+    //fDigitsInputFile = OpenDigitsFile(fname,fDigitsInputFileName,""); // <-
 
 
 #if 0
@@ -296,6 +296,7 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     }
 
     //if(fDigMan) delete fDigMan;
+    /*
     fDigMan = new AliTRDdigitsManager;
     fDigMan->CreateArrays();
 
@@ -315,7 +316,7 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
 	TRD_alignment_file = TFile::Open("alien:///alice/data/2016/OCDB/TRD/Align/Data/Run0_999999999_v1_s0.root");
         cout << "Alignment file from database loaded" << endl;
     }
-
+    */
     
     //cout << "End of UserNotify" << endl;
     return kTRUE;
@@ -1354,6 +1355,7 @@ void Ali_DarkMatter_ESD_analysis::FindDCAHelixPoint(TVector3 space_vec, AliHelix
 
 
 //________________________________________________________________________
+/*
 Bool_t Ali_DarkMatter_ESD_analysis::ReadDigits()
 {
     //cout << "In ReadDigits" << endl;
@@ -1374,24 +1376,23 @@ Bool_t Ali_DarkMatter_ESD_analysis::ReadDigits()
     }
 
 
-    if(!fDigitsInputFile)
-    {
-	AliError("digits file not available");
-        return kFALSE;
-        //return kTRUE;
-    }
+    //if(!fDigitsInputFile)
+    //{
+      //  AliError("digits file not available");
+	//return kFALSE;
+   // }
 
 
     // read digits from file
-    TTree* tr = (TTree*)fDigitsInputFile->Get(Form("Event%d/TreeD",
-						   fEventNoInFile));
+    //TTree* tr = (TTree*)fDigitsInputFile->Get(Form("Event%d/TreeD",
+      //  					   fEventNoInFile));
 
     if(!tr)
     {
 	//AliWarning(Form("digits tree for event %d not found", fEventNoInFile));
 	return kFALSE;
     }
-    /*
+
     fDigMan->ReadDigits(tr);
     delete tr;
 
@@ -1403,11 +1404,11 @@ Bool_t Ali_DarkMatter_ESD_analysis::ReadDigits()
 	    fDigMan->GetDigits(det)->Expand();
 	}
     }
-    */
 
     fDigitsLoadedFlag = kTRUE;
     return kTRUE;
 }
+   */
 
 //________________________________________________________________________
 Bool_t Ali_DarkMatter_ESD_analysis::WriteDigits()
