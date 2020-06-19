@@ -84,22 +84,8 @@ static Int_t flag_plot_event = 0;
 static TString HistName;
 
 static TFile* dfile;
-static TFile* TRD_alignment_file;
-static TFile* TRD_calibration_file_AA;
 static const char *pathdatabase="alien://folder=/alice/data/2016/OCDB"; // for pPb
 //static const char *pathdatabase="alien://folder=/alice/data/2015/OCDB"; // for PbPb
-static AliTRDCalDet *ChamberVdrift;
-static AliTRDCalDet *ChamberT0;
-static AliTRDCalDet *ChamberExB;
-static AliTRDCalDet *chambergain;
-static AliTRDCalOnlineGainTable *KryptoGain;
-static AliTRDCalPad *PadNoise;
-static AliTRDCalPad *LocalT0_pad;
-static AliTRDCalROC* CalROC;
-static AliTRDCalROC  *LocalT0;            //  Pad wise T0 calibration object
-static const Int_t N_pT_bins = 5;
-static const Double_t pT_ranges[N_pT_bins+1] = {0.2,0.5,1.0,2.0,3.0,5.0};
-static const Double_t TRD_Impact_distance_in_drift = 3.35;
 
 static AliTRDCommonParam* fParam;
 static AliESDfriend *esdFr = NULL;
@@ -117,10 +103,8 @@ ClassImp(Ali_DarkMatter_ESD_analysis)
     //________________________________________________________________________
     Ali_DarkMatter_ESD_analysis::Ali_DarkMatter_ESD_analysis(const char *name)
     : AliAnalysisTaskSE(name),
-    fDigitsInputFileName("TRD.FltDigits.root"), fDigitsInputFile(0),
-    fDigitsOutputFileName(""), fDigitsOutputFile(0),
-    fDigMan(0),fGeo(0),AS_Event(0),AS_V0(0),AS_Track(0),AS_Tracklet(0),AS_offline_Tracklet(0),AS_Digit(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0), fDigitsLoadedFlag(kFALSE),
-    fListOfHistos(0x0),fTree(0x0),h_dca(0x0),h_dca_xyz(0x0), h2D_TPC_dEdx_vs_momentum(0x0), h_ADC_tracklet(0x0), h_ADC_vs_time(0x0), fPIDResponse(0), EsdTrackCuts(0)
+    AS_Event(0),AS_V0(0),AS_Track(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
+    fListOfHistos(0x0),fTree(0x0),h_dca(0x0),h_dca_xyz(0x0), h2D_TPC_dEdx_vs_momentum(0x0), fPIDResponse(0), EsdTrackCuts(0)
 {
     // Constructor
 
@@ -140,51 +124,9 @@ ClassImp(Ali_DarkMatter_ESD_analysis)
 //new class definition
 
 
-
-TFile* Ali_DarkMatter_ESD_analysis::OpenDigitsFile(TString inputfile,
-				   TString digfile,
-				   TString opt)
+void print_int_vector(vector<Int_t> vec)
 {
-    // we should check if we are reading ESDs or AODs - for now, only
-    // ESDs are supported
-
-    cout << "" << endl;
-    cout << "In OpenDigitsFile" << endl;
-    //cout << "Digits file name: " << digfile.Data() << endl;
-
-    if(digfile == "")
-    {
-	cout << "WARNING: No TRD digits file available" << endl;
-	return NULL;
-    }
-
-    // TGrid::Connect("alien")
-    // construct the name of the digits file from the input file
-    inputfile.ReplaceAll("AliESDs.root", digfile);
-    //TString inputfile_LF = "alien:///alice/data/2016/LHC16q/000265525/pass1_CENT_wSDD/16000265525037.6203/TRD.FltDigits.root";
-    TString inputfile_LF = inputfile;
-
-    // open the file
-    AliInfo( "opening digits file " + inputfile_LF + " with option \"" + opt + "\"");
-
-    cout << "inputfile: " << inputfile_LF.Data() << endl;
-    //TFile* dfile = new TFile(inputfile_LF, opt);
-    //if(dfile) delete dfile;
-    dfile = TFile::Open(inputfile_LF);
-    cout << "After TRD digits file" << endl;
-    cout << "" << endl;
-
-    if(!dfile)
-    {
-	AliWarning("digits file '" + inputfile + "' cannot be opened");
-    }
-
-    return dfile;
-}
-
-void print_int_vector(vector<int> vec)
-{
-    for(int i=0;i<vec.size();i++)
+    for(Int_t i=0;i<vec.size();i++)
     {
         cout<<"Vektor  "<<i<<": "<<vec[i]<<endl;
 
@@ -192,16 +134,14 @@ void print_int_vector(vector<int> vec)
 }
 
 //_______________________________________________________________________
+
 Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
 {
     cout << "" << endl;
     cout << "In UserNotify" << endl;
-    cout << "fDigitsInputFileName: " << fDigitsInputFileName.Data() << endl;
 
     fParam = AliTRDCommonParam::Instance();
 
-    delete fDigitsInputFile;
-    delete fDigitsOutputFile;
 
     cout << "Digits file pointers deleted" << endl;
 
@@ -248,17 +188,13 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     fEventNoInFile = -1;
     N_good_events  = 0;
 
-
-    //fDigitsInputFile = OpenDigitsFile(fname,fDigitsInputFileName,""); // <-
-
-
 #if 0
     // Connect the friends
     //fESD ->SetESDfriend(esdFr);
 
     esdFriendTreeFName = fname;
     TString basename = gSystem->BaseName(esdFriendTreeFName);
-    int index = basename.Index("#")+1;
+    Int_t index = basename.Index("#")+1;
     basename.Remove(index);
     basename += "AliESDfriends.root";
     TString dirname = gSystem->DirName(esdFriendTreeFName);
@@ -266,10 +202,6 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     esdFriendTreeFName = dirname + basename;
     cout << "Friend name: " << esdFriendTreeFName.Data() << endl;
 #endif
-
-
-
-
 
     EsdTrackCuts = new AliESDtrackCuts();
 
@@ -285,42 +217,12 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     cout << "" << endl;
     cout << "________________________________________________________________________" << endl;
     cout << "Created AliTRDdigitsManager" << endl;
-    cout << "fDigitsInputFileName: " << fDigitsInputFileName.Data() << endl;
     cout << "" << endl;
 
-    // create a TRD geometry, needed for matching digits to tracks
-    fGeo = new AliTRDgeometry;
-    if(!fGeo)
-    {
-	AliFatal("cannot create geometry ");
-    }
-
-    //if(fDigMan) delete fDigMan;
-    /*
-    fDigMan = new AliTRDdigitsManager;
-    fDigMan->CreateArrays();
-
-    for(Int_t i_det = 0; i_det < 5; i_det++)
-    {
-	Int_t N_columns   = fDigMan->GetDigits(i_det)->GetNcol();
-	cout << "i_det: " << i_det << ", N_columns: " << N_columns << endl;
-    }
-
-    if(fname.Contains("/home/"))
-    {
-        TRD_alignment_file = TFile::Open("/home/ceres/schmah/ALICE/Database/TRD_Align_2016.root");
-	cout << "Local alignment file loaded" << endl;
-    }
-    else
-    {
-	TRD_alignment_file = TFile::Open("alien:///alice/data/2016/OCDB/TRD/Align/Data/Run0_999999999_v1_s0.root");
-        cout << "Alignment file from database loaded" << endl;
-    }
-    */
-    
-    //cout << "End of UserNotify" << endl;
+   
     return kTRUE;
 }
+
 
 
 //________________________________________________________________________
@@ -328,7 +230,6 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
 {
     cout << "" << endl;
     cout << "In UserCreateOutputObjects" << endl;
-    cout << "fDigitsInputFileName: " << fDigitsInputFileName.Data() << endl;
 
 
     OpenFile(1);
@@ -337,35 +238,13 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
     fListOfHistos = new TList();
     fListOfHistos ->SetOwner();
 
-    h_ADC_tracklet.resize(2);
-    for(Int_t i_ADC = 0; i_ADC < 2; i_ADC++)
-    {
-        HistName = "h_ADC_tracklet_";
-        HistName += i_ADC;
-        h_ADC_tracklet[i_ADC] = new TH1D(HistName.Data(),HistName.Data(),350,-50.0,300.0);
-        fListOfHistos->Add(h_ADC_tracklet[i_ADC]);
-    }
-
-
-    h_ADC_vs_time.resize(540);
-    for(Int_t i_det = 0; i_det < 540; i_det++)
-    {
-        HistName = "h_ADC_vs_time_";
-        HistName += i_det;
-        h_ADC_vs_time[i_det] = new TProfile(HistName.Data(),HistName.Data(),30,0.0,30.0);
-        fListOfHistos->Add(h_ADC_vs_time[i_det]);
-    }
-
-
+   
     OpenFile(2);
     cout << "File opened" << endl;
 
     AS_Event       = new Ali_AS_Event();
     AS_Track       = new Ali_AS_Track();
    
-    //AS_Tracklet    = new Ali_AS_Tracklet();
-    //AS_offline_Tracklet    = new Ali_AS_offline_Tracklet();
-    AS_Digit       = new Ali_AS_TRD_digit();
     Tree_AS_Event  = NULL;
     Tree_AS_Event  = new TTree("Tree_AS_Event" , "AS_Events" );
     Tree_AS_Event  ->Branch("Tree_AS_Event_branch"  , "AS_Event", AS_Event );
@@ -384,7 +263,7 @@ Bool_t Ali_DarkMatter_ESD_analysis::NextEvent(Bool_t preload)
 {
     fEventNoInFile++;
     //cout << "fEventNoInFile: " << fEventNoInFile << endl;
-    fDigitsLoadedFlag = kFALSE;
+    //fDigitsLoadedFlag = kFALSE;
 
 
     if(preload)
@@ -464,7 +343,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     Int_t          N_tracks         = fESD ->GetNumberOfTracks();
     Int_t          N_TRD_tracks     = fESD ->GetNumberOfTrdTracks();
-    Int_t          N_TRD_tracklets  = fESD ->GetNumberOfTrdTracklets(); // online
     Float_t        magF             = fESD ->GetMagneticField();
     const AliESDVertex* PrimVertex  = fESD ->GetPrimaryVertex();
     Int_t          RunNum           = fESD ->GetRunNumber();
@@ -486,7 +364,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     // Fill event information
     AS_Event ->clearTrackList();
-    AS_Event ->clearTrackletList();
     AS_Event ->clearV0List();
     AS_Event ->setTriggerWord(fESD->GetFiredTriggerClasses());
     AS_Event ->setx(PrimVertex->GetX());
@@ -494,7 +371,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     AS_Event ->setz(PrimVertex->GetZ());
     AS_Event ->setid(RunNum);
     AS_Event ->setN_tracks(N_tracks);
-    AS_Event ->setN_TRD_tracklets(N_TRD_tracklets); // online
     AS_Event ->setBeamIntAA(MeanBeamIntAA);
     AS_Event ->setT0zVertex(T0zVertex);
     AS_Event ->setN_V0s(numberV0);
@@ -519,13 +395,10 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     }
 
-    //vector<int> all_positive_track_ids;
-    //vector<int> all_negative_track_ids;
 
 
 
-
-    for (int V0_counter=0; V0_counter<numberV0; V0_counter++)
+    for (Int_t V0_counter=0; V0_counter<numberV0; V0_counter++)
     {
         //get position of V0-----------------------
         Double_t x=0;
@@ -541,16 +414,16 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //-------------------------------
 
         //get impulse of particle N and P by AliESDv0 class
-        double pxN,pyN,pzN;
+        Double_t pxN,pyN,pzN;
         V0->GetNPxPyPz(pxN,pyN,pzN);
-        double pxP,pyP,pzP;
+        Double_t pxP,pyP,pzP;
         V0->GetPPxPyPz(pxP,pyP,pzP);
        //-------------------------------------
 
 
         //get track (by using index)-----------------------------
-        int indexN = V0->GetNindex();
-        int indexP = V0->GetPindex();
+        Int_t indexN = V0->GetNindex();
+        Int_t indexP = V0->GetPindex();
 
         //all_positive_track_ids.push_back(indexP);
         //all_negative_track_ids.push_back(indexN);
@@ -560,32 +433,32 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         AliESDtrack* trackP = fESD->AliESDEvent::GetTrack(indexP);
 
         /*TBits tbit = trackN->GetTPCFitMap();
-        int countbits = tbit.CountBits();
+        Int_t countbits = tbit.CountBits();
         cout<<"bits1 fit: : "<<countbits<<endl;
-        int nbits = tbit.GetNbits();
+        Int_t nbits = tbit.GetNbits();
         cout<<"nbits fit: : "<<nbits<<endl;
 
         TBits shared = trackN->GetTPCSharedMap();
-        int countbits_sh = shared.CountBits();
+        Int_t countbits_sh = shared.CountBits();
         cout<<"bits1 shared:: "<<countbits_sh<<endl;
-        int nbits_sh = shared.GetNbits();
+        Int_t nbits_sh = shared.GetNbits();
         cout<<"nbits shared:: "<<nbits_sh<<endl;
         */
 
       
 
-        double momentumP = sqrt(pxP*pxP + pyP*pyP + pzP*pzP);
-        double momentumN = sqrt(pxN*pxN + pyN*pyN + pzN*pzN);
+        Double_t momentumP = sqrt(pxP*pxP + pyP*pyP + pzP*pzP);
+        Double_t momentumN = sqrt(pxN*pxN + pyN*pyN + pzN*pzN);
 
         printf("trackidP %d, trackidN %d \n",indexP,indexN);
         printf("momentum of positive particle: %f   momentum of negative particle: %f \n",momentumP,momentumN);
         //----------------------------------------------------------------
 
         //get impulse vector by using AliESDtrack class-------------------------
-        double *pN;
-        double *pP;
-        pN=new double[3];
-        pP=new double[3];
+        Double_t *pN;
+        Double_t *pP;
+        pN=new Double_t[3];
+        pP=new Double_t[3];
         trackN->GetInnerPxPyPz(pN);
         trackP->GetInnerPxPyPz(pP);
 
@@ -595,8 +468,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
         //create element of Ali_AS_V0 class
-        //Ali_AS_V0* AS_V0;
-        //AS_V0 = new Ali_AS_V0();
         AS_V0  = AS_Event ->createV0();
 
         //use set functions
@@ -631,7 +502,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         as_trackP  ->setdca(((Double_t)charge)*track_total_impact);
 
         as_trackP -> setTRDSignal(trackP->GetTRDsignal());
-        as_trackP -> setTRDsumADC(-1);        //not found ok?
+        //as_trackP -> setTRDsumADC(-1);        //not found ok?
         as_trackP  ->setStatus(trackP->GetStatus());
         as_trackP  ->setNITScls(trackP->GetITSNcls());   
         as_trackP -> setTPCchi2(trackP->GetTPCchi2());
@@ -692,7 +563,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         as_trackN  ->setdca(((Double_t)charge)*track_total_impact);
 
         as_trackN -> setTRDSignal(trackN->GetTRDsignal());
-        as_trackN -> setTRDsumADC(-1);        //not found ok?
+        //as_trackN -> setTRDsumADC(-1);        //not found ok?
         as_trackN  ->setStatus(trackN->GetStatus());
         as_trackN  ->setNITScls(trackN->GetITSNcls());
         as_trackN -> setTPCchi2(trackN->GetTPCchi2());
@@ -742,15 +613,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //----------------------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------------------
 
-    //sort(all_positive_track_ids.begin(),all_positive_track_ids.end());
-    //sort(all_negative_track_ids.begin(),all_negative_track_ids.end());
-    //print_int_vector(all_positive_track_ids);
-    //print_int_vector(all_negative_track_ids);
-
-    //-----------------------------------------------------------------
-    //cout << "" << endl;
-    //cout << "" << endl;
-    //cout << "----------------------------------------------------------------------------------------" << endl;
     //cout << "Event number: " << fEventNoInFile << ", event number with TRD digits: " << N_good_events << endl;
     //printf("Event number: %d, N_tracks: %d, cent(V0M): %f , cent(CL0): %f \n",fEventNoInFile,N_tracks,MultSelection->GetMultiplicityPercentile("SPDTracklets"));
     //-----------------------------------------------------------------
@@ -758,8 +620,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
     //-----------------------------------------------------------------
-    Double_t TRD_time_per_bin        = 0.1;   // 100 ns = 0.1 mus
-    Double_t TRD_drift_velocity      = 1.56;  // 1.56 cm/mus, this value is too high for p+Pb, database values are now used
     Double_t TPC_TRD_matching_window = 10.0;  // Matching window between TRD digits (pad position) and TPC track in cm
     Double_t TPC_min_radius_plot     = 114.0/2.0; // Minimum radius for TPC track to be plotted
     Double_t TPC_max_radius_plot     = 368.0; // Maximum radius for TPC track to be plotted
@@ -775,14 +635,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //printf("There are %d TRD tracks in this event\n", N_TRD_tracks);
     //printf("There are %d TRD tracklets in this event\n", N_TRD_tracklets);
 
-
-
-    
-
-
     Int_t N_good_tracks = 0;
-
-    
 
     //-----------------------------------------------------------------
     // Track loop
@@ -790,7 +643,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //cout << "-----------------------------------------------------------------" << endl;
     //cout << "Start matching " << N_tracks << " TPC tracks with " << TV3_TRD_hits_middle.size() << " TRD pads" << endl;
     N_good_tracks = 0;
-    Int_t N_matched_TRD_hits_total = 0;
     for(Int_t iTracks = 0; iTracks < N_tracks; iTracks++)
     {
 	//---------------------------------------------------------------
@@ -808,15 +660,15 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         if(!EsdTrackCuts->AcceptTrack(track)) continue;
 
         TBits tbits_fit  = track->GetTPCFitMap();
-        //int countbits = tbit.CountBits();
+        //Int_t countbits = tbit.CountBits();
         //cout<<"bits1 fit: : "<<countbits<<endl;
-        //int nbits = tbit.GetNbits();
+        //Int_t nbits = tbit.GetNbits();
         //cout<<"nbits fit: : "<<nbits<<endl;
 
         TBits tbits_shared = track->GetTPCSharedMap();
-        //int countbits_sh = shared.CountBits();
+        //Int_t countbits_sh = shared.CountBits();
         //cout<<"bits1 shared:: "<<countbits_sh<<endl;
-        //int nbits_sh = shared.GetNbits();
+        //Int_t nbits_sh = shared.GetNbits();
         //cout<<"nbits shared:: "<<nbits_sh<<endl;
 
         Double_t TRD_signal   = track ->GetTRDsignal(); // truncated mean signal?
@@ -835,21 +687,13 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         UShort_t N_TPC_cls    = track ->GetTPCNcls();
         Int_t   trackid       = track ->GetID();
 
-        Int_t pT_bin;
-	for(Int_t i_pT = 0; i_pT < N_pT_bins; i_pT++)
-	{
-	    if(Track_pT >= pT_ranges[i_pT] && Track_pT < pT_ranges[i_pT+1])
-	    {
-                pT_bin = i_pT;
-                break;
-	    }
-        }
+        
 
-        double r[3];
-        double p[3];
+        Double_t r[3];
+        Double_t p[3];
         track -> GetInnerXYZ(r);
         track -> GetInnerPxPyPz(p);
-        double momentum = sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]);
+        Double_t momentum = sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]);
 
         printf("track number: %d, charge:  %d, momentum: %f \n",iTracks, charge, momentum);
 
@@ -915,8 +759,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 	TLorentzVector TL_vec;
 	TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,0.1349766);
 	AS_Track  = AS_Event ->createTrack();
-        AS_Track  ->clearTRD_digit_list();
-        AS_Track  ->clearOfflineTrackletList();
 	AS_Track  ->set_TLV_part(TL_vec);
 	AS_Track  ->setdca(((Double_t)charge)*track_total_impact);
 	AS_Track  ->setnsigma_e_TPC(Track_PID[0]);
@@ -939,8 +781,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
         AS_Track -> settbitsfit(tbits_fit);
         AS_Track -> settbitsshared(tbits_shared);
-
-
 
 #if 1
         //--------------------------------------
@@ -978,188 +818,20 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 #if 0
         //---------------------
-        // Friends -> offline TRD tracklets
-        printf("Loop over friend tracks \n");
-        const AliESDfriendTrack *trkF = track->GetFriendTrack();
-        if(!trkF) continue;
-        Int_t ESDtrackID       = trkF ->GetESDtrackID();
-        Float_t one_over_p     = trkF ->Get1P();
-        //Int_t N_MaxTPCclusters = trkF ->GetMaxTPCcluster();
-        printf("Track available, ESDtrackID: %d, one_over_p: %4.3f \n",ESDtrackID,one_over_p);
-        const AliTRDtrackV1 *trdTrack = 0;
-        const TObject *calibObject = 0;
-
-        //cout << (calibObject = trkF->GetCalibObject(0))->IsA() << endl;
-
-        for(Int_t idx = 0; (calibObject = trkF->GetCalibObject(idx)); ++idx)
-        {
-            printf("   -> idx: %d \n",idx);
-            if(calibObject->IsA() != AliTRDtrackV1::Class()) continue;
-            trdTrack = (AliTRDtrackV1*) calibObject;
-            printf("     -> trdTrack \n");
-        }
-        if(!trdTrack) continue;
-        printf("TRD tracklet available \n");
-
-        for(Int_t iTrklt = 0; iTrklt < 6; iTrklt++)
-        {
-            AliTRDseedV1 *tracklet = trdTrack->GetTracklet(iTrklt);
-            if(!tracklet) continue;
-            tracklet->Print();
-        }
         //---------------------
 #endif
-
-
-
-	//-------------------
-	// Get TRD information
-	Int_t N_TRD_cls = 0;
-	Double_t TRD_sum_ADC = 0.0;
-	Long64_t TRD_layer_info[6]; // each value stores all 8 time slices, Long64_t has 8 byte = 8*8 bit = 64 bit in total -> one byte = 8 bit = 256 per time bin
-	memset(TRD_layer_info, 0, sizeof(TRD_layer_info)); // for automatically-allocated arrays
-	for(Int_t iPl = 0; iPl < 6; iPl++) // layer
-	{
-	    AS_Track  ->setTRD_layer(iPl,TRD_layer_info[iPl]); // set all values to 0
-	}
-
-	//printf("track: %d \n",iTracks);
-	if(TRD_signal > 0.0)
-	{
-	    //------------------------------
-	    // Get TRD PID information from ESD track
-	    for(Int_t iPl = 0; iPl < 6; iPl++) // layer
-	    {
-		TRD_layer_info[iPl] = 0;
-		Double_t TRD_momentum = track->GetTRDmomentum(iPl);
-		//cout << "" << endl;
-		//cout << "--------------------------------" << endl;
-                Double_t sum_ADC = 0.0;
-		for(int isl = 0; isl <= 7; isl++) // time slice
-		{
-                    Double_t TRD_ADC_time_slice = track->GetTRDslice(iPl,isl);
-
-                    if(isl == 0 && TPC_signal > 50.0 && TPC_signal < 70.0)
-                    {
-                        //printf("iTracks: %d, dE/dx: %4.2f, layer: %d, ADC/dEdx: %4.2f \n",iTracks,TPC_signal,iPl,TRD_ADC_time_slice/TPC_signal);
-                    }
-
-		    //if(TRD_ADC_time_slice > 20000.0) printf("layer: %d, time: %d, ADC: %f \n",iPl,isl,TRD_ADC_time_slice);
-                    sum_ADC += TRD_ADC_time_slice;
-		    Int_t TRD_ADC_time_slice_byte = (Int_t)round((Double_t)TRD_ADC_time_slice/TRD_ADC_bin_width);
-		    if(TRD_ADC_time_slice_byte > 255) TRD_ADC_time_slice_byte = 255;
-
-		    //number |= 1 << x; // setting bit x to 1
-		    //bit = (number >> x) & 1; // check bit x
-
-		    for(Int_t i_bit = 0; i_bit < 8; i_bit++) // One single time slice 8 bit = 256
-		    {
-			Int_t bit_status = (TRD_ADC_time_slice_byte >> i_bit) & 1; // check bit i_bit
-			Int_t bitset = i_bit + 8*isl; // range: 0..63 = 64 bit = 8 byte = Long64_t
-			if(bit_status) TRD_layer_info[iPl] |= (ULong64_t)1 << bitset; // setting bit bitset to 1
-		    }
-
-		    if(TRD_ADC_time_slice > 0.0)
-		    {
-			TRD_sum_ADC += TRD_ADC_time_slice;
-			N_TRD_cls++;
-		    }
-		    //cout << "isl: " << isl << ", TRD_ADC_time_slice: " << TRD_ADC_time_slice << ", TRD_ADC_time_slice_byte: " << TRD_ADC_time_slice_byte << endl;
-		}
-		Double_t average_sum_ADC = sum_ADC/7.0;
-		//printf("sum_ADC: %f, average_sum_ADC: %f \n",sum_ADC,average_sum_ADC);
-
-                AS_Track  ->setTRD_layer(iPl,TRD_layer_info[iPl]);
-                //for(int isl = 0; isl <= 7; isl++) // time slice
-                //{
-                //    Float_t rec_TRD_AdC = AS_Track->getTRD_ADC(iPl,isl);
-                //    if(rec_TRD_AdC > 19500) printf("    ->layer: %d, time: %d, rec ADC: %f \n",iPl,isl,rec_TRD_AdC);
-                //}
-
-		// Check the decoding
-		//cout << "" << endl;
-		for(int isl = 0; isl <= 7; isl++) // time slice
-		{
-		    // Decode TRD_layer_info back to TRD ADC values
-		    ULong64_t TRD_value = 0;
-		    for(Int_t i_bit = 0; i_bit < 8; i_bit++) // One single time slice 8 bit = 256
-		    {
-			Int_t bitcheck = i_bit + 8*isl; // range: 0..63 = 64 bit = 8 byte = Long64_t
-			Int_t bit_status = (TRD_layer_info[iPl] >> bitcheck) & 1; // check bit bitcheck
-			if(bit_status) TRD_value |= (ULong64_t)1 << i_bit; // setting bit i_bit to 1
-		    }
-		    Double_t TRD_value_decode = (Double_t)TRD_value * TRD_ADC_bin_width;
-		    //cout << "isl: " << isl << ", TRD_value_decode: " << TRD_value_decode << endl;
-		}
-		//cout << "--------------------------------" << endl;
-
-	    }
-	}
-
-	AS_Track  ->setNTRDcls(N_TRD_cls);
-	AS_Track  ->setTRDsumADC(TRD_sum_ADC);
-	//-------------------
-
-
 
 	//Helix
         FillHelix(track,magF);
 
         AS_Track ->setHelix(aliHelix.fHelix[0],aliHelix.fHelix[1],aliHelix.fHelix[2],aliHelix.fHelix[3],aliHelix.fHelix[4],aliHelix.fHelix[5],aliHelix.fHelix[6],aliHelix.fHelix[7],aliHelix.fHelix[8]);
 
-	Int_t N_track_TRD_tracklets     = track     ->GetTRDntracklets();
-	//printf("N_track_TRD_tracklets: %d \n",N_track_TRD_tracklets);
-
-	if(N_good_tracks >= 0 && N_good_tracks < 60000)
-	{
-            Double_t max_radius_reached = -1.0;
-            Int_t flag_reached_TRD  = 1;
-	    Double_t path_initA = 0.0;
-	    Double_t helix_point_search[3];
-	    for(Int_t i_step = 0; i_step < 2000; i_step++)
-	    {
-		Double_t pathA_step  = (TPC_radius_scan-20.0) + (Double_t)i_step*5.0; // use this for GetExternalParameters
-                //Double_t pathA_step  = (0.0-20.0) + (Double_t)i_step*5.0; // use this for GetExternalOuterParameters
-		path_initA = pathA_step;
-		aliHelix.Evaluate(pathA_step,helix_point_search);
-		Double_t Track_radius = TMath::Sqrt(helix_point_search[0]*helix_point_search[0] + helix_point_search[1]*helix_point_search[1]);
-		//cout << "i_step: " << i_step << ", pT: " << Track_pT << ", path: " << pathA_step << ", radius: " << Track_radius << ", charge: " << charge
-		//    << ", xyz = {" << helix_point_search[0] << ", " << helix_point_search[1] << ", " << helix_point_search[2] << "}" << endl;
-                if(Track_radius > max_radius_reached) max_radius_reached = Track_radius;
-		if(Track_radius > TPC_radius_scan) break;
-		if(Track_radius < max_radius_reached)
-		{
-                    flag_reached_TRD = 0;
-		    break;
-		}
-	    }
-
-	    //cout << "flag_reached_TRD: " << flag_reached_TRD << endl;
-	    if(!flag_reached_TRD) continue; // skip tracks which didn't make it to the TRD due to low momentum
-
-
-
-	    //--------------------------------------------------------------------------------
-	    // Loop over all TRD middle hits in the event and match them with the TPC track
-	    Int_t TRD_layer_match[6] = {0,0,0,0,0,0};
-            Double_t Impact_angle_first = -100.0;
-            Double_t min_dca = 100000.0;
-
-            //cout << "Test A, fEventNoInFile: " << fEventNoInFile <<  ", N_good_tracks: " << N_good_tracks << ", iTracks: " << iTracks << endl;
-
-            
-	    AS_Track  ->setimpact_angle_on_TRD(Impact_angle_first);
-
-            //cout << "Test B" << endl;
-	    //cout << "min_dca: " << min_dca << endl;
-	    //--------------------------------------------------------------------------------
-
-	}  // N Good tracks >= ...
-
-	N_good_tracks++;
+      
 
     } // End of TPC track loop
     cout << "Tracks matched" << endl;
+    //------------------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------------------------
 
 
     Tree_AS_Event ->Fill();
@@ -1354,98 +1026,8 @@ void Ali_DarkMatter_ESD_analysis::FindDCAHelixPoint(TVector3 space_vec, AliHelix
 }
 
 
-//________________________________________________________________________
-/*
-Bool_t Ali_DarkMatter_ESD_analysis::ReadDigits()
-{
-    //cout << "In ReadDigits" << endl;
-    // don't do anything if the digits have already been loaded
-    if (fDigitsLoadedFlag) return kTRUE;
-
-    if(!fDigMan)
-    {
-	AliError("no digits manager");
-	return kFALSE;
-    }
-
-    // reset digit arrays
-    for(Int_t det=0; det<540; det++)
-    {
-	fDigMan->ClearArrays(det);
-	fDigMan->ClearIndexes(det);
-    }
-
-
-    //if(!fDigitsInputFile)
-    //{
-      //  AliError("digits file not available");
-	//return kFALSE;
-   // }
-
-
-    // read digits from file
-    //TTree* tr = (TTree*)fDigitsInputFile->Get(Form("Event%d/TreeD",
-      //  					   fEventNoInFile));
-
-    if(!tr)
-    {
-	//AliWarning(Form("digits tree for event %d not found", fEventNoInFile));
-	return kFALSE;
-    }
-
-    fDigMan->ReadDigits(tr);
-    delete tr;
-
-    // expand digits for use in this task
-    for(Int_t det=0; det<540; det++)
-    {
-	if(fDigMan->GetDigits(det))
-	{
-	    fDigMan->GetDigits(det)->Expand();
-	}
-    }
-
-    fDigitsLoadedFlag = kTRUE;
-    return kTRUE;
-}
-   */
-
-//________________________________________________________________________
-Bool_t Ali_DarkMatter_ESD_analysis::WriteDigits()
-{
-    cout << "In WriteDigits" << endl;
-    // check for output file
-    if(!fDigitsOutputFile)
-    {
-	AliError("digits output file not available");
-	return kFALSE;
-    }
-
-    // compress digits for storage
-    for(Int_t det=0; det<540; det++)
-    {
-	fDigMan->GetDigits(det)->Expand();
-    }
-
-    // create directory to store digits tree
-    TDirectory* evdir =
-	fDigitsOutputFile->mkdir(Form("Event%d", fEventNoInFile),
-				 Form("Event%d", fEventNoInFile));
-
-    evdir->Write();
-    evdir->cd();
-
-    // save digits tree
-    TTree* tr = new TTree("TreeD", "TreeD");
-    fDigMan->MakeBranch(tr);
-    fDigMan->WriteDigits();
-    delete tr;
-
-    return kTRUE;
-}
-
-
 //----------------------------------------------------------------------------------------
+
 void Ali_DarkMatter_ESD_analysis::func_tail_cancellation(Short_t *arr, Int_t nexp)
 {
     // Tail cancellation by deconvolution for PASA v4 TRF

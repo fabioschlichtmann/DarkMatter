@@ -18,23 +18,20 @@ ClassImp(Ali_AS_Tracklet)
 ClassImp(Ali_AS_offline_Tracklet)
 ClassImp(Ali_AS_V0)
 ClassImp(Ali_AS_Event)
-    
 
-/*
+
 class Ali_DarkMatter_ESD_analysis : public AliAnalysisTaskSE
 {
 public:
     Ali_DarkMatter_ESD_analysis()
 	: AliAnalysisTaskSE(),
-	fDigitsInputFileName("TRD.FltDigits.root"), fDigitsInputFile(0),
-	fDigitsOutputFileName(""), fDigitsOutputFile(0),
-	fDigMan(0),fGeo(0),AS_Event(0),AS_Track(0),AS_Tracklet(0),AS_Digit(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0), fDigitsLoadedFlag(kFALSE),
-	h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),h_ADC_tracklet(0x0)
+	AS_Event(0),AS_V0(0),AS_Track(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
+	h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0)
     {
 	cout << "" << endl;
 	cout << "***************************************************************************************" << endl;
 	cout << "In Ali_DarkMatter_ESD_analysis.h constructor" << endl;
-	cout << "fDigitsInputFileName: " << fDigitsInputFileName << endl;
+	//cout << "fDigitsInputFileName: " << fDigitsInputFileName << endl;
 	cout << "***************************************************************************************" << endl;
 	//AS_Event       = new Ali_AS_Event();
 	//AS_Track       = new Ali_AS_Track();
@@ -50,33 +47,14 @@ public:
         void FillHelix(AliESDtrack* track_in, Double_t magF_in);
 	void FindDCAHelixPoint(TVector3 space_vec, AliHelix helixA, Float_t path_initA, Float_t path_initB, Float_t &pathA, Float_t &dcaAB);
 
-	void SetDigitsInputFilename(TString x)
-	{
-	    fDigitsInputFileName=x;
-	    cout << "" << endl;
-	    cout << "***************************************************************************************" << endl;
-	    cout << "fDigitsInputFileName: " << fDigitsInputFileName << endl;
-	    cout << "***************************************************************************************" << endl;
-	}
-	void SetDigitsOutputFilename(TString x) {fDigitsOutputFileName=x;}
 
 	AliHelix aliHelix;
 
     protected:
 
 	Bool_t NextEvent(Bool_t preload=kFALSE);
-	Bool_t ReadDigits();
-	Bool_t WriteDigits();
         void   func_tail_cancellation(Short_t *arr, Int_t nexp);
 
-
-	Int_t FindDigitsTrkl(const AliTRDtrackV1* trdTrack, Int_t layer,
-			     Int_t* det, Int_t* row, Int_t* col,
-			     Float_t* x, Float_t* y, Float_t* z);
-
-	Int_t FindDigits(const AliExternalTrackParam* param,
-			 Float_t bfield, Int_t layer,
-			 Int_t* det, Int_t* row, Int_t* col);
 
 	TList           *fListOfHistos;       //! list of output histograms
 	TTree           *fTree;               //! output tree
@@ -85,128 +63,19 @@ public:
 
     private:
 
-	TFile* OpenDigitsFile(TString inputfile, TString digfile, TString opt);
-
-	TString fDigitsInputFileName;         //! Name of digits file for reading
-	TFile*  fDigitsInputFile;             //! Digits file for reading
-	TString fDigitsOutputFileName;        //! Name of digits file for writing
-	TFile*  fDigitsOutputFile;            //! Digits file for writing
-
-	AliTRDdigitsManager* fDigMan; //! digits manager
-	AliTRDgeometry* fGeo; //! TRD geometry
-	Ali_AS_Event* AS_Event;
-        Ali_AS_Track* AS_Track;
-        Ali_AS_Tracklet* AS_Tracklet;
-        Ali_AS_TRD_digit* AS_Digit;
-	TTree       *Tree_AS_Event;
-
-	Int_t fEventNoInFile;
-	Int_t N_good_events;
-	Int_t fDigitsLoadedFlag;
-
-	std::vector<TH1D*> h_dca;
-	std::vector< std::vector<TH1D*> > h_dca_xyz;
-        TH2D* h2D_TPC_dEdx_vs_momentum;
-        vector<TH1D*> h_ADC_tracklet;
-
-	Ali_DarkMatter_ESD_analysis(const Ali_DarkMatter_ESD_analysis&); // not implemented
-	Ali_DarkMatter_ESD_analysis& operator=(const Ali_DarkMatter_ESD_analysis&); // not implemented
-
-	ClassDef(Ali_DarkMatter_ESD_analysis, 1);
-};
-*/
-
-
-class Ali_DarkMatter_ESD_analysis : public AliAnalysisTaskSE
-{
-public:
-    Ali_DarkMatter_ESD_analysis()
-	: AliAnalysisTaskSE(),
-	fDigitsInputFileName("TRD.FltDigits.root"), fDigitsInputFile(0),
-	fDigitsOutputFileName(""), fDigitsOutputFile(0),
-	fDigMan(0),fGeo(0),AS_Event(0),AS_V0(0),AS_Track(0),AS_Tracklet(0),AS_offline_Tracklet(0),AS_Digit(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0), fDigitsLoadedFlag(kFALSE),
-	h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),h_ADC_tracklet(0x0),h_ADC_vs_time(0x0)
-    {
-	cout << "" << endl;
-	cout << "***************************************************************************************" << endl;
-	cout << "In Ali_DarkMatter_ESD_analysis.h constructor" << endl;
-	cout << "fDigitsInputFileName: " << fDigitsInputFileName << endl;
-	cout << "***************************************************************************************" << endl;
-	//AS_Event       = new Ali_AS_Event();
-	//AS_Track       = new Ali_AS_Track();
-	cout << "" << endl;
-    }
-	Ali_DarkMatter_ESD_analysis(const char *name);
-	//virtual ~Ali_DarkMatter_ESD_analysis() {}
-
-	virtual void   UserCreateOutputObjects();
-	virtual Bool_t UserNotify();
-	virtual void   UserExec(Option_t *option);
-	virtual void   Terminate(Option_t *);
-        void FillHelix(AliESDtrack* track_in, Double_t magF_in);
-	void FindDCAHelixPoint(TVector3 space_vec, AliHelix helixA, Float_t path_initA, Float_t path_initB, Float_t &pathA, Float_t &dcaAB);
-
-	void SetDigitsInputFilename(TString x)
-	{
-	    fDigitsInputFileName=x;
-	    cout << "" << endl;
-	    cout << "***************************************************************************************" << endl;
-	    cout << "fDigitsInputFileName: " << fDigitsInputFileName << endl;
-	    cout << "***************************************************************************************" << endl;
-	}
-	void SetDigitsOutputFilename(TString x) {fDigitsOutputFileName=x;}
-
-	AliHelix aliHelix;
-
-    protected:
-
-	Bool_t NextEvent(Bool_t preload=kFALSE);
-	Bool_t ReadDigits();
-	Bool_t WriteDigits();
-        void   func_tail_cancellation(Short_t *arr, Int_t nexp);
-
-
-	Int_t FindDigitsTrkl(const AliTRDtrackV1* trdTrack, Int_t layer,
-			     Int_t* det, Int_t* row, Int_t* col,
-			     Float_t* x, Float_t* y, Float_t* z);
-
-	Int_t FindDigits(const AliExternalTrackParam* param,
-			 Float_t bfield, Int_t layer,
-			 Int_t* det, Int_t* row, Int_t* col);
-
-	TList           *fListOfHistos;       //! list of output histograms
-	TTree           *fTree;               //! output tree
-	AliPIDResponse  *fPIDResponse;        //! PID handling
-	AliESDtrackCuts *EsdTrackCuts;        //!
-
-    private:
-
-	TFile* OpenDigitsFile(TString inputfile, TString digfile, TString opt);
-
-	TString fDigitsInputFileName;         //! Name of digits file for reading
-	TFile*  fDigitsInputFile;             //! Digits file for reading
-	TString fDigitsOutputFileName;        //! Name of digits file for writing
-	TFile*  fDigitsOutputFile;            //! Digits file for writing
-
-	AliTRDdigitsManager* fDigMan; //! digits manager
-        AliTRDgeometry* fGeo; //! TRD geometry
         Ali_AS_Event* AS_Event;
         Ali_AS_V0* AS_V0;
         Ali_AS_Track* AS_Track;
-        Ali_AS_Tracklet* AS_Tracklet;
-        Ali_AS_offline_Tracklet* AS_offline_Tracklet;
-        Ali_AS_TRD_digit* AS_Digit;
+       
 	TTree       *Tree_AS_Event;
 
 	Int_t fEventNoInFile;
 	Int_t N_good_events;
-	Int_t fDigitsLoadedFlag;
+	//Int_t fDigitsLoadedFlag;
 
 	std::vector<TH1D*> h_dca;
 	std::vector< std::vector<TH1D*> > h_dca_xyz;
         TH2D* h2D_TPC_dEdx_vs_momentum;
-        vector<TH1D*> h_ADC_tracklet;
-        vector<TProfile*> h_ADC_vs_time;
 
 	Ali_DarkMatter_ESD_analysis(const Ali_DarkMatter_ESD_analysis&); // not implemented
 	Ali_DarkMatter_ESD_analysis& operator=(const Ali_DarkMatter_ESD_analysis&); // not implemented
