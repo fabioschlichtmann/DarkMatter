@@ -21,13 +21,13 @@
 
 #include "AliKalmanTrack.h"
 
-#include "AliTRDpadPlane.h"
+//#include "AliTRDpadPlane.h"
 #include "AliTRDtrackV1.h"
-#include "AliTRDseedV1.h"
+//#include "AliTRDseedV1.h"
 #include "AliESDfriend.h"
 
-#include "AliTRDdigitsManager.h"
-#include "AliTRDarrayADC.h"
+//#include "AliTRDdigitsManager.h"
+//#include "AliTRDarrayADC.h"
 
 #include "AliPIDResponse.h"
 #include "AliPID.h"
@@ -45,16 +45,16 @@
 #include "TGeoMatrix.h"
 #include "AliAlignObjParams.h"
 
-#include "AliTRDdigitsParam.h"
+//#include "AliTRDdigitsParam.h"
 #include "AliRunTag.h"
 #include "TObjString.h"
 
 #include "AliCDBManager.h"
 #include "AliCDBStorage.h"
-#include "AliTRDCalPad.h"
-#include "AliTRDCalDet.h"
-#include "AliTRDCalOnlineGainTable.h"
-#include "AliTRDCalROC.h"
+//#include "AliTRDCalPad.h"
+//#include "AliTRDCalDet.h"
+//#include "AliTRDCalOnlineGainTable.h"
+//#include "AliTRDCalROC.h"
 #include "TPolyMarker.h"
 
 #include "AliTRDCommonParam.h"
@@ -293,8 +293,10 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //if(fEventNoInFile > 50) return;
     //-----------------------------------------------------------------
 
+    counter_events++;
+    cout<<"counter events: "<<counter_events<<endl;
 
-
+    //if(counter_events<250){return;}
 
     //-----------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------
@@ -354,13 +356,22 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     Int_t ncascades =  fESD-> GetNumberOfCascades();
     Int_t numberV0  =  fESD ->GetNumberOfV0s () ;
 
-    cout<<numberV0<<endl;
 
-
+    cout<<"numberV0: "<<numberV0<<endl;
+    /*
+    if(numberV0>60000)
+    {
+        //counter_many_V0s++:
+       // return;
+    }
+    */
+    
     //printf("RunNum: %d, ncascades: %d , numberV0: %d /n ",RunNum,ncascades,numberV0);
 
     Double_t Sign_magnetic_field = (magF/fabs(magF));
     //cout << "Trigger: " <<  fESD->GetFiredTriggerClasses() << endl;
+ 
+
 
     // Fill event information
     AS_Event ->clearTrackList();
@@ -395,7 +406,10 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     }
 
-
+     Double_t *pN;
+     Double_t *pP;
+     pN = new Double_t[3];
+     pP = new Double_t[3];
 
 
     for (Int_t V0_counter=0; V0_counter<numberV0; V0_counter++)
@@ -407,9 +421,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         AliESDv0 *V0=fESD->GetV0(V0_counter);
         V0->AliESDv0::GetXYZ(x,y,z);
 
-        cout<<""<<endl;
-        printf("V0 number: %d \n",V0_counter);
-        printf("x: %f,y: %f, z: %f \n",x,y,z);
+        //cout<<""<<endl;
+        //printf("V0 number: %d \n",V0_counter);
+        //printf("x: %f,y: %f, z: %f \n",x,y,z);
         
         //-------------------------------
 
@@ -432,33 +446,16 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         AliESDtrack* trackN = fESD->AliESDEvent::GetTrack(indexN);
         AliESDtrack* trackP = fESD->AliESDEvent::GetTrack(indexP);
 
-        /*TBits tbit = trackN->GetTPCFitMap();
-        Int_t countbits = tbit.CountBits();
-        cout<<"bits1 fit: : "<<countbits<<endl;
-        Int_t nbits = tbit.GetNbits();
-        cout<<"nbits fit: : "<<nbits<<endl;
-
-        TBits shared = trackN->GetTPCSharedMap();
-        Int_t countbits_sh = shared.CountBits();
-        cout<<"bits1 shared:: "<<countbits_sh<<endl;
-        Int_t nbits_sh = shared.GetNbits();
-        cout<<"nbits shared:: "<<nbits_sh<<endl;
-        */
-
-      
 
         Double_t momentumP = sqrt(pxP*pxP + pyP*pyP + pzP*pzP);
         Double_t momentumN = sqrt(pxN*pxN + pyN*pyN + pzN*pzN);
 
-        printf("trackidP %d, trackidN %d \n",indexP,indexN);
-        printf("momentum of positive particle: %f   momentum of negative particle: %f \n",momentumP,momentumN);
+        //printf("trackidP %d, trackidN %d \n",indexP,indexN);
+        //printf("momentum of positive particle: %f   momentum of negative particle: %f \n",momentumP,momentumN);
         //----------------------------------------------------------------
 
         //get impulse vector by using AliESDtrack class-------------------------
-        Double_t *pN;
-        Double_t *pP;
-        pN=new Double_t[3];
-        pP=new Double_t[3];
+       
         trackN->GetInnerPxPyPz(pN);
         trackP->GetInnerPxPyPz(pP);
 
@@ -468,8 +465,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
         //create element of Ali_AS_V0 class
-        AS_V0  = AS_Event ->createV0();
 
+        AS_V0  = AS_Event ->createV0();
+        /*
         //use set functions
         AS_V0 -> setxyz(x,y,z);
         AS_V0 -> setNpxpypz(pxN,pyN,pzN);
@@ -484,8 +482,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
         //fill tracks------------------------------------------------------------------
-        as_trackP  ->clearTRD_digit_list();
-        as_trackP  ->clearOfflineTrackletList();
+        //as_trackP  ->clearTRD_digit_list();
+        //as_trackP  ->clearOfflineTrackletList();
 
         TLorentzVector TL_vec;
         Double_t Track_pT     = trackP ->Pt();
@@ -547,8 +545,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //end of filling for P particle track-------------------------------------------------------------------
 
         //do the same for N particle track-----------------------------------------------------------------------
-        as_trackN  ->clearTRD_digit_list();
-        as_trackN  ->clearOfflineTrackletList();
+        //as_trackN  ->clearTRD_digit_list();
+        //as_trackN  ->clearOfflineTrackletList();
 
         Track_pT     = trackN ->Pt();
         Track_eta    = trackN ->Eta();
@@ -605,11 +603,12 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         as_trackN  ->setnsigma_p_TOF(Track_PID_N[9]);
 
         //end of filling for N particle track-------------------------------------------------------------------
-
+        */
     }
     cout<<"end of V0 loop"<<endl;
     cout<<""<<endl;
     //end of V0 loop
+
     //----------------------------------------------------------------------------------------------------------
     //----------------------------------------------------------------------------------------------------------
 
@@ -643,6 +642,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //cout << "-----------------------------------------------------------------" << endl;
     //cout << "Start matching " << N_tracks << " TPC tracks with " << TV3_TRD_hits_middle.size() << " TRD pads" << endl;
     N_good_tracks = 0;
+
+
     for(Int_t iTracks = 0; iTracks < N_tracks; iTracks++)
     {
 	//---------------------------------------------------------------
@@ -695,7 +696,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         track -> GetInnerPxPyPz(p);
         Double_t momentum = sqrt(p[0]*p[0]+p[1]*p[1]+p[2]*p[2]);
 
-        printf("track number: %d, charge:  %d, momentum: %f \n",iTracks, charge, momentum);
+        //printf("track number: %d, charge:  %d, momentum: %f \n",iTracks, charge, momentum);
 
 	TLorentzVector TLV_p_vec;
 	Double_t p_vec_energy = TMath::Sqrt(p_vec[0]*p_vec[0] + p_vec[1]*p_vec[1] + p_vec[2]*p_vec[2] + 0.938*0.938);
@@ -757,9 +758,13 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 	//-------------------
 
 	TLorentzVector TL_vec;
-	TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,0.1349766);
+        TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,0.1349766);
+
+
 	AS_Track  = AS_Event ->createTrack();
-	AS_Track  ->set_TLV_part(TL_vec);
+
+
+        AS_Track  ->set_TLV_part(TL_vec);
 	AS_Track  ->setdca(((Double_t)charge)*track_total_impact);
 	AS_Track  ->setnsigma_e_TPC(Track_PID[0]);
 	AS_Track  ->setnsigma_e_TOF(Track_PID[5]);
@@ -836,6 +841,34 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     Tree_AS_Event ->Fill();
 
+    //Ali_AS_V0* AS_V0;
+
+    for (Int_t V0_counter=0; V0_counter<numberV0; V0_counter++)
+    {
+        //if(counter_events>280) {cout<<"V0 counter2: "<<V0_counter<<endl;}
+        AS_V0 =  AS_Event->getV0(V0_counter);
+        AS_V0 -> clearTrackList();
+        //AS_V0 -> clearV0List();
+        //AS_V0->~Ali_AS_V0();
+    }
+
+
+    int Ntracks = AS_Event->getN_tracks();
+    //cout<<"Ntracks: "<<Ntracks<<endl;
+
+    /*
+    for(Int_t iTracks = 0; iTracks < Ntracks; iTracks++)
+    {
+        //cout<<iTracks<<endl;
+        Ali_AS_Track* AS_Track = AS_Event->getTrack(iTracks);
+        //AS_Track->~Ali_AS_Track();
+        //if(AS_Track==NULL){continue;}
+        delete AS_Track;
+    }
+    */
+
+    //AS_Event->clearTrackList();
+   // AS_Event ->clearV0List();
 
     N_good_events++;
 

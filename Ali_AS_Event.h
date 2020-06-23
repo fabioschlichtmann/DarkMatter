@@ -202,13 +202,13 @@ private:
     Float_t        Track_length; // length of track
     Float_t        aliHelix_params[9];
 
-    UShort_t      fNumTRDdigits; // number of TRD digits for this track
-    UShort_t      fNumOfflineTracklets; // number of offline tracklets
+    //UShort_t      fNumTRDdigits; // number of TRD digits for this track
+    //UShort_t      fNumOfflineTracklets; // number of offline tracklets
 
     Int_t track_id;
 
-    TClonesArray* fTRD_digits;          //->
-    TClonesArray* fOfflineTracklets;    //->
+    //TClonesArray* fTRD_digits;          //->
+    //TClonesArray* fOfflineTracklets;    //->
 
     TBits tbits_fit;
     TBits tbits_shared;
@@ -217,17 +217,17 @@ public:
     Ali_AS_Track() :
 	nsigma_e_TPC(-1),nsigma_e_TOF(-1),nsigma_pi_TPC(-1),nsigma_pi_TOF(-1),nsigma_K_TPC(-1),nsigma_K_TOF(-1),nsigma_p_TPC(-1),nsigma_p_TOF(-1),TRD_signal(-1),
         TRDsumADC(-1),dca(-1),TLV_part(),NTPCcls(-1),NTRDcls(-1),NITScls(-1),status(-1),TPCchi2(-1),TRD_ADC_time_layer(),
-        impact_angle_on_TRD(-1),TPCdEdx(-1),TOFsignal(-1),Track_length(-1),aliHelix_params(),fNumTRDdigits(0),fNumOfflineTracklets(0),track_id(0)
+        impact_angle_on_TRD(-1),TPCdEdx(-1),TOFsignal(-1),Track_length(-1),aliHelix_params(),track_id(0)
     {
-        fTRD_digits       = new TClonesArray( "Ali_AS_TRD_digit", 10 );
-        fOfflineTracklets = new TClonesArray( "Ali_AS_offline_Tracklet", 10 );
+        //fTRD_digits       = new TClonesArray( "Ali_AS_TRD_digit", 10 );
+        //fOfflineTracklets = new TClonesArray( "Ali_AS_offline_Tracklet", 10 );
     }
 	~Ali_AS_Track()
 	{
-            delete fTRD_digits;
-            delete fOfflineTracklets;
-            fTRD_digits       = NULL;
-            fOfflineTracklets = NULL;
+            //delete fTRD_digits;
+            //delete fOfflineTracklets;
+            //fTRD_digits       = NULL;
+            //fOfflineTracklets = NULL;
 	}
 
 	// setters
@@ -322,64 +322,7 @@ public:
 
 
         //----------------------------
-        Ali_AS_offline_Tracklet* createOfflineTracklet()
-	{
-	    if (fNumOfflineTracklets == fOfflineTracklets->GetSize())
-		fOfflineTracklets->Expand( fNumOfflineTracklets + 10 );
-	    if (fNumOfflineTracklets >= 10000)
-	    {
-		Fatal( "Ali_AS_Event::createOfflineTracklet()", "ERROR: Too many tracklets (>100000)!" );
-		exit( 2 );
-	    }
-
-	    new((*fOfflineTracklets)[fNumOfflineTracklets++]) Ali_AS_offline_Tracklet;
-	    return (Ali_AS_offline_Tracklet*)((*fOfflineTracklets)[fNumOfflineTracklets - 1]);
-	}
-	void clearOfflineTrackletList()
-	{
-	    fNumOfflineTracklets   = 0;
-	    fOfflineTracklets      ->Clear();
-	}
-	UShort_t getNumOfflineTracklets() const
-	{
-	    return fNumOfflineTracklets;
-	}
-	Ali_AS_offline_Tracklet* getOfflineTracklet(UShort_t i) const
-	{
-	    return i < fNumOfflineTracklets ? (Ali_AS_offline_Tracklet*)((*fOfflineTracklets)[i]) : NULL;
-        }
-        //----------------------------
-
-
-
-        //----------------------------
-	Ali_AS_TRD_digit* createTRD_digit()
-	{
-	    if (fNumTRDdigits == fTRD_digits->GetSize())
-		fTRD_digits->Expand( fNumTRDdigits + 10 );
-	    if (fNumTRDdigits >= 10000)
-	    {
-		Fatal( "Ali_AS_Track::createTRD_digit()", "ERROR: Too many TRD digits (>10000)!" );
-		exit( 2 );
-	    }
-
-	    new((*fTRD_digits)[fNumTRDdigits++]) Ali_AS_TRD_digit;
-	    return (Ali_AS_TRD_digit*)((*fTRD_digits)[fNumTRDdigits - 1]);
-	}
-	void clearTRD_digit_list()
-	{
-	    fNumTRDdigits   = 0;
-	    fTRD_digits      ->Clear();
-	}
-	UShort_t getNumTRD_digits() const
-	{
-	    return fNumTRDdigits;
-	}
-	Ali_AS_TRD_digit* getTRD_digit(UShort_t i) const
-	{
-            return i < fNumTRDdigits ? (Ali_AS_TRD_digit*)((*fTRD_digits)[i]) : NULL;
-        }
-        //----------------------------
+	
 
 
 
@@ -460,15 +403,13 @@ private:
     Int_t   N_tracks; // total number of tracks
    
 
-    UShort_t      fNumTracks; // number of tracks in event
-    UShort_t      fNumV0s; // number of V0s in event
+    Int_t      fNumTracks; // number of tracks in event
 
     TClonesArray* fTracks;      //->
-    TClonesArray* fV0s;      //->
 
 public:
     Ali_AS_V0() :
-        x(-1),y(-1),z(-1),Npx(-1),Npy(-1),Npz(-1),Ppx(-1),Ppy(-1),Ppz(-1),pos(),N_tracks(0),fNumTracks(0),dca_V0(0)
+        x(-1),y(-1),z(-1),Npx(-1),Npy(-1),Npz(-1),Ppx(-1),Ppy(-1),Ppz(-1),dca_V0(0),pos(),N_tracks(0),fNumTracks(0)
 
         //brauchen wir auch nicht?
         /*         
@@ -477,16 +418,13 @@ public:
         cent_class_SPD(0),cent_class_V0MEq(0),cent_class_V0AEq(0),cent_class_V0CEq(0),BeamIntAA(-1),T0zVertex(-1),TriggerWord(),fNumTracks(0),fNumTracklets(0),
         ADC_sum_det()  */
     {
-        fTracks         = new TClonesArray( "Ali_AS_Track", 10 );
-        fV0s         = new TClonesArray( "Ali_AS_V0", 10 );
+        fTracks         = new TClonesArray( "Ali_AS_Track", 2 );
        // fTracklets      = new TClonesArray( "Ali_AS_Tracklet", 10 );
     }
 	~Ali_AS_V0()
 	{
 	    delete fTracks;
-	    delete fV0s;
             fTracks = NULL;
-            fV0s = NULL;
             //delete fTracklets;
 	    //fTracklets = NULL;
 	}
@@ -554,10 +492,10 @@ public:
 	Ali_AS_Track* createTrack()
 	{
 	    if (fNumTracks == fTracks->GetSize())
-		fTracks->Expand( fNumTracks + 10 );
-	    if (fNumTracks >= 10000)
+		fTracks->Expand( fNumTracks + 1 );
+	    if (fNumTracks >= 100000)
 	    {
-		Fatal( "Ali_AS_V0::createTrack()", "ERROR: Too many tracks (>10000)!" );
+		Fatal( "Ali_AS_V0::createTrack()", "ERROR: Too many tracks (>100000)!" );
 		exit( 2 );
 	    }
 
@@ -565,19 +503,7 @@ public:
 	    return (Ali_AS_Track*)((*fTracks)[fNumTracks - 1]);
         }
 
-        Ali_AS_V0* createV0()
-	{
-	    if (fNumV0s == fV0s->GetSize())
-		fV0s->Expand( fNumV0s + 10 );
-	    if (fNumV0s >= 10000)
-	    {
-		Fatal( "Ali_AS_V0::createV0()", "ERROR: Too many V0s (>10000)!" );
-		exit( 2 );
-	    }
-
-	    new((*fV0s)[fNumV0s++]) Ali_AS_V0;
-	    return (Ali_AS_V0*)((*fV0s)[fNumV0s - 1]);
-	}
+        
 
 	void clearTrackList()
 	{
@@ -585,11 +511,6 @@ public:
 	    fTracks      ->Clear();
         }
 
-        void clearV0List()
-	{
-	    fNumV0s   = 0;
-	    fV0s      ->Clear();
-	}
 
 
 	UShort_t getNumTracks() const
@@ -597,20 +518,12 @@ public:
 	    return fNumTracks;
         }
 
-        UShort_t getNumV0s() const
-	{
-	    return fNumV0s;
-        }
 
-	Ali_AS_Track* getTrack(UShort_t i) const
+	Ali_AS_Track* getTrack(Int_t i) const
 	{
 	    return i < fNumTracks ? (Ali_AS_Track*)((*fTracks)[i]) : NULL;
         }
 
-        Ali_AS_V0* getV0(UShort_t i) const
-	{
-	    return i < fNumV0s ? (Ali_AS_V0*)((*fV0s)[i]) : NULL;
-        }
         //----------------------------
 
 
@@ -661,7 +574,7 @@ private:
     TString TriggerWord; // Trigger word
 
     UShort_t      fNumTracks; // number of tracks in event
-    UShort_t      fNumV0s; // number of tracks in event
+    Int_t         fNumV0s; // number of tracks in event
     UShort_t      fNumTracklets; // number of tracks in event
 
     TClonesArray* fTracks;      //->
@@ -761,23 +674,27 @@ public:
 	{
 	    if (fNumTracks == fTracks->GetSize())
 		fTracks->Expand( fNumTracks + 10 );
-	    if (fNumTracks >= 10000)
+	    if (fNumTracks >= 100000)
 	    {
-		Fatal( "Ali_AS_Event::createTrack()", "ERROR: Too many tracks (>10000)!" );
+		Fatal( "Ali_AS_Event::createTrack()", "ERROR: Too many tracks (>100000)!" );
 		exit( 2 );
 	    }
 
-	    new((*fTracks)[fNumTracks++]) Ali_AS_Track;
+            new((*fTracks)[fNumTracks++]) Ali_AS_Track;
+            //printf("fNumTracks: %d \n",fNumTracks);
 	    return (Ali_AS_Track*)((*fTracks)[fNumTracks - 1]);
         }
 
         Ali_AS_V0* createV0()
-	{
+        {
+            cout<<"size: "<< fV0s->GetSize()<<endl;
 	    if (fNumV0s == fV0s->GetSize())
-		fV0s->Expand( fNumV0s + 10 );
-	    if (fNumV0s >= 10000)
+            {
+                fV0s->Expand( fNumV0s + 10 );
+            }
+	    if (fNumV0s >= 500000)
 	    {
-		Fatal( "Ali_AS_Event::createV0()", "ERROR: Too many V0s (>10000)!" );
+		Fatal( "Ali_AS_Event::createV0()", "ERROR: Too many V0s (>500000)!" );
 		exit( 2 );
 	    }
 
@@ -807,12 +724,12 @@ public:
 	    return fNumV0s;
         }
 
-	Ali_AS_Track* getTrack(UShort_t i) const
+	Ali_AS_Track* getTrack(Int_t i) const
 	{
 	    return i < fNumTracks ? (Ali_AS_Track*)((*fTracks)[i]) : NULL;
         }
         //----------------------------
-        Ali_AS_V0* getV0(UShort_t i) const
+        Ali_AS_V0* getV0(Int_t i) const
 	{
 	    return i < fNumV0s ? (Ali_AS_V0*)((*fV0s)[i]) : NULL;
         }
@@ -913,9 +830,9 @@ public:
 	{
 	    if (fNumTracks == fTracks->GetSize())
 		fTracks->Expand( fNumTracks + 10 );
-	    if (fNumTracks >= 10000)
+	    if (fNumTracks >= 100000)
 	    {
-		Fatal( "Ali_AS_Event::createTrack()", "ERROR: Too many tracks (>10000)!" );
+		Fatal( "Ali_AS_Event::createTrack()", "ERROR: Too many tracks (>100000)!" );
 		exit( 2 );
 	    }
 
@@ -934,7 +851,7 @@ public:
 	    return fNumTracks;
         }
 
-	Ali_AS_Track* getTrack(UShort_t i) const
+	Ali_AS_Track* getTrack(Int_t i) const
 	{
 	    return i < fNumTracks ? (Ali_AS_Track*)((*fTracks)[i]) : NULL;
         }

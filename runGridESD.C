@@ -120,8 +120,21 @@ void runGridESD(TString mode="terminate",Int_t sub=702, TString fname="Ali_DarkM
 	//chain->AddFile("/misc/alidata120/alice_u/schmah/PbPb_2015/raw/15000245450036.1008/AliESDs.root");
 	//chain->AddFile("/misc/alidata120/alice_u/schmah/PbPb_2015/raw/15000246980039.9708/AliESDs.root");
 	//chain->AddFile("/misc/alidata120/alice_u/schmah/PbPb_2015/raw/15000246980039.9709/AliESDs.root");
-        chain->AddFile("/misc/alidata120/alice_u/schmah/PbPb_2015/raw/15000246980039.9711/AliESDs.root");
-	//chain->Print();
+
+        //chain->AddFile("/misc/alidata120/alice_u/schmah/PbPb_2015/raw/15000246980039.9711/AliESDs.root");
+        //chain->AddFile("/misc/alidata120/alice_u/schlichtmann/AliESDs.root");
+        //chain->AddFile("/misc/alidata120/alice_u/schlichtmann/AliESDs2.root");
+        TString name = "/misc/alidata120/alice_u/schlichtmann/AliESDs";
+        for(int i = 0;i<20;i++)
+        {
+            TString new_name = name;
+            new_name+=i;
+            new_name+=".root";
+            chain->AddFile(new_name.Data());
+
+        }
+
+        //chain->Print();
 	mgr->StartAnalysis("local",chain);
     }
 
