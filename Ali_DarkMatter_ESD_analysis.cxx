@@ -467,7 +467,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //create element of Ali_AS_V0 class
 
         AS_V0  = AS_Event ->createV0();
-        /*
+
+        //AS_V0->~Ali_AS_V0();
+
         //use set functions
         AS_V0 -> setxyz(x,y,z);
         AS_V0 -> setNpxpypz(pxN,pyN,pzN);
@@ -602,8 +604,10 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 	as_trackN  ->setnsigma_p_TPC(Track_PID_N[4]);
         as_trackN  ->setnsigma_p_TOF(Track_PID_N[9]);
 
+
+        AS_V0->clearTrackList();
         //end of filling for N particle track-------------------------------------------------------------------
-        */
+
     }
     cout<<"end of V0 loop"<<endl;
     cout<<""<<endl;
@@ -849,7 +853,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         AS_V0 =  AS_Event->getV0(V0_counter);
         AS_V0 -> clearTrackList();
         //AS_V0 -> clearV0List();
-        //AS_V0->~Ali_AS_V0();
+        AS_V0->~Ali_AS_V0();
     }
 
 
