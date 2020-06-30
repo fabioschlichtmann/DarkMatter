@@ -26,7 +26,7 @@ public:
     Ali_DarkMatter_ESD_analysis()
 	: AliAnalysisTaskSE(),
 	AS_Event(0),AS_V0(0),AS_Track(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
-	h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0)
+	h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),counter_events(0)
     {
 	cout << "" << endl;
 	cout << "***************************************************************************************" << endl;
@@ -46,9 +46,11 @@ public:
 	virtual void   Terminate(Option_t *);
         void FillHelix(AliESDtrack* track_in, Double_t magF_in);
 	void FindDCAHelixPoint(TVector3 space_vec, AliHelix helixA, Float_t path_initA, Float_t path_initB, Float_t &pathA, Float_t &dcaAB);
+	void FindDCAHelixPoint2(TVector3 space_vec, Ali_AS_Track* helixA, Float_t path_initA, Float_t path_initB, Float_t &pathA, Float_t &dcaAB);
 
 
-	AliHelix aliHelix;
+        AliHelix aliHelix;
+         int counter_events=0;
 
     protected:
 
