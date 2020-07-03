@@ -399,6 +399,10 @@ private:
 
 
     Float_t pos[3];
+    Float_t mom[3];
+    //Float_t* mom1 = new Float_t[3];
+    
+    
 
     Int_t   N_tracks; // total number of tracks
    
@@ -409,7 +413,7 @@ private:
 
 public:
     Ali_AS_V0() :
-        x(-1),y(-1),z(-1),Npx(-1),Npy(-1),Npz(-1),Ppx(-1),Ppy(-1),Ppz(-1),dca_V0(0),pos(),N_tracks(0),fNumTracks(0)
+        x(-1),y(-1),z(-1),Npx(-1),Npy(-1),Npz(-1),Ppx(-1),Ppy(-1),Ppz(-1),dca_V0(0),pos(),mom(),N_tracks(0),fNumTracks(0)
 
         //brauchen wir auch nicht?
         /*         
@@ -432,6 +436,7 @@ public:
         //set and get functions ------------------------------------------------------------------
         //--------------------------------------------------------------------------------------------
 	void       setxyz(Float_t r, Float_t s, Float_t t)                    { x = r; y = s; z = t;}
+
         Float_t*    getxyz()
         {
             pos[0] = x;
@@ -440,6 +445,8 @@ public:
 
             return pos;
         }
+
+        
 
         Float_t getx() const
         {
@@ -450,9 +457,9 @@ public:
         void setNpxpypz(Float_t r, Float_t s, Float_t t) {Npx=r;Npy=s;Npz=t;}
         void setPpxpypz(Float_t r, Float_t s, Float_t t) {Ppx=r;Ppy=s;Ppz=t;}
 
-        Float_t* getNpxpypz() const
+
+        Float_t* getNpxpypz()
         {
-            Float_t* mom = new Float_t[3];
             mom[0] = Npx;
             mom[1] = Npy;
             mom[2] = Npz;
@@ -460,10 +467,10 @@ public:
             return mom;
 
         }
+        
 
-        Float_t* getPpxpypz() const
+        Float_t* getPpxpypz()
         {
-            Float_t* mom = new Float_t[3];
             mom[0] = Ppx;
             mom[1] = Ppy;
             mom[2] = Ppz;
@@ -828,7 +835,8 @@ public:
 
         //----------------------------
 	Ali_AS_Track* createTrack()
-	{
+        {
+            cout<<"as_dm created Track"<<endl;
 	    if (fNumTracks == fTracks->GetSize())
 		fTracks->Expand( fNumTracks + 10 );
 	    if (fNumTracks >= 100000)
