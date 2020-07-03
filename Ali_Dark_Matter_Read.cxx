@@ -166,75 +166,6 @@ TVector3 calculatePointOfClosestApproach(TVector3 &base1, TVector3 &dir1,
 TVector3 calculateCrossPoint(TVector3 &base1, TVector3 &dir1,
 							TVector3 &base2, TVector3 &dir2)
 { 
-  // calculating Cross point 
-  // taking all three equations into account solving the overdetermined set of lin. equations
-  // of 
-  // base1 + l * dir2 =  base1 + m * dir2 
-  //
-  // set of lin. equations:
-  //  
-  //   base1(0) + l * dir1(0) = base2(0) + m * dir2(0) 
-  //   base1(1) + l * dir1(1) = base2(1) + m * dir2(1)
-  //   base1(2) + l * dir1(2) = base2(2) + m * dir2(2) this line is ignored
-  //
-  //   written in matrix form
-  //
-  //        l
-  //   M * |   | = base2 - base1
-  //       \\ m /
-  //
-  //   M is a 3x2 matrix
-  //     
-  // to solve multiply the equation by the transposed Matrix of M from the left: M 
-  //     
-  //  T      /  l \\                                                               .
-  // M * M * |    | = M  * (base2 - base1)
-  //         \\ -m /
-  // MIND THE '-' of m
-  //
-  //     / dir1(0) dir2(0) \\                                                      .
-  //     |                 |    T   / dir1(0) dir1(1) dir1(2) \\                   .
-  // M = | dir1(1) dir2(1) |,  M  = |                         |
-  //     |                 |        \\ dir2(0) dir2(1) dir2(2) /                   .
-  //     \\ dir1(2) dir2(2) /                                    
-  //
-  //  T      / (dir1(0)*dir1(0) + dir1(1)*dir1(1) + dir1(2)*dir1(2))   (dir1(0)*dir2(0) + dir1(1)*dir2(1) + dir1(2)*dir2(2))  \\ .
-  // M * M = |                                                                                                                |
-  //         \\ (dir1(0)*dir2(0) + dir1(1)*dir2(1) + dir1(2)*dir2(2))   (dir2(0)*dir2(0) + dir2(1)*dir2(1) + dir2(2)*dir2(2))  /                        
-  //
-  //  T       / d1d1 d1d2 \\                           .
-  // M  * M = |           |
-  //          \\ d1d2 d2d2 /
-  //
-  // diff = base2 - base1
-  //
-  //  T           /  (dir1(0)*diff(0) + dir1(1)*diff(1) + dir1(2)*diff(2)) \\         .
-  // M  * diff =  |                                                        |
-  //              \\  (dir2(0)*diff(0) + dir2(1)*diff(1) + dir2(2)*diff(2)) /
-  //
-  //  T           /  d1diff  \\                                          .
-  // M  * diff =  |          |
-  //              \\  d2diff  /
-  // 
-  // now the new Matrix set is to be solved by CRAMER'S Rule:
-  // 
-  // / d1d1 d1d2 \\   /  l \\   /  d1diff \\                   .
-  // |           | * |    | = |          |
-  // \\ d1d2 d2d2 /   \\ -m /   \\  d2diff /
-  //
-  //     | d1d1 d1d2 |
-  // D = |           | = d1d1*d2d2 - d1d2*d1d2;
-  //     | d1d2 d2d2 |
-  // 
-  //     | d1diff d1d2 |
-  // Dl= |              | = d1diff*d2d2 - d1d2*d2diff;
-  //     | d2diff d2d2 |              
-  //
-  // l = Dl/D = l_Cross
-  // 
-  // vertex = base1 + l_Cross * dir1
-  //
-
   Double_t d1d1 = dir1(0)*dir1(0) + dir1(1)*dir1(1) + dir1(2)*dir1(2);
   Double_t d2d2 = dir2(0)*dir2(0) + dir2(1)*dir2(1) + dir2(2)*dir2(2);
   Double_t d1d2 = dir1(0)*dir2(0) + dir1(1)*dir2(1) + dir1(2)*dir2(2);
@@ -259,10 +190,8 @@ TVector3 calculateCrossPoint(TVector3 &base1, TVector3 &dir1,
   vertex *= lambda;
   vertex += base1;
 
-  //cout << "Cross point calculated" << endl;
   return TVector3(vertex);
 
- // return TVector3(-20000.,-20000.,-20000.);
 }
 
 
@@ -637,12 +566,29 @@ public:
 
 
 //----------------------------------------------------------------------------------------
-Ali_Dark_Matter_Read::Ali_Dark_Matter_Read()
+
+//----------------------------------------------------------------------------------------
+Ali_Dark_Matter_Read::Ali_Dark_Matter_Read(TString list)
 {
+    TString in_list_name = list;
+    TString outfile_dir = "/misc/alidata120/alice_u/schlichtmann/out/";
+    TString outfile_name = outfile_dir + in_list_name + "_out.root";
+    //outputfile = new TFile("./TRD_Calib.root","RECREATE");
+    //outputfile = new TFile(outfile_name.Data(),"RECREATE");
+    output_histos = new TFile(outfile_name.Data(),"RECREATE");
+    // outputfile_trkl = new TFile("./TRD_Calib_on_trkl.root","RECREATE");
+    //outputfile_histos = new TFile("Histos.root","RECREATE");
+
+    AS_DM_particle = new Ali_AS_DM_particle();
+    AS_DM_Track    = new Ali_AS_Track();
+
+    Tree_AS_DM_particle  = NULL;
+    Tree_AS_DM_particle  = new TTree("Tree_AS_DM_particle" , "Ali_AS_DM_particles" );
+    //Tree_AS_DM_particle  = new TTree();
+    Tree_AS_DM_particle  ->Branch("Tree_AS_DM_branch"  , "Ali_AS_DM_particle", AS_DM_particle );
+
 
 }
-//----------------------------------------------------------------------------------------
-
 
 
 //----------------------------------------------------------------------------------------
@@ -659,8 +605,9 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
 {
     cout << "Initialize tree" << endl;
     //TString pinputdir = "/home/ceres/schlichtmann/ESD_Analysis/";
-    TString inlistdir = "/home/ceres/schmah/ALICE/DarkMatter/Lists/";
-    TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter_V5/";
+    TString inlistdir = "/home/ceres/schlichtmann/ESD_Analysis/Lists/";
+    TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter_V11/";
+    //TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter_PbPb_V4/";
     //TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter/";
     //TString pinputdir = "/home/ceres/berdnikova/TRD-Run3-Calibration/";
 
@@ -670,8 +617,8 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
     AS_Event = new Ali_AS_Event();
     AS_V0    = new Ali_AS_V0();
     AS_Track = new Ali_AS_Track();
-    AS_Tracklet = new Ali_AS_Tracklet();
-    AS_Digit = new Ali_AS_TRD_digit();
+    //AS_Tracklet = new Ali_AS_Tracklet();
+    //AS_Digit = new Ali_AS_TRD_digit();
 
     // Same event input
     if (!SEList.IsNull())   // if input file is ok
@@ -783,21 +730,10 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
 
     }
 
+    
 
-    TString outfile_dir = "/misc/alidata120/alice_u/schmah/DarkMatter/out/";
-    TString outfile_name = outfile_dir + in_list_name + "_out.root";
-    //outputfile = new TFile("./TRD_Calib.root","RECREATE");
-    outputfile = new TFile(outfile_name.Data(),"RECREATE");
-    // outputfile_trkl = new TFile("./TRD_Calib_on_trkl.root","RECREATE");
-    //outputfile_histos = new TFile("Histos.root","RECREATE");
 
-    AS_DM_particle = new Ali_AS_DM_particle();
-    AS_DM_Track    = new Ali_AS_Track();
-
-    Tree_AS_DM_particle  = NULL;
-    Tree_AS_DM_particle  = new TTree("Tree_AS_DM_particle" , "Ali_AS_DM_particles" );
-    //Tree_AS_DM_particle  = new TTree();
-    Tree_AS_DM_particle  ->Branch("Tree_AS_DM_branch"  , "Ali_AS_DM_particle", AS_DM_particle );
+    
 }
 //----------------------------------------------------------------------------------------
 
@@ -838,6 +774,11 @@ float calc_momentum(float* mom)
      return sqrt( mom[0]*mom[0]+mom[1]*mom[1]+mom[2]*mom[2] );
 }
 
+float calc_momentum_squared(float* mom)
+{
+     return  mom[0]*mom[0]+mom[1]*mom[1]+mom[2]*mom[2] ;
+}
+
 //----------------------------------------------------------------------------------------
 Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 {
@@ -845,6 +786,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     {
         printf("Loop event number: %lld \n",event);
     }
+    printf("Loop event number: %lld \n",event);
     counters[0]++;
     //cout<<""<<endl;
 
@@ -854,7 +796,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     if (!input_SE->GetEntry( event )) return 0; // take the event -> information is stored in event
 
     N_Digits = 0;
-
+    //cout<<"a"<<endl;
     //---------------------------------------------------------------------------
     UShort_t NumTracks            = AS_Event ->getNumTracks(); // number of tracks in this event
     Double_t EventVertexX         = AS_Event ->getx();
@@ -871,12 +813,17 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     TVector3 pos_primary_vertex;
     pos_primary_vertex.SetXYZ(EventVertexX,EventVertexY,EventVertexZ);
 
+     //cout<<"b"<<endl;
+
     //printf("Event vertex: %f", EventVertexX);
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
-    UShort_t NumV0s = AS_Event ->getN_V0s();
+    Int_t NumV0s = AS_Event ->getN_V0s();
+
+    cout<<"NumV0s: "<<NumV0s<<endl;
+
     Float_t* pos = new Float_t[3];
     Float_t* momP = new Float_t[3];
     Float_t* momN = new Float_t[3];
@@ -896,6 +843,8 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     Ali_AS_Track* AS_TrackC = new Ali_AS_Track;
     Ali_AS_Track* AS_TrackD = new Ali_AS_Track;
     Ali_AS_Track* track_in_loop  =  new Ali_AS_Track;
+    Ali_AS_Track* tracka  =  new Ali_AS_Track;
+    Ali_AS_Track* trackb  =  new Ali_AS_Track;
     Float_t* sigma_proton_TPC = new Float_t[2];
     Float_t* sigma_pion_TPC = new Float_t[2];
     Float_t radius;
@@ -905,7 +854,6 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     TVector3 direction_SV3;
 
     TLorentzVector tlv_in_loop;
-
 
     vector<TVector3> vec_position_SV2;
     vector<TVector3> vec_position_SV3;
@@ -992,16 +940,138 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
     vector<int> brute_force;
 
+    vector<int> trackids_bits_shared;
+    vector<int> trackids_similiar_tracks;
+    vector<int> trackids_similiar_used;
+
+     //cout<<"c"<<endl;
+
+    //find similiar tracks
+
+    int counter_tracks=0;
+    /*
+    for(Int_t atrack = 0; atrack < NumTracks; atrack++)
+    {
+        tracka =  AS_Event -> getTrack(atrack);
+        TLorentzVector tlva = tracka->get_TLV_part();
+        int trackida = tracka->gettrackid();
+        if ( check_if_int_is_in_vector(trackida,trackids_similiar_used)){continue;}
+
+        for(int btrack=0; btrack<NumTracks; btrack++)
+        {
+            if(btrack==atrack){continue;}
+
+            trackb = AS_Event -> getTrack(btrack);
+            int trackidb = trackb->gettrackid();
+            if ( check_if_int_is_in_vector(trackidb,trackids_similiar_used)){continue;}
+
+            TLorentzVector tlvb = trackb->get_TLV_part();
+
+             TBits tbitsshared = tracka->getbitsshared();
+             int numbitsshared = tbitsshared.CountBits();
+
+
+            if( fabs( 1-tlva[0]/tlvb[0]) < 0.005 && fabs( 1-tlva[1]/tlvb[1]) < 0.005 && fabs( 1-tlva[2]/tlvb[2]) < 0.005)
+            {
+                
+                printf("tracka: %d, trackb %d \n",trackida,trackidb);
+                cout<<"numbitsshared: "<<numbitsshared<<endl;
+                cout<<"+++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+
+                Float_t path_closest_to_point = 0;
+                Float_t dca_closest_to_point  = 0;
+                Float_t path_initA = 0.0;
+                Float_t path_initB = 30.0;
+                double  pos[3];
+                float dca=-1;
+
+                tracka->Evaluate(0,pos);
+                TVector3 position;
+                position[0]=pos[0];
+                position[1]=pos[1];
+                position[2]=pos[2];
+                FindDCAHelixPoint(position,trackb,path_initA,path_initB,path_closest_to_point,dca);
+                cout<<"dca: "<<dca<<endl;
+                if(dca<0.5)
+                {
+                    cout<<"pushed back"<<endl;
+                    trackids_similiar_tracks.push_back(trackidb);
+
+                    trackids_similiar_used.push_back(trackida);
+                    trackids_similiar_used.push_back(trackidb);
+                }
+
+                AS_DM_particle ->set_primVertex(pos_primary_vertex);
+                AS_DM_particle ->clearTrackList();
+                AS_DM_Track = AS_DM_particle ->createTrack();
+                copy_track_params(tracka,AS_DM_Track);
+                AS_DM_Track = AS_DM_particle ->createTrack();
+                copy_track_params(trackb,AS_DM_Track);
+                //cout<<"a"<<endl;
+                Tree_AS_DM_particle ->Fill();
+                //cout<<"b"<<endl;
+            }
+
+
+            /*
+            if(atrack==10 && btrack ==15 && counter_tracks<10)
+            {
+                //printf("tracka: %d, trackb %d \n",trackida,trackidb);
+                //cout<<"numbitsshared: "<<numbitsshared<<endl;
+                //cout<<"+++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+                AS_DM_particle ->set_primVertex(pos_primary_vertex);
+                AS_DM_particle ->clearTrackList();
+                AS_DM_Track = AS_DM_particle ->createTrack();
+                copy_track_params(tracka,AS_DM_Track);
+                AS_DM_Track = AS_DM_particle ->createTrack();
+                copy_track_params(trackb,AS_DM_Track);
+
+                Tree_AS_DM_particle ->Fill();
+
+                counter_tracks++;
+
+            }
+
+
+
+
+        }
+
+    }
+    */
+     //cout<<"d"<<endl;
+
+    //loop over all tracks
+    for(Int_t i_track = 0; i_track < NumTracks; i_track++)
+    {
+        //histo_counter->Fill(7.5);
+
+        track_in_loop = AS_Event -> getTrack(i_track);
+
+        int trackid = track_in_loop->gettrackid();
+        TBits tbitsshared = track_in_loop->getbitsshared();
+        int numbitsshared = tbitsshared.CountBits();
+        if(numbitsshared>10)
+        {
+            //histo_counter->Fill(8.5);
+            trackids_bits_shared.push_back(trackid);
+        }
+
+    }
+
     
     //-------------------------------------------------------------------------------------------------------------------------------
     //loop over all tracks of event in order to make Bethe Bloch plot: dEdx as function of charge*momentum
-
-
     for(Int_t i_track = 0; i_track < NumTracks; i_track++)
     {
         track_in_loop = AS_Event -> getTrack(i_track);
+        int trackid = track_in_loop->gettrackid();
+        if( check_if_int_is_in_vector(trackid,trackids_similiar_tracks) )
+        {
+            counter_skipped_track++;
+            continue;
+        }
 
-        
 
         Float_t TPCdEdx   = track_in_loop->getTPCdEdx();
         Float_t tofsignal = track_in_loop->getTOFsignal();
@@ -1049,6 +1119,8 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         int num_points2 = gr2 ->GetN();
         gr2 ->SetPoint(num_points,charge * momentum, m_squared);
 
+        double m_squared2 =   calculate_m_squared_by_TOF(track_in_loop);
+
         mass_squared_vs_charge_dot_momentum->Fill( charge * momentum , m_squared);
 
         if ( fabs( track_in_loop -> getnsigma_K_TPC()) < 1.0 )
@@ -1064,11 +1136,16 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
           mass_squared_no_pions->Fill(m_squared);
         }
 
+        if(fabs( track_in_loop-> getnsigma_K_TPC())<2.5 && tofsignal<99990)
+        {
+            mass_squared_kaons->Fill(m_squared2);
+        }
+
 
 
     }
 
-
+     //cout<<"f"<<endl;
     //-------------------------------------------------------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------------------------------------------------------
 
@@ -1082,13 +1159,13 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     //loop over V0s
     for(Int_t V0counter = 0; V0counter < NumV0s; V0counter++)
     {
+         //cout<<"g"<<endl;
         V0_is_used =0;
 
         AS_V0 = AS_Event -> getV0(V0counter);
-
         //get position of V0
         pos = AS_V0 -> getxyz();
-        //cout<<"posx: "<<pos[0]<<endl;
+        ////cout<<"posx: "<<pos[0]<<endl;
         //position.SetXYZ(pos[0],pos[1],pos[2]);
         radius = sqrt( (pos[0]-EventVertexX) *(pos[0]-EventVertexX)+(pos[1]-EventVertexY)*(pos[1]-EventVertexY)+(pos[2]-EventVertexZ)*(pos[2]-EventVertexZ) );
 
@@ -1102,22 +1179,16 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         //get momentum for negative particle
 
         momN = AS_V0 -> getNpxpypz();
-
         double dcaV0 = AS_V0 -> getdcaV0();
-
         //printf("momentum of negative particle px: %f,py: %f,pz: %f \n",momN[0],momN[1],momN[2]);
 
         //--------------------------------------------------------------------------------
         //get two tracks for each V0
-
         as_trackP = AS_V0 -> getTrack(0);
         as_trackN = AS_V0 -> getTrack(1);
-
         dcaP = as_trackP->getdca();
         dcaN = as_trackN->getdca();
-
         //printf("dcaP: %f, dcaN: %f \n",dcaP,dcaN);
-
 
 
         // Double check that the charge is correct
@@ -1126,7 +1197,6 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
         trackidP = as_trackP->gettrackid();
         trackidN = as_trackN->gettrackid();
-
         //printf("trackidN: %d \n",trackidN);
 
         momentumP = sqrt( momP[0]*momP[0] + momP[1]*momP[1]+ momP[2]*momP[2] );
@@ -1138,7 +1208,6 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
         all_used_positive_track_ids_for_V0s.push_back(trackidP);
         all_used_negative_track_ids_for_V0s.push_back(trackidN);
-
         ///if(event%100==0 && V0counter%10 ==0)
         // {
         // printf("trackidP %d, trackidN %d \n",trackidP,trackidN )  ;
@@ -1146,7 +1215,6 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
         //------------------------------------------------------------------------------
         //------------------------------------------------------------------------------
-
 
         //_____________________________________________________________________----
 
@@ -1168,7 +1236,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
         float radiuscuts[4]{1,3,5,7};
         float dcaprimcuts[4]{0.5,1,2,5};
-
+         //cout<<"g1"<<endl;
         //Lambda0 -> proton + pi-
         //check if positive particle is proton and if negative particle is pion-
         if(fabs(sigma_proton_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
@@ -1203,17 +1271,17 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                 used_track_ids_of_pions.push_back(trackidN);
                 //printf(" proton and pi- ; trackidP %u, trackidN %u \n",trackidP,trackidN )  ;
-                position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
-                vec_position_SV3.push_back(position_SV3);
+                //position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
+                //vec_position_SV3.push_back(position_SV3);
 
                 direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
                 vec_direction_SV3.push_back(direction_SV3);
 
-                vec_SV3_tracks.push_back(as_trackP);
-                vec_SV3_tracks.push_back(as_trackN);
+                //vec_SV3_tracks.push_back(as_trackP);
+                //vec_SV3_tracks.push_back(as_trackN);
 
-                vec_SV3_track_ids.push_back(trackidP);
-                vec_SV3_track_ids.push_back(trackidN);
+                //vec_SV3_track_ids.push_back(trackidP);
+                //vec_SV3_track_ids.push_back(trackidN);
 
 
                 //search for Xi-baryons xi- -> pi- + lambda ; lambda -> proton + pi-
@@ -1351,7 +1419,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             }
         }
-
+         //cout<<"h"<<endl;
         //if (V0_is_used ==1 )  {continue;}
 
 
@@ -1517,7 +1585,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             }
         }
-
+         //cout<<"i"<<endl;
         //if(V0_is_used==1){continue;}
 
         //K0 - > pi+ and pi-
@@ -1579,14 +1647,15 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
-
+         //cout<<"j"<<endl;
 
         //search for V0 coming from anti-proton and K+
         if (fabs(sigma_proton_TPC[1]) < 2.5 && fabs(sigma_K_plus_TPC < 2.5))
         {
             //  cout<<"V0 from anti-proton and K+"<<endl;
-            energy_K_plus      = sqrt(mass_K * mass_K + (momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
-            energy_anti_proton = sqrt(mass_proton * mass_proton + (momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2])) ;
+            //energy_K_plus      = sqrt(mass_K * mass_K + (momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+            energy_K_plus      = sqrt(mass_K * mass_K + calc_momentum_squared(momP) );
+            energy_anti_proton = sqrt(mass_proton * mass_proton + calc_momentum_squared(momN)) ;
 
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_K_plus);
             tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_anti_proton);
@@ -1679,43 +1748,62 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                     counter_vertices_antip_K_plus_K_plus_r_larger_5_and_dot_product++;
 
+                    //histo_counter->Fill(3.5);
+
                     double m_squared1 = calculate_m_squared_by_TOF(AS_Track);
                     double m_squared2 = calculate_m_squared_by_TOF(as_trackP);
 
-                    printf("mass squared Kaon 1: %f, Kaon 2: %f \n",m_squared1,m_squared2);
-                    printf("trackids: %d %d %d \n",trackidP,trackidN,Trackid);
+                    if(m_squared1!=-1.) {mass_squared_kaons_and_background->Fill(m_squared1);}
+                    if(m_squared2!=-1.) {mass_squared_kaons_and_background->Fill(m_squared2);}
 
-                    AS_DM_particle ->set_primVertex(pos_primary_vertex);
-                    AS_DM_particle ->set_S1Vertex(pos);
-                    //AS_DM_particle ->set_S2Vertex(null);
-                    //AS_DM_particle ->set_S3Vertex(null);
-                    AS_DM_particle ->set_DirSV1(dir);
-                    //AS_DM_particle ->set_DirSV2(null);
-                    //AS_DM_particle ->set_DirSV3(null);
-                    AS_DM_particle ->setN_V0s(1);
-                    AS_DM_particle ->clearTrackList();
+                    //printf("mass squared Kaon 1: %f, Kaon 2: %f \n",m_squared1,m_squared2);
+                    //printf("trackids: %d %d %d \n",trackidP,trackidN,Trackid);
+                    if(m_squared1>0.2 && m_squared1<0.35 && m_squared2>0.2 && m_squared2<0.35)
+                    {
+                        histo_counter->Fill(7.5);
+                        ////cout<<"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+                        ////cout<<"hi"<<endl;
+                        ////cout<<"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
 
-                    AS_DM_Track = AS_DM_particle ->createTrack();
-                    copy_track_params(as_trackP,AS_DM_Track);
-                    //cout<<ASTrack1->gettrackid()<<endl;
+                        /*
+                        AS_DM_particle ->set_primVertex(pos_primary_vertex);
+                        AS_DM_particle ->set_S1Vertex(pos);
+                        //AS_DM_particle ->set_S2Vertex(null);
+                        //AS_DM_particle ->set_S3Vertex(null);
+                        AS_DM_particle ->set_DirSV1(dir);
+                        //AS_DM_particle ->set_DirSV2(null);
+                        //AS_DM_particle ->set_DirSV3(null);
+                        AS_DM_particle ->setN_V0s(1);
+                        AS_DM_particle ->clearTrackList();
 
-                    AS_DM_Track = AS_DM_particle ->createTrack();
-                    copy_track_params(as_trackN,AS_DM_Track);
-                    //cout<<ASTrack2->gettrackid()<<endl;
+                        AS_DM_Track = AS_DM_particle ->createTrack();
+                        copy_track_params(as_trackP,AS_DM_Track);
+                        ////cout<<ASTrack1->gettrackid()<<endl;
 
-                    AS_DM_Track = AS_DM_particle ->createTrack();
-                    copy_track_params(AS_Track,AS_DM_Track);
-                    //cout<<vec_SV2_tracks[2*vector_loop_SV2]->gettrackid()<<endl;
+                        AS_DM_Track = AS_DM_particle ->createTrack();
+                        copy_track_params(as_trackN,AS_DM_Track);
+                        ////cout<<ASTrack2->gettrackid()<<endl;
 
-                    Tree_AS_DM_particle ->Fill();
-                    cout<<"filled Tree"<<endl;
-                    cout<<""<<endl;
+                        AS_DM_Track = AS_DM_particle ->createTrack();
+                        copy_track_params(AS_Track,AS_DM_Track);
+                        ////cout<<vec_SV2_tracks[2*vector_loop_SV2]->gettrackid()<<endl;
+
+                        Tree_AS_DM_particle ->Fill();
+                        //cout<<"filled Tree"<<endl;
+                        //cout<<""<<endl;
+
+                        TBits tbitsshared = AS_Track->getbitsshared();
+                        int numbitsshared = tbitsshared.CountBits();
+                        //cout<<"numbitsshared: "<<numbitsshared<<endl;
+                        //histo_counter->SetBinContent(7,numbitsshared);
+                        */
+                    }
 
                 }
 
             }
 
-            //cout<<"invariantmass: "<<invariantmass<<endl;
+            ////cout<<"invariantmass: "<<invariantmass<<endl;
             save_track_ids.clear();
 
         }
@@ -1744,11 +1832,11 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
             {
-                //cout<<i_track_A<<endl;
+                ////cout<<i_track_A<<endl;
                 as_Track5 = AS_Event->getTrack(i_track_A);
                 trackid3 = as_Track5->gettrackid();
 
-                //cout<<"trackids: "<<trackid3<<endl;
+                ////cout<<"trackids: "<<trackid3<<endl;
 
                 if( check_if_int_is_in_vector(trackid3,tracks_of_V0) ){continue;}
 
@@ -1770,7 +1858,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             if(num_of_pions == 3)
             {
                 //if(radius<15){continue;}
-                //cout<<"filled"<<endl;
+                ////cout<<"filled"<<endl;
                 histo_reference_vertex_radius_3_pionen->Fill(radius);
                 histo_reference_x_and_y_3_pionen->Fill(pos[0],pos[1]);
 
@@ -1830,7 +1918,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                 //("ntuple","ntuple","x:y:z:dcaA:dcaB:dcaC:dcaD:pA:pB:pC:pD:dcaAprim:dcaBprim:dcaCprim:dcaDprim");
                 tpl->Fill(pos[0],pos[1],pos[2],dcaA,dcaB,dcaC,dcaD,pA,pB,pC,pD,dcaAprim,dcaBprim,dcaCprim,dcaDprim);
-                //cout<<"filled ntuple"<<endl;
+                ////cout<<"filled ntuple"<<endl;
 
             }
 
@@ -1852,7 +1940,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         //-------------------------------------------------------------------------------
         //-------------------------------------------------------------------------------
         //do it like in Master Thesis of Friederike Bock
-
+         //cout<<"k"<<endl;
         if(dcaV0>0.5){continue;}
         //if(radius<30){continue;}
 
@@ -1886,10 +1974,10 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
         //if(ntpcclsP<120 || ntpcclsN<120){continue;}
 
-        /*cout<<"tpccls: "<<ntpcclsP<<" "<<ntpcclsN<<endl;
-        cout<<"nitscls: "<<nitsclsP<<" "<<nitsclsN<<endl;
-        cout<<"status: "<<statusP<<" "<<statusN<<endl;
-        cout<<"tpcchi2: "<<tpcchi2P<<" "<<tpcchi2N<<endl;
+        /*//cout<<"tpccls: "<<ntpcclsP<<" "<<ntpcclsN<<endl;
+        //cout<<"nitscls: "<<nitsclsP<<" "<<nitsclsN<<endl;
+        //cout<<"status: "<<statusP<<" "<<statusN<<endl;
+        //cout<<"tpcchi2: "<<tpcchi2P<<" "<<tpcchi2N<<endl;
         */
         
         //printf("track ids: %d %d %d %d \n",all_tracks_of_pions[0],all_tracks_of_pions[1],all_tracks_of_pions[2],all_tracks_of_pions[3]);
@@ -1901,7 +1989,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         if(tpcchi2P<150)
         {
             counter_path_trackA++;
-            //cout<<"pathA: "<<path_closest_to_point<<endl;
+            ////cout<<"pathA: "<<path_closest_to_point<<endl;
             if(path_closest_to_point<0){counter_path_trackA_negativ++;}
         }
 
@@ -1910,8 +1998,8 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         if(tpcchi2N<150)
         {
             counter_path_trackB++;
-            //cout<<"pathB: "<<path_closest_to_point<<endl;
-            //cout<<""<<endl;
+            ////cout<<"pathB: "<<path_closest_to_point<<endl;
+            ////cout<<""<<endl;
             if(path_closest_to_point<0){counter_path_trackB_negativ++;}
         }
 
@@ -1925,11 +2013,15 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         double sigma_p_N  = as_trackN-> getnsigma_p_TPC();
 
         double m_squared;
-        Float_t tofsignal;
 
         //do PID
         //if V0 particle is gamma or K0 or Lambda or Anti-Lambda then continue
 
+        Float_t TPCdEdx   = as_trackP->getTPCdEdx();
+        Float_t tofsignal = as_trackP->getTOFsignal();
+        Float_t dca       = as_trackP->getdca();
+        Float_t tracklength = as_trackP->getTrack_length();
+        int charge;
         //invariant mass of e+
         if(fabs(sigma_e_P)<2.5 )
         {
@@ -1937,11 +2029,6 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_electron_plus);
             invariantmass = tlv_pos ->M();
 
-            Float_t TPCdEdx   = as_trackP->getTPCdEdx();
-            tofsignal = as_trackP->getTOFsignal();
-            Float_t dca       = as_trackP->getdca();
-            Float_t tracklength = as_trackP->getTrack_length();
-            int charge;
 
             tlv_in_loop = as_trackP->get_TLV_part();
             double momentum = tlv_in_loop.P();
@@ -1975,7 +2062,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             //if(m_squared<0){printf("mass squared: %f \n", m_squared);}
             //printf("mass squared: %f \n", m_squared);
         }
-
+         //cout<<"l"<<endl;
         //invariant mass of e-
         if(fabs(sigma_e_N)<2.5 )
         {
@@ -2004,14 +2091,14 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                 if(invariantmass<0+0.05){continue;}
             }
         }
-
+         //cout<<"m"<<endl;
         //K0s (two pions)
         if(fabs(sigma_pi_P)<2.5 && fabs(sigma_pi_N)<2.5 )
         {
             energy_pion_plus  = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
             energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
-            //cout<<energy_proton<<endl;
-            //cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
+            ////cout<<energy_proton<<endl;
+            ////cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion_plus);
             tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion_minus);
 
@@ -2027,32 +2114,32 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         //Lambda -> proton + pi-
         if(fabs(sigma_p_P)<2.5 && fabs(sigma_pi_N)<2.5)
         {
-            energy_proton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
-            energy_pion   = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+            Float_t energy_proton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+            Float_t energy_pion   = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_proton);
             tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion);
 
             *tlv_Lambda = *tlv_pos + *tlv_neg;
             invariantmass = tlv_Lambda->M();
-            //cout<<invariantmass<<endl;
+            ////cout<<invariantmass<<endl;
             if(invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
             {
                 continue;
             }
 
         }
-
+         //cout<<"n"<<endl;
         //Anti-Lambda -> antiproton + p+
         if(fabs(sigma_p_N)<2.5 && fabs(sigma_pi_P)<2.5)
         {
             energy_antiproton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
             energy_pion_plus   = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
-            tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_proton);
-            tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion);
+            tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion_plus);
+            tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_antiproton);
 
             *tlv_Lambda = *tlv_pos + *tlv_neg;
             invariantmass = tlv_Lambda->M();
-            //cout<<invariantmass<<endl;
+            ////cout<<invariantmass<<endl;
             if(invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
             {
                 continue;
@@ -2069,7 +2156,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
         track_ids_V0.push_back(trackidP);
         track_ids_V0.push_back(trackidN);
-
+         //cout<<"o"<<endl;
         for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
         {
 
@@ -2097,7 +2184,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
 
         }
-
+         //cout<<"p"<<endl;
         if(track_ids_pions.size() == 0)
         {
 
@@ -2137,10 +2224,10 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             // XHERE
             //tpl->Fill(pos[0],pos[1],pos[2],dcaA,dcaB,-999.,-999.,pA,pB,-999.,-999.,dcaAprim,dcaBprim,-999.,-999.);
 
-            //cout<<"filled ntuple"<<endl;
+            ////cout<<"filled ntuple"<<endl;
             //for(int i = 0;i < track_ids_pions.size();i++)
         }
-
+         //cout<<"q"<<endl;
 
         if(track_ids_pions.size() == 1)
         {
@@ -2199,11 +2286,11 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             brute_force.push_back(track_ids_pions[0]);
 
             
-            //cout<<"filled ntuple"<<endl;
+            ////cout<<"filled ntuple"<<endl;
             //for(int i = 0;i < track_ids_pions.size();i++)
         }
 
-
+         //cout<<"r"<<endl;
         if(track_ids_pions.size() == 2)
         {
 
@@ -2235,20 +2322,20 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             float dcaA,dcaB,dcaC,dcaD;
             FindDCAHelixPoint(pos,AS_TrackA,path_initA,path_initB,path_closest_to_point,dcaA);
-            //cout<<"pathA: "<<path_closest_to_point<<endl;
+            ////cout<<"pathA: "<<path_closest_to_point<<endl;
             //counter_path_trackA++;
            // if(path_closest_to_point<0){counter_path_trackA_negativ++;}
 
             FindDCAHelixPoint(pos,AS_TrackB,path_initA,path_initB,path_closest_to_point,dcaB);
-            //cout<<"pathB: "<<path_closest_to_point<<endl;
+            ////cout<<"pathB: "<<path_closest_to_point<<endl;
 
             FindDCAHelixPoint(pos,AS_TrackC,path_initA,path_initB,path_closest_to_point,dcaC);
-            //cout<<"pathC: "<<path_closest_to_point<<endl;
+            ////cout<<"pathC: "<<path_closest_to_point<<endl;
             counter_path_trackC++;
             if(path_closest_to_point<0){counter_path_trackC_negativ++;}
 
             FindDCAHelixPoint(pos,AS_TrackD,path_initA,path_initB,path_closest_to_point,dcaD);
-            //cout<<"pathD: "<<path_closest_to_point<<endl;
+            ////cout<<"pathD: "<<path_closest_to_point<<endl;
 
             //printf("dcaA: %f, dcaB: %f, dcaC: %f, dcaD: %f \n",dcaA,dcaB,dcaC,dcaD);
             //pA is momentum of particle A
@@ -2278,10 +2365,10 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             brute_force.push_back(track_ids_pions[0]);
             brute_force.push_back(track_ids_pions[1]);
-            //cout<<"filled ntuple"<<endl;
+            ////cout<<"filled ntuple"<<endl;
             //for(int i = 0;i < track_ids_pions.size();i++)
         }
-
+         //cout<<"s"<<endl;
 
         brute_force.push_back(trackidP);
         brute_force.push_back(trackidN);
@@ -2298,6 +2385,9 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
     }     //end of V0 loop
 
+    cout<<"end of V0 loop"<<endl;
+    trackids_bits_shared.clear();
+    brute_force.clear();
   
 
     //-------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2316,7 +2406,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     sort(all_used_negative_track_ids_for_V0s.begin(),all_used_negative_track_ids_for_V0s.end());
 
     //print_int_vector(all_used_positive_track_ids_for_V0s);
-    //cout<<""<<endl;
+    ////cout<<""<<endl;
     //print_int_vector(all_used_negative_track_ids_for_V0s);
 
     float radiusS;
@@ -2360,6 +2450,12 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                 S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]);
                 counters[3]++;
+
+                vector<int> trackidsV0s;
+                trackidsV0s.push_back(vec_SV3_track_ids[vector_loop_SV3]);
+                trackidsV0s.push_back(vec_SV3_track_ids[vector_loop_SV3+1]);
+                trackidsV0s.push_back(vec_SV2_track_ids[vector_loop_SV2]);
+                trackidsV0s.push_back(vec_SV2_track_ids[vector_loop_SV2+1]);
                 //build lorentz vector of SV2 and SV3
                 //SV2
                 double px,py,pz,E;
@@ -2392,29 +2488,6 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                 radiusS = vec_primary_vertex_to_SV1.Mag();
 
-                /*
-                 if( fabs(radiusS) < 200 )
-                 {
-                 //cout<<S_vertex_pos[0]<<endl;
-                 histos_1D[4]->Fill(radiusS);
-
-                 histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
-
-                 //wrong mass filled!
-                 if(fabs(radiusS)>10)
-                 {
-                 histos_1D[5]->Fill(S_mass);
-                 }
-
-                 if(fabs(radiusS)>20)
-                 {
-                 histos_1D[6]->Fill(S_mass);
-                 }
-                 }        */
-
-
-                //printf("S mass: %f", S_mass);
-
                 //------------------------------------------------------------------------------------
                 //search for two pions coming from S-vertex------------------------------------------------------
                 //------------------------------------------------------------------------------------
@@ -2433,9 +2506,8 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                     AS_Track = AS_Event->getTrack(i_track_A);
                     int trackid2 = AS_Track->gettrackid();
 
-                    if( check_if_int_is_in_vector(trackid2,used_track_ids_of_pions) == 1 ) {continue;};
+                    if( check_if_int_is_in_vector(trackid2,trackidsV0s) ) {continue;};
 
-                   
 
                     double sigma = AS_Track -> getnsigma_pi_TPC();
 
@@ -2464,10 +2536,10 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                 }
 
-                //cout<<"number pions close to S-vertex: "<<counter_pions_close_to_S_vertex<<endl;
+                ////cout<<"number pions close to S-vertex: "<<counter_pions_close_to_S_vertex<<endl;
 
                 //if(tracks.size()<2){continue;}
-                //cout<<tracks[0]<<"  "<<tracks[1]<<endl;
+                ////cout<<tracks[0]<<"  "<<tracks[1]<<endl;
                 if(trackids.size()==1)
                 {
                     counters[4]++;
@@ -2489,6 +2561,16 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                     if(check>=1){continue;}
 
+                    vector<int> alltrackids;
+                    alltrackids.push_back(trackids[0]);   //pion1
+                    alltrackids.push_back(trackids[1]);   //pion2
+                    alltrackids.push_back(vec_SV2_track_ids[2*vector_loop_SV2]);   //tracks of SV2
+                    alltrackids.push_back(vec_SV2_track_ids[2*vector_loop_SV2+1]);   //tracks of SV2
+                    alltrackids.push_back(vec_SV3_track_ids[2*vector_loop_SV3]);   //tracks of SV3
+                    alltrackids.push_back(vec_SV3_track_ids[2*vector_loop_SV3+1]);   //tracks of SV3
+
+                    if ( check_if_value_is_doppelt_in_vector(alltrackids) ) {continue;}
+
 
 
                     Double_t r1[3];
@@ -2496,6 +2578,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                     //count S-vertices with two 2 pions coming from there for all events
                     counters[1]++;
+                    histo_counter->Fill(1.5);
 
                     //get tracks of 2 pions
                     //if(!ASTrack1 || !ASTrack2){continue;}
@@ -2531,15 +2614,15 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                     //unit vector in direction of pion 1
                     unit_mom_dir_pion1 = mom_dir_pion1.Unit();
 
-                    //cout<<r1[0]<<endl;
-                    //cout<<r2[0]<<endl;
+                    ////cout<<r1[0]<<endl;
+                    ////cout<<r2[0]<<endl;
 
                     TLorentzVector tlv = ASTrack1->get_TLV_part();
                     double momentum = tlv.P();
 
                     vec_momentum.SetXYZ(unit_mom_dir_pion1[0]*momentum,unit_mom_dir_pion1[1]*momentum,unit_mom_dir_pion1[2]*momentum);
 
-                    //cout<<"momentum vec: "<<vec_momentum[0]<<endl;
+                    ////cout<<"momentum vec: "<<vec_momentum[0]<<endl;
 
 
                     TLorentzVector tlv_pion1;
@@ -2602,12 +2685,12 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                     //calculate again S-mass----------------------------------------------
                     double S_mass_correct = tlv_SV1->M();
-                    //cout<<"falsche S-mass: "<<S_mass<<endl;
-                    //cout<<"korrekte S-mass: "<<S_mass_correct<<endl;
+                    ////cout<<"falsche S-mass: "<<S_mass<<endl;
+                    ////cout<<"korrekte S-mass: "<<S_mass_correct<<endl;
 
                     if( fabs(radiusS) < 200 )
                     {
-                        //cout<<S_vertex_pos[0]<<endl;
+                        ////cout<<S_vertex_pos[0]<<endl;
                         histos_1D[4]->Fill(radiusS);
 
                         histos_2D[2]->Fill(S_vertex_pos[0],S_vertex_pos[1]);
@@ -2627,20 +2710,15 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                     TVector3 TV3_S1(tlv_SV1->Px(),tlv_SV1->Py(),tlv_SV1->Pz());
 
-
+                    histo_counter->Fill(2.5);
                     
                     if(radiusS<15){continue;}
 
-                    vector<int> alltrackids;
-                    alltrackids.push_back(trackids[0]);   //pion1
-                    alltrackids.push_back(trackids[1]);   //pion2
-                    alltrackids.push_back(vec_SV2_track_ids[2*vector_loop_SV2]);   //tracks of SV2
-                    alltrackids.push_back(vec_SV2_track_ids[2*vector_loop_SV2+1]);   //tracks of SV2
-                    alltrackids.push_back(vec_SV3_track_ids[2*vector_loop_SV3]);   //tracks of SV3
-                    alltrackids.push_back(vec_SV3_track_ids[2*vector_loop_SV3+1]);   //tracks of SV3
-
-                    if ( check_if_value_is_doppelt_in_vector(alltrackids) ) {continue;}
+                    
                     counters[6]++;
+
+                    //vertices that fulfill all cuts
+                    histo_counter->Fill(3.5);
 
 
                     //after all cuts store all 6 tracks in brute force
@@ -2665,23 +2743,23 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                     AS_DM_particle ->clearTrackList();
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(ASTrack1,AS_DM_Track);
-                    //cout<<ASTrack1->gettrackid()<<endl;
+                    ////cout<<ASTrack1->gettrackid()<<endl;
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(ASTrack2,AS_DM_Track);
-                    //cout<<ASTrack2->gettrackid()<<endl;
+                    ////cout<<ASTrack2->gettrackid()<<endl;
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(vec_SV2_tracks[2*vector_loop_SV2],AS_DM_Track);
-                    //cout<<vec_SV2_tracks[2*vector_loop_SV2]->gettrackid()<<endl;
+                    ////cout<<vec_SV2_tracks[2*vector_loop_SV2]->gettrackid()<<endl;
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(vec_SV2_tracks[2*vector_loop_SV2+1],AS_DM_Track);
-                    //cout<<vec_SV2_tracks[2*vector_loop_SV2+1]->gettrackid()<<endl;
+                    ////cout<<vec_SV2_tracks[2*vector_loop_SV2+1]->gettrackid()<<endl;
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(vec_SV3_tracks[2*vector_loop_SV3],AS_DM_Track);
-                    //cout<<vec_SV3_tracks[2*vector_loop_SV3]->gettrackid()<<endl;
+                    ////cout<<vec_SV3_tracks[2*vector_loop_SV3]->gettrackid()<<endl;
                     AS_DM_Track = AS_DM_particle ->createTrack();
                     copy_track_params(vec_SV3_tracks[2*vector_loop_SV3+1],AS_DM_Track);
-                    //cout<<vec_SV3_tracks[2*vector_loop_SV3+1]->gettrackid()<<endl;
-                    //cout<<""<<endl;
+                    ////cout<<vec_SV3_tracks[2*vector_loop_SV3+1]->gettrackid()<<endl;
+                    ////cout<<""<<endl;
 
                     Tree_AS_DM_particle ->Fill();
                     cout<<"filled Tree"<<endl;
@@ -2705,7 +2783,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
 
     }  //end of vector loop
-
+    cout<<"end of vector loop"<<endl;
 
     /*for (int i = 0;i<3;i++)
      {
@@ -2731,9 +2809,11 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
 void Ali_Dark_Matter_Read::Save()
 {
+    /*
     outputfile->cd();
     Tree_AS_DM_particle->Write();
-
+    histo_counter->Write();
+    */
     
     TCanvas* can6 = new TCanvas;
     TCanvas* can7 = new TCanvas;
@@ -2765,6 +2845,10 @@ void Ali_Dark_Matter_Read::Save()
     printf("counterA neg: %d \n",counter_path_trackA_negativ);
     printf("counterB : %d \n",counter_path_trackB);
     printf("counterB neg: %d \n",counter_path_trackB_negativ);
+
+    cout<<"counter skipped tracks: "<<counter_skipped_track<<endl;
+
+   
     //printf("prozent A: %d \n",counter_path_trackA_negativ/counter_path_trackA);
     //printf("counterC: %d \n",counter_path_trackC);
     //printf("counterC neg: %d \n",counter_path_trackC_negativ);
@@ -2846,19 +2930,25 @@ void Ali_Dark_Matter_Read::Save()
 
     printf("antilambdas: %d, lambdas: %d \n",counter_anti_lambdas,counter_lambdas);
 
-    /*
-    outputfile_histos->cd();
+
+
+    output_histos->cd();
     histo_invariantmass_lambda->Write();
     histo_invariantmass_anti_lambda->Write();
     histo_invariantmass_K0->Write();
     histo_S_vertex_radius->Write();
     histo_invariantmass_xi_minus_baryon->Write();
     histo_invariantmass_xi_plus_baryon->Write();
+    mass_squared_kaons_and_background->Write();
+    mass_squared_kaons->Write();
+    histo_counter->Write();
+    /*
     for(int i=0;i<16;i++)
     {
         vec_histo_omega_minus[i]->Write();
         vec_histo_omega_plus[i]->Write();
     }
     */
+
 }
 #endif

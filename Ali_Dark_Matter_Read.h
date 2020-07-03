@@ -87,7 +87,12 @@ private:
 
     TH1D* histo_lambda_vertex_radius = new TH1D("histo lambda vertex radius ","histo lambda vertex radius ",50,0,200);
     TH1D* histo_K0_vertex_radius = new TH1D("histo K0 vertex radius ","histo K0 vertex radius ",50,0,200);
-    
+
+    TH1D* mass_squared_kaons = new TH1D("mass_squared_kaons", "mass_squared_kaons",100,-0.1,0.4);
+    TH1D* mass_squared_kaons_and_background = new TH1D("mass_squared_kaons_and_background", "mass_squared_kaons_and_background",100,-0.1,0.4);
+
+    TH1D* histo_counter = new TH1D("histo counter 1.5: S-vertices with two pions; 2.5: S-vertices that fulfill all cuts",
+                                   "histo counter 1.5: S-vertices with two pions; 2.5: S-vertices that fulfill all cuts",10,0,10);
 
     int binning2D = 400;
     TH2D* histo_lambda_x_and_y = new TH2D("histo lambda x and y ","histo lambda x and y ",binning2D,-200,200,binning2D,-200,200);
@@ -124,6 +129,7 @@ private:
     int counter_vertices_antip_K_plus_K_plus=0;
     int counter_vertices_antip_K_plus_K_plus_r_larger_5=0;
     int counter_vertices_antip_K_plus_K_plus_r_larger_5_and_dot_product=0;
+    int counter_skipped_track=0;
 
     vector<int> counters;
 
@@ -145,6 +151,7 @@ private:
     TFile* outputfile_trkl;
 
     TFile* outputfile_histos;
+    TFile* output_histos;
 
     //TFile* ofile = new TFile("ntuple.root","RECREATE");
     //TFile* ofile2 = new TFile("mass_squared_and_dEdx.root","RECREATE");
@@ -188,7 +195,9 @@ private:
 
 
 public:
-    Ali_Dark_Matter_Read();
+    Ali_Dark_Matter_Read(){}
+    Ali_Dark_Matter_Read(TString list);
+    //Ali_Dark_Matter_Read(TString list);
     ~Ali_Dark_Matter_Read();
     void Init_tree(TString SEList);
     Int_t Loop_event(Long64_t event );
@@ -200,4 +209,10 @@ public:
 };
 //----------------------------------------------------------------------------------------
 
+
+
 #endif // __ALI_DARK_MATTER_READ_H__
+
+
+
+
