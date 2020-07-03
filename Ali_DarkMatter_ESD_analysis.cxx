@@ -663,13 +663,47 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      Ali_AS_Track* as_trackP = new Ali_AS_Track;
      Ali_AS_Track* as_trackN = new Ali_AS_Track;
 
+     Float_t* pos = new Float_t[3];
+     Float_t* momP = new Float_t[3];
+     Float_t* momN = new Float_t[3];
+
+     double dcaP=-10000;
+     double dcaN=-10000;
+     Int_t trackidP,trackidN;
+     Float_t energy_proton,energy_pion,energy_antiproton,energy_pion_plus,energy_pion_minus, energy_K_plus,energy_anti_proton;
+     Float_t energy_electron_plus,energy_electron_minus;
+     Double_t invariantmass = -1.;
+     double dcaV0;
+     Double_t x=0;
+     Double_t y=0;
+     Double_t z=0;
+
+     double sigma_proton_TPC;
+     double sigma_antiproton_TPC;
+     double sigma_pion_plus_TPC ;
+     double sigma_pion_minus_TPC;
+
+     double sigma_K_plus_TPC;
+
+     Float_t path_closest_to_point = 0;
+     Float_t dca_closest_to_point  = 0;
+     Float_t path_initA = 0.0;
+     Float_t path_initB = 30.0;
+
+     float radiuscuts[4]{1,3,5,7};
+     float dcaprimcuts[4]{0.5,1,2,5};
+     Double_t momentumP;
+     Double_t momentumN;
+     double radius;
+     TVector3 vec_primtoV0;
+
     for (Int_t V0_counter=0; V0_counter<numberV0; V0_counter++)
     {
         //get position of V0-----------------------
-        Double_t x=0;
-        Double_t y=0;
-        Double_t z=0;
         AliESDv0 *V0=fESD->GetV0(V0_counter);
+        x=0;
+        y=0;
+        z=0;
         V0->AliESDv0::GetXYZ(x,y,z);
 
         //cout<<""<<endl;
@@ -698,8 +732,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         AliESDtrack* trackP = fESD->AliESDEvent::GetTrack(indexP);
 
 
-        Double_t momentumP = sqrt(pxP*pxP + pyP*pyP + pzP*pzP);
-        Double_t momentumN = sqrt(pxN*pxN + pyN*pyN + pzN*pzN);
+        momentumP = sqrt(pxP*pxP + pyP*pyP + pzP*pzP);
+        momentumN = sqrt(pxN*pxN + pyN*pyN + pzN*pzN);
 
         //printf("trackidP %d, trackidN %d \n",indexP,indexN);
         //printf("momentum of positive particle: %f   momentum of negative particle: %f \n",momentumP,momentumN);
@@ -714,7 +748,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //cout<<pyN<<pN[1]<<endl;
         //-------------------------------------------------
 
-        double radius = sqrt ( (x-xprim)*(x-xprim) + (y-yprim)*(y-yprim) + (z-zprim)*(z-zprim)  );
+        radius = sqrt ( (x-xprim)*(x-xprim) + (y-yprim)*(y-yprim) + (z-zprim)*(z-zprim)  );
         //radius cut???
 
 
@@ -861,36 +895,40 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //AS_V0->clearTrackList();
         //end of filling for N particle track-------------------------------------------------------------------
 
+
         //start of analysis-----------------------------------------------------------
         //variables:
-        Float_t* pos = new Float_t[3];
-        Float_t* momP = new Float_t[3];
-        Float_t* momN = new Float_t[3];
-        double dcaP=-10000;
-        double dcaN=-10000;
-        Int_t trackidP,trackidN;
+        dcaP=-10000;
+        dcaN=-10000;
+        
         //double momentumP,momentumN;
-        Float_t energy_proton,energy_pion,energy_antiproton,energy_pion_plus,energy_pion_minus, energy_K_plus,energy_anti_proton;
-        Float_t energy_electron_plus,energy_electron_minus;
-        Double_t invariantmass = -1.;
+        
+        
         //------------------------------------------------------------------------------
         pos = AS_V0 -> getxyz();
         //cout<<"posx: "<<pos[0]<<endl;
         //position.SetXYZ(pos[0],pos[1],pos[2]);
         radius = sqrt( (pos[0]-xprim) *(pos[0]-xprim)+(pos[1]-yprim)*(pos[1]-yprim)+(pos[2]-zprim)*(pos[2]-zprim) );
 
-        TVector3 vec_primtoV0;
+        
         vec_primtoV0.SetXYZ((pos[0]-xprim),(pos[1]-yprim),(pos[2]-zprim));
         //printf("x %f,y %f, z %f \n",pos[0],pos[1],pos[2]);
 
-        //get momentum of posititve particle
-        momP = AS_V0 -> getPpxpypz();
 
+        //get momentum of posititve particle
+        //momP = AS_V0 -> getPpxpypz();
+        momP[0]=pxP;
+        momP[1]=pyP;
+        momP[2]=pzP;
         //get momentum for negative particle
 
-        momN = AS_V0 -> getNpxpypz();
+        //momN = AS_V0 -> getNpxpypz();
+        momN[0]=pxN;
+        momN[1]=pyN;
+        momN[2]=pzN;
 
-        double dcaV0 = AS_V0 -> getdcaV0();
+
+        dcaV0 = AS_V0 -> getdcaV0();
         dcaP = as_trackP->getdca();
         dcaN = as_trackN->getdca();
 
@@ -902,23 +940,22 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
         //momentumP = sqrt( momP[0]*momP[0] + momP[1]*momP[1]+ momP[2]*momP[2] );
         //momentumN = sqrt( momN[0]*momN[0] + momN[1]*momN[1]+ momN[2]*momN[2] );
-        all_used_positive_track_ids_for_V0s.push_back(trackidP);
-        all_used_negative_track_ids_for_V0s.push_back(trackidN);
+        //all_used_positive_track_ids_for_V0s.push_back(trackidP);
+        //all_used_negative_track_ids_for_V0s.push_back(trackidN);
 
-        double sigma_proton_TPC = as_trackP -> getnsigma_p_TPC();
-        double sigma_antiproton_TPC = as_trackN -> getnsigma_p_TPC();
-        double sigma_pion_plus_TPC = as_trackP -> getnsigma_pi_TPC();
-        double sigma_pion_minus_TPC = as_trackN -> getnsigma_pi_TPC();
+        sigma_proton_TPC = as_trackP -> getnsigma_p_TPC();
+        sigma_antiproton_TPC = as_trackN -> getnsigma_p_TPC();
+        sigma_pion_plus_TPC = as_trackP -> getnsigma_pi_TPC();
+        sigma_pion_minus_TPC = as_trackN -> getnsigma_pi_TPC();
 
-        double sigma_K_plus_TPC = as_trackP -> getnsigma_K_TPC();
+        sigma_K_plus_TPC = as_trackP -> getnsigma_K_TPC();
 
-        Float_t path_closest_to_point = 0;
-        Float_t dca_closest_to_point  = 0;
-        Float_t path_initA = 0.0;
-        Float_t path_initB = 30.0;
+        path_closest_to_point = 0;
+        dca_closest_to_point  = 0;
+        path_initA = 0.0;
+        path_initB = 30.0;
 
-        float radiuscuts[4]{1,3,5,7};
-        float dcaprimcuts[4]{0.5,1,2,5};
+
 
         if(fabs(sigma_antiproton_TPC) < 2.5 && fabs(sigma_pion_plus_TPC) < 2.5)
         {
@@ -1245,18 +1282,23 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     UShort_t NumTracks            = AS_Event ->getNumTracks(); // number of tracks in this event
 
-    Float_t path_closest_to_point = 0;
-    Float_t dca_closest_to_point  = 0;
-    Float_t path_initA = 0.0;
-    Float_t path_initB = 30.0;
+    path_closest_to_point = 0;
+    dca_closest_to_point  = 0;
+    path_initA = 0.0;
+    path_initB = 30.0;
 
     Ali_AS_Track* ASTrack1 = new Ali_AS_Track;
     Ali_AS_Track* ASTrack2 = new Ali_AS_Track;
 
     vector<int> brute_force;
     vector<int> createdV0s;
+    vector<int> tracknumbers;
+    vector<int> trackids;
+    vector<int> alltrackids;
+    vector<int> V0numbers;
     //-----------------------------------------------
     //find S-vertex:
+
     for(Int_t vector_loop_SV3 = 0; vector_loop_SV3 < vec_position_SV3.size(); vector_loop_SV3++)
     {
         for(Int_t vector_loop_SV2 = 0; vector_loop_SV2 < vec_position_SV2.size(); vector_loop_SV2++)
@@ -1294,8 +1336,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 Int_t counter_pions_close_to_S_vertex = 0;
 
                 //store tracks of all pions that come from S-vertex
-                vector<int> tracknumbers;
-                vector<int> trackids;
+                
+                tracknumbers.clear();
+                trackids.clear();
 
                 //for each S-vertex loop over all tracks of event
                 for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
@@ -1448,7 +1491,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                     //if(radiusS<5){continue;}
 
-                   vector<int> alltrackids;
+                    
+                    alltrackids.clear();
                    alltrackids.push_back(trackids[0]);   //pion1
                    alltrackids.push_back(trackids[1]);   //pion2
                    alltrackids.push_back(vec_SV2_track_ids[2*vector_loop_SV2]);   //tracks of SV2
@@ -1469,7 +1513,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                    brute_force.push_back(vec_SV3_track_ids[2*vector_loop_SV3+1]);   //tracks of SV3
 
                    //get position of V0-----------------------
-                   vector<int> V0numbers;
+                   
+                   V0numbers.clear();
                    V0numbers.push_back(vec_SV2_number[vector_loop_SV2]);
                    V0numbers.push_back(vec_SV3_number[vector_loop_SV3]);
 
@@ -1507,8 +1552,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                        cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" <<endl;
                        cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" <<endl;
 
-                       AS_V0  = AS_Event ->createV0();
 
+                       AS_V0  = AS_Event ->createV0();
                        
                        createdV0s.push_back(V0numbers[i]);
                        //use set functions
@@ -1517,10 +1562,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                        AS_V0 -> setPpxpypz(pxP,pyP,pzP);
 
                        AS_V0 -> setdcaV0( V0->GetDcaV0Daughters() );
-
                        //create tracks for positive and negative particle
-                       Ali_AS_Track* as_trackP = AS_V0->createTrack();
-                       Ali_AS_Track* as_trackN = AS_V0->createTrack();
+                       as_trackP = AS_V0->createTrack();
+                       as_trackN = AS_V0->createTrack();
 
                        TLorentzVector TL_vec;
                        Double_t Track_pT     = trackP ->Pt();
@@ -1545,7 +1589,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                        as_trackP -> setNTPCcls(trackP ->GetTPCNcls());
                        as_trackP -> setTOFsignal(trackP ->GetTOFsignal());
                        as_trackP -> setTPCdEdx(trackP ->GetTPCsignal());
-
                        FillHelix(trackP,magF);
                        as_trackP ->setHelix(aliHelix.fHelix[0],aliHelix.fHelix[1],aliHelix.fHelix[2],aliHelix.fHelix[3],aliHelix.fHelix[4],aliHelix.fHelix[5],aliHelix.fHelix[6],aliHelix.fHelix[7],aliHelix.fHelix[8]);
 
@@ -1610,7 +1653,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                        FillHelix(trackN,magF);
                        as_trackN ->setHelix(aliHelix.fHelix[0],aliHelix.fHelix[1],aliHelix.fHelix[2],aliHelix.fHelix[3],aliHelix.fHelix[4],aliHelix.fHelix[5],aliHelix.fHelix[6],aliHelix.fHelix[7],aliHelix.fHelix[8]);
 
-
                        //track_PID
                        // e = 0, muon = 1, pion = 2, kaon = 3, proton = 4
                        Double_t Track_PID_N[10] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
@@ -1629,7 +1671,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                        Track_PID_N[8] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kKaon);
                        Track_PID_N[9] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kProton);
 
-
                        as_trackN  ->setnsigma_e_TPC(Track_PID_N[0]);
                        as_trackN  ->setnsigma_e_TOF(Track_PID_N[5]);
                        as_trackN  ->setnsigma_pi_TPC(Track_PID_N[2]);
@@ -1638,6 +1679,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                        as_trackN  ->setnsigma_K_TOF(Track_PID_N[8]);
                        as_trackN  ->setnsigma_p_TPC(Track_PID_N[4]);
                        as_trackN  ->setnsigma_p_TOF(Track_PID_N[9]);
+
                    }
                 //-----------------------------------------------------------------------------------------------
                 //-----------------------------------------------------------------------------------------------
@@ -1652,12 +1694,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     }
 
 
-
     Tree_AS_Event ->Fill();
-
     //Ali_AS_V0* AS_V0;
 
-    /*
+    numberV0 = AS_Event->getNumV0s();
+    cout<<"numberV0: "<<numberV0<<endl;
     for (Int_t V0_counter=0; V0_counter<numberV0; V0_counter++)
     {
         //if(counter_events>280) {cout<<"V0 counter2: "<<V0_counter<<endl;}
@@ -1670,9 +1711,18 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //AS_V0 -> clearV0List();
         AS_V0->~Ali_AS_V0();
     }
-    */
-
+    cout<<"a1"<<endl;
     int Ntracks = AS_Event->getN_tracks();
+
+    if(numberV0<1)
+    {
+        as_trackP->~Ali_AS_Track();
+        as_trackN->~Ali_AS_Track();
+    }
+
+    ASTrack1->~Ali_AS_Track();
+    ASTrack2->~Ali_AS_Track();
+
     //cout<<"Ntracks: "<<Ntracks<<endl;
 
     /*
