@@ -1175,10 +1175,13 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
         //get momentum of posititve particle
         momP = AS_V0 -> getPpxpypz();
+        //cout<<"momentumP: "<<momP[0]<<endl;
 
         //get momentum for negative particle
 
         momN = AS_V0 -> getNpxpypz();
+        //cout<<"momentumN: "<<momN[0]<<endl;
+
         double dcaV0 = AS_V0 -> getdcaV0();
         //printf("momentum of negative particle px: %f,py: %f,pz: %f \n",momN[0],momN[1],momN[2]);
 
@@ -1241,7 +1244,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         //check if positive particle is proton and if negative particle is pion-
         if(fabs(sigma_proton_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
         {
-            // printf("particles are proton and pion- \n");
+            //printf("particles are proton and pion- \n");
            
 
             energy_proton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
@@ -2591,6 +2594,22 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                     //check if one is negative and one is positive
                     if (dca1 * dca2 >0) {continue;}
 
+
+                    //check dca to primary vertex:
+                    path_closest_to_point = 0;
+                    dca_closest_to_point  = 0;
+                    path_initA = 0.0;
+                    path_initB = 30.0;
+                    FindDCAHelixPoint(pos_primary_vertex,ASTrack1,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+                    if(dca_closest_to_point<0.5){continue;}
+
+                    path_closest_to_point = 0;
+                    dca_closest_to_point  = 0;
+                    path_initA = 0.0;
+                    path_initB = 30.0;
+                    FindDCAHelixPoint(pos_primary_vertex,ASTrack2,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+                    if(dca_closest_to_point<0.5){continue;}
+
                     //do all for pion 1--------------------------------------------------------------
                     //---------------------------------------------------------------------------------
                     path_closest_to_point = 0;
@@ -2712,7 +2731,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                     histo_counter->Fill(2.5);
                     
-                    if(radiusS<15){continue;}
+                    if(radiusS<5){continue;}
 
                     
                     counters[6]++;
@@ -2942,6 +2961,7 @@ void Ali_Dark_Matter_Read::Save()
     mass_squared_kaons_and_background->Write();
     mass_squared_kaons->Write();
     histo_counter->Write();
+    Tree_AS_DM_particle->Write();
     /*
     for(int i=0;i<16;i++)
     {

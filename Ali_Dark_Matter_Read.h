@@ -33,7 +33,7 @@ using namespace std;
 #include "AliTRDpadPlane.h"
 
 
-#include "Ali_AS_Event.h"
+#include "Ali_AS_Event_old.h"
 #include "Ali_AS_EventLinkDef.h"
 
 ClassImp(Ali_AS_TRD_digit)
