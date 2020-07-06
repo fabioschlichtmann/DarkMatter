@@ -399,7 +399,8 @@ private:
 
 
     Float_t pos[3];
-    Float_t mom[3];
+    Float_t momN[3];
+    Float_t momP[3];
     //Float_t* mom1 = new Float_t[3];
     
     
@@ -413,7 +414,7 @@ private:
 
 public:
     Ali_AS_V0() :
-        x(-1),y(-1),z(-1),Npx(-1),Npy(-1),Npz(-1),Ppx(-1),Ppy(-1),Ppz(-1),dca_V0(0),pos(),mom(),N_tracks(0),fNumTracks(0)
+        x(-1),y(-1),z(-1),Npx(-1),Npy(-1),Npz(-1),Ppx(-1),Ppy(-1),Ppz(-1),dca_V0(0),pos(),momN(),momP(),N_tracks(0),fNumTracks(0)
 
         //brauchen wir auch nicht?
         /*         
@@ -460,22 +461,22 @@ public:
 
         Float_t* getNpxpypz()
         {
-            mom[0] = Npx;
-            mom[1] = Npy;
-            mom[2] = Npz;
+            momN[0] = Npx;
+            momN[1] = Npy;
+            momN[2] = Npz;
 
-            return mom;
+            return momN;
 
         }
         
 
         Float_t* getPpxpypz()
         {
-            mom[0] = Ppx;
-            mom[1] = Ppy;
-            mom[2] = Ppz;
+            momP[0] = Ppx;
+            momP[1] = Ppy;
+            momP[2] = Ppz;
 
-            return mom;
+            return momP;
 
         }
 
