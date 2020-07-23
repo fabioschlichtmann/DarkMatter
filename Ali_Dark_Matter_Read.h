@@ -33,7 +33,7 @@ using namespace std;
 #include "AliTRDpadPlane.h"
 
 
-#include "Ali_AS_Event_old.h"
+#include "Ali_AS_Event.h"
 #include "Ali_AS_EventLinkDef.h"
 
 ClassImp(Ali_AS_TRD_digit)
@@ -81,7 +81,14 @@ private:
 
     //histos from Macro
     TH1D* histo_invariantmass_lambda = new TH1D("histo inv mass lambda","histo inv mass lambda",50*2,1.1,1.13);
-    TH1D* histo_invariantmass_anti_lambda = new TH1D("histo inv mass anti lambda","histo inv mass anti lambda",50*2,1.0,1.5);
+
+    vector<TH1D*> vec_histo_invariantmass_Lambda;
+    vector<TH1D*> vec_histo_invariantmass_K0;
+    vector<TH1D*> vec_histo_radius_variation_invariantmass_K0;
+    vector<TH1D*> vec_histo_radius_variation_invariantmass_Lambda;
+    
+
+    TH1D* histo_invariantmass_anti_lambda = new TH1D("histo inv mass anti lambda","histo inv mass anti lambda",50*2,1.1,1.13);
 
     TH1D* histo_invariantmass_K0 = new TH1D("histo inv mass K0","histo inv mass K0",50*3,0.4,0.6);
 
@@ -191,6 +198,8 @@ private:
 
     double counter =0;
 
+    
+
     //TNtuple* tpl = new TNtuple ("ntuple","ntuple","x:y:z:dcaA:dcaB:dcaC:dcaD:pA:pB:pC:pD:dcaAprim:dcaBprim:dcaCprim:dcaDprim");
 
 
@@ -205,7 +214,15 @@ public:
     void copy_track_params(Ali_AS_Track* track_in, Ali_AS_Track* track_out);
     void Save();
 
+    float arr_distance_prim_sec[15]={};
+    float arr_distance_daughter_particles[1]={0.1};
+    float arr_dca_AB[15]={};
+    float arr_dca_daughter_prim[15]={};
+    float arr_radius_variation[45]={};
+
     ClassDef(Ali_Dark_Matter_Read, 1)
+
+
 };
 //----------------------------------------------------------------------------------------
 

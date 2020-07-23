@@ -606,7 +606,11 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
     cout << "Initialize tree" << endl;
     //TString pinputdir = "/home/ceres/schlichtmann/ESD_Analysis/";
     TString inlistdir = "/home/ceres/schlichtmann/ESD_Analysis/Lists/";
-    TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter_V11/";
+
+    TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/Pb_Pb_V3/";
+
+    //TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter_V11/";
+    //
     //TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter_PbPb_V4/";
     //TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter/";
     //TString pinputdir = "/home/ceres/berdnikova/TRD-Run3-Calibration/";
@@ -730,6 +734,93 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
 
     }
 
+    //float arr_distance_prim_sec[10]{0.5,0.7,0.9,1.1,1.2,1.3,1.4,1.5,1.6,1.7};
+    //float arr_distance_daughter_particles[10]{0.1,0.2,0.3,0.4,0.5,0.6,0.8,0.9,1.1,1.3};
+    //float arr_dca_daughter_prim[10]{0.02,0.025,0.03,0.035,0.04,0.045,0.05,0.055,0.1,0.2};
+    for(int i=0;i<15;i++)
+    {
+        arr_distance_prim_sec[i]=6./15*(i+1);
+        arr_dca_daughter_prim[i] = 1.5/15*(i+1);
+        arr_dca_AB[i] = 0.1*(i+1);
+    }
+
+    for(int i=0;i<45;i++)
+    {
+        arr_radius_variation[i]=1.*(i+1);
+    }
+
+
+    for(int i=0;i<15*15;i++)
+    {
+        TString name = "radius >  ";
+        name+=arr_distance_prim_sec[i/15];
+        name+=" dcaV0 < ";
+        name+=arr_distance_daughter_particles[0];
+        name+=" dca_daughter_prim> ";
+        name+=arr_dca_daughter_prim[i%15];
+        TH1D* histo_invariantmass_lambda = new TH1D(name.Data(),name.Data(),50*2,1.1,1.13);
+        vec_histo_invariantmass_Lambda.push_back(histo_invariantmass_lambda);
+
+        TString name2 = "K0: radius >  ";
+        name2+=arr_distance_prim_sec[i/15];
+        name2+=" dcaV0 < ";
+        name2+=arr_distance_daughter_particles[0];
+        name2+=" dca_daughter_prim> ";
+        name2+=arr_dca_daughter_prim[i%15];
+        TH1D* histo_invariantmass_K0 = new TH1D(name2.Data(),name2.Data(),50*3,0.4,0.6);
+        vec_histo_invariantmass_K0.push_back(histo_invariantmass_K0);
+
+        //vec_histo_invariantmass_Lambda[top1*16+top2*4+top3]->Fill(invariantmass);
+    }
+
+    for(int i=0;i<45;i++)
+    {
+        TString name = "K0: radius >  ";
+        name+= arr_radius_variation[i];
+        name+=" dcaV0 < ";
+        name+=1.;
+        name+=" dca_daughter_prim> ";
+        name+=0.2;
+        TH1D* histo_invariantmass_K0 = new TH1D(name.Data(),name.Data(),50*3,0.4,0.6);
+        vec_histo_radius_variation_invariantmass_K0.push_back(histo_invariantmass_K0);
+    }
+
+    for(int i=0;i<45;i++)
+    {
+        TString name = "Lambda: radius >  ";
+        name+= arr_radius_variation[i];
+        name+=" dcaV0 < ";
+        name+=1.;
+        name+=" dca_daughter_prim> ";
+        name+=0.2;
+        TH1D* histo_invariantmass_lambda = new TH1D(name.Data(),name.Data(),50*2,1.1,1.13);
+        vec_histo_radius_variation_invariantmass_Lambda.push_back(histo_invariantmass_lambda);
+    }
+
+    for(int j=0;j<15*15;j++)
+    {
+        TString name = "Lambda radius > 45 ";
+        name+=" dcaV0 < ";
+        name+=arr_dca_AB[j/15];
+        name+=" dca_daughter_prim> ";
+        name+=arr_dca_daughter_prim[j%15];
+        TH1D* histo_invariantmass_lambda = new TH1D(name.Data(),name.Data(),50*2,1.1,1.13);
+        vec_histo_invariantmass_Lambda.push_back(histo_invariantmass_lambda);
+
+        TString name2 = "K0 radius > 45 ";
+        name2+=" dcaV0 < ";
+        name2+=arr_dca_AB[j/15];
+        name2+=" dca_daughter_prim> ";
+        name2+=arr_dca_daughter_prim[j%15];
+        TH1D* histo_invariantmass_K0 = new TH1D(name2.Data(),name2.Data(),50*3,0.4,0.6);
+        vec_histo_invariantmass_K0.push_back(histo_invariantmass_K0);
+
+
+    }
+
+    
+
+
     
 
 
@@ -820,7 +911,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
-    Int_t NumV0s = AS_Event ->getN_V0s();
+    Int_t NumV0s = AS_Event ->getNumV0s();
 
     cout<<"NumV0s: "<<NumV0s<<endl;
 
@@ -905,9 +996,9 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     limits_z_vertex.push_back(5.7);
     limits_z_vertex.push_back(30);
 
-    const Float_t mass_proton = 0.938 ;  //in GeV?
-    const Float_t mass_pion = 0.1396 ;  //in GeV?
-    const Float_t mass_electron = 0.510998 * 1e-3 ;  //in GeV?
+    const Float_t mass_proton = 0.93827208816 ;  //in GeV?
+    const Float_t mass_pion = 0.139657061 ;  //in GeV?
+    const Float_t mass_electron = 0.510998950 * 1e-3 ;  //in GeV?
     const double  mass_K = 0.493677 ;  //in GeV?
 
     vector<int> used_track_ids_of_pions;
@@ -1058,7 +1149,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         }
 
     }
-
+    //cout<<"a"<<endl;
     
     //-------------------------------------------------------------------------------------------------------------------------------
     //loop over all tracks of event in order to make Bethe Bloch plot: dEdx as function of charge*momentum
@@ -1155,33 +1246,52 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     track_ids_all.resize(NumV0s);
 
   
-
+    //cout<<"b"<<endl;
     //loop over V0s
     for(Int_t V0counter = 0; V0counter < NumV0s; V0counter++)
     {
-         //cout<<"g"<<endl;
+       // cout<<"c"<<endl;
         V0_is_used =0;
 
         AS_V0 = AS_Event -> getV0(V0counter);
+        //cout<<"d"<<endl;
         //get position of V0
         pos = AS_V0 -> getxyz();
+        //cout<<"d1"<<endl;
         ////cout<<"posx: "<<pos[0]<<endl;
         //position.SetXYZ(pos[0],pos[1],pos[2]);
         radius = sqrt( (pos[0]-EventVertexX) *(pos[0]-EventVertexX)+(pos[1]-EventVertexY)*(pos[1]-EventVertexY)+(pos[2]-EventVertexZ)*(pos[2]-EventVertexZ) );
-
+        // cout<<"d2"<<endl;
         TVector3 vec_primtoV0;
         vec_primtoV0.SetXYZ((pos[0]-EventVertexX),(pos[1]-EventVertexY),(pos[2]-EventVertexZ));
+        TVector3 unit_prim_to_V0;
+        unit_prim_to_V0 = vec_primtoV0.Unit();
         //printf("x %f,y %f, z %f \n",pos[0],pos[1],pos[2]);
+        //cout<<"d3"<<endl;
 
-        //get momentum of posititve particle
+        //get momentum
         momP = AS_V0 -> getPpxpypz();
-        //cout<<"momentumP: "<<momP[0]<<endl;
-
-        //get momentum for negative particle
-
         momN = AS_V0 -> getNpxpypz();
-        //cout<<"momentumN: "<<momN[0]<<endl;
 
+        //printf("pxP: %f,pyP: %f, pzP: %f \n",momP[0],momP[1],momP[2]);
+        //printf("pxN: %f,pyN: %f, pzN: %f \n",momN[0],momN[1],momN[2]);
+
+        energy_antiproton = sqrt(mass_proton*mass_proton+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+        energy_pion       = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+        //cout<<"hi: "<<mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
+        //cout<<"masspion: "<<mass_pion<<endl;
+        //cout<<"energy_antiproton: "<<energy_antiproton<<endl;
+        //cout<<"energy_pion: "<<energy_pion<<endl;
+
+        tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion);
+        tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_antiproton);
+
+        *tlv_Lambda = *tlv_pos + *tlv_neg;
+        invariantmass = tlv_Lambda->M();
+
+        //cout<<"invariantmass: "<<invariantmass<<endl;
+        //cout<<"momentumN: "<<momN[0]<<endl;
+        //cout<<"d4"<<endl;
         double dcaV0 = AS_V0 -> getdcaV0();
         //printf("momentum of negative particle px: %f,py: %f,pz: %f \n",momN[0],momN[1],momN[2]);
 
@@ -1193,7 +1303,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         dcaN = as_trackN->getdca();
         //printf("dcaP: %f, dcaN: %f \n",dcaP,dcaN);
 
-
+        //cout<<"e"<<endl;
         // Double check that the charge is correct
         if(dcaP < 0){continue;}
         if(dcaN > 0){continue;}
@@ -1234,12 +1344,197 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
         Float_t path_closest_to_point = 0;
         Float_t dca_closest_to_point  = 0;
+        Float_t dca_closest_to_pointP  = 0;
+        Float_t dca_closest_to_pointN  = 0;
         Float_t path_initA = 0.0;
         Float_t path_initB = 30.0;
 
         float radiuscuts[4]{1,3,5,7};
         float dcaprimcuts[4]{0.5,1,2,5};
-         //cout<<"g1"<<endl;
+        // cout<<"d"<<endl;
+
+        //------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------
+        //test topology cuts
+      
+        //float arr_distance_prim_sec[10]{0.3,0.5,0.7,0.9,1.1,1.2,1.3,1.4,1.5,1.6};
+        //float arr_distance_daughter_particles[10]{0.1,0.2,0.3,0.4,0.5,0.6,0.8,0.9,1.1,1.3};
+        //float arr_dca_daughter_prim[10]{0.02,0.03,0.035,0.04,0.045,0.05,0.055,0.1,0.2,0.7};
+        // float arr_distance_prim_sec[10]{1.4,1.45,1.5,1.55,1.6,1.65,1.7,1.75,1.8,1.85};
+        //float arr_distance_daughter_particles[10]{0.35,0.4,0.45,0.47,0.5,0.55,0.6,0.65,0.7,0.75};
+        //float arr_dca_daughter_prim[10]{0.04,0.042,0.044,0.046,0.048,0.05,0.052,0.054,0.056,0.058};
+        for(int i=0;i<45;i++)
+        {
+            if(radius<arr_radius_variation[i]){continue;}
+            if(dcaV0>1.){continue;}
+            if(fabs(dcaP) < 0.2){continue;}
+            if(fabs(dcaN) < 0.2){continue;}
+
+            if(fabs(sigma_pion_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
+            {
+                energy_pion_plus  = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+                energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+                tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion_plus);
+                tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion_minus);
+
+                *tlv_Kaon = *tlv_pos + *tlv_neg;
+                TVector3 dir_K0;
+                dir_K0.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
+                TVector3 unit_dir_K0 = dir_K0.Unit();
+                double dot_product = unit_dir_K0.Dot(unit_prim_to_V0);
+                if(dot_product<0.){continue;}
+
+                invariantmass = tlv_Kaon->M();
+                vec_histo_radius_variation_invariantmass_K0[i]->Fill(invariantmass);
+
+            }
+
+            if(fabs(sigma_proton_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
+            {
+                energy_proton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+                energy_pion   = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+                tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_proton);
+                tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion);
+
+                *tlv_Lambda = *tlv_pos + *tlv_neg;
+                TVector3 dir_Lambda;
+                dir_Lambda.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
+                TVector3 unit_dir_Lambda = dir_Lambda.Unit();
+                double dot_product = unit_dir_Lambda.Dot(unit_prim_to_V0);
+                if(dot_product<0.){continue;}
+
+                invariantmass = tlv_Lambda->M();
+                vec_histo_radius_variation_invariantmass_Lambda[i]->Fill(invariantmass);
+               // cout<<"filled"<<endl;
+            }
+
+        }
+
+        for(int dca_AB = 0; dca_AB<15; dca_AB++)
+        {
+            for(int dca_daughter_prim=0;dca_daughter_prim<15;dca_daughter_prim++)
+            {
+                if(radius<45){continue;}
+                if(dcaV0>arr_dca_AB[dca_AB]){continue;}
+                if(fabs(dcaP) < arr_dca_daughter_prim[dca_daughter_prim]){continue;}
+                if(fabs(dcaN) < arr_dca_daughter_prim[dca_daughter_prim]){continue;}
+
+                int i_val = 15*15+dca_AB*15+dca_daughter_prim;
+
+                if(fabs(sigma_proton_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
+                {
+                    energy_proton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+                    energy_pion   = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+                    tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_proton);
+                    tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion);
+
+                    *tlv_Lambda = *tlv_pos + *tlv_neg;
+                    TVector3 dir_Lambda;
+                    dir_Lambda.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
+                    TVector3 unit_dir_Lambda = dir_Lambda.Unit();
+                    double dot_product = unit_dir_Lambda.Dot(unit_prim_to_V0);
+                    if(dot_product<0.){continue;}
+
+                    invariantmass = tlv_Lambda->M();
+                    vec_histo_invariantmass_Lambda[i_val]->Fill(invariantmass);
+
+                }
+
+                //PID K0
+                if(fabs(sigma_pion_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
+                {
+                    energy_pion_plus  = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+                    energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+                    tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion_plus);
+                    tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion_minus);
+
+                    *tlv_Kaon = *tlv_pos + *tlv_neg;
+                    TVector3 dir_K0;
+                    dir_K0.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
+                    TVector3 unit_dir_K0 = dir_K0.Unit();
+                    double dot_product = unit_dir_K0.Dot(unit_prim_to_V0);
+                    if(dot_product<0.){continue;}
+
+                    invariantmass = tlv_Kaon->M();
+                    vec_histo_invariantmass_K0[i_val]->Fill(invariantmass);
+
+                }
+
+
+            }
+        }
+
+
+        for(int top1 = 0; top1<15; top1++)
+        {
+            for(int top2=0;top2<1;top2++)
+            {
+                for(int top3=0;top3<15;top3++)
+                {
+                    float distance_prim_sec = arr_distance_prim_sec[top1];
+                    float distance_daughter_particles = arr_distance_daughter_particles[top2];
+                    float dca_daughter_prim = arr_dca_daughter_prim[top3];
+
+                    if(radius < distance_prim_sec){continue;}
+                    if(dcaV0 > distance_daughter_particles){continue;}
+                    if(fabs(dcaP) < dca_daughter_prim){continue;}
+                    if(fabs(dcaN) < dca_daughter_prim){continue;}
+
+                    int i_val = top1*15+top3;
+
+                    //PID for Lambdas
+                    if(fabs(sigma_proton_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
+                    {
+                        energy_proton = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+                        energy_pion   = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+                        tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_proton);
+                        tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion);
+
+                        *tlv_Lambda = *tlv_pos + *tlv_neg;
+                        TVector3 dir_Lambda;
+                        dir_Lambda.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
+                        TVector3 unit_dir_Lambda = dir_Lambda.Unit();
+                        double dot_product = unit_dir_Lambda.Dot(unit_prim_to_V0);
+                        if(dot_product<0.){continue;}
+
+                        invariantmass = tlv_Lambda->M();
+                        vec_histo_invariantmass_Lambda[i_val]->Fill(invariantmass);
+
+                    }
+
+                    //PID K0
+                    if(fabs(sigma_pion_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
+                    {
+                        energy_pion_plus  = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+                        energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+                        tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion_plus);
+                        tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion_minus);
+
+                        *tlv_Kaon = *tlv_pos + *tlv_neg;
+                        TVector3 dir_K0;
+                        dir_K0.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
+                        TVector3 unit_dir_K0 = dir_K0.Unit();
+                        double dot_product = unit_dir_K0.Dot(unit_prim_to_V0);
+                        if(dot_product<0.){continue;}
+
+                        invariantmass = tlv_Kaon->M();
+                        vec_histo_invariantmass_K0[i_val]->Fill(invariantmass);
+
+                    }
+                }
+
+
+            }
+
+
+        }
+
+
+      
+
+        //------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------
+
         //Lambda0 -> proton + pi-
         //check if positive particle is proton and if negative particle is pion-
         if(fabs(sigma_proton_TPC[0]) < 2.5 && fabs(sigma_pion_TPC[1]) < 2.5)
@@ -1258,7 +1553,10 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             invariantmass = tlv_Lambda->M();
             //cout<<invariantmass<<endl;
             //histos_1D[0]->Fill(invariantmass);
-            histo_invariantmass_lambda->Fill(invariantmass);
+            if(radius>45)
+            {
+                histo_invariantmass_lambda->Fill(invariantmass);
+            }
 
             histos_1D[2]->Fill(radius);
 
@@ -1607,7 +1905,11 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             *tlv_Kaon = *tlv_pos + *tlv_neg;
             invariantmass = tlv_Kaon->M();
             //cout<<invariantmass<<endl;
-            histos_1D[1]->Fill(invariantmass);
+            if(radius>45)
+            {
+                histo_invariantmass_K0->Fill(invariantmass);
+            }
+            //histos_1D[1]->Fill(invariantmass);
 
             histos_1D[3]->Fill(radius);
 
@@ -1734,8 +2036,6 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                 TVector3 unit_dir;
                 unit_dir = dir.Unit();
 
-                TVector3 unit_prim_to_V0;
-                unit_prim_to_V0 = vec_primtoV0.Unit();
 
                 double dot_product = unit_dir.Dot(unit_prim_to_V0);
 
@@ -2434,10 +2734,10 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
     TVector3 S_vertex_pos;
 
-    Float_t path_closest_to_point = 0;
-    Float_t dca_closest_to_point  = 0;
-    Float_t path_initA = 0.0;
-    Float_t path_initB = 30.0;
+    float path_closest_to_point = 0;
+    float dca_closest_to_point  = 0;
+    float path_initA = 0.0;
+    float path_initB = 30.0;
 
 
 
@@ -2840,6 +3140,7 @@ void Ali_Dark_Matter_Read::Save()
     TCanvas* can9 = new TCanvas;
     TCanvas* can10 = new TCanvas;
     TCanvas* can11 = new TCanvas;
+    TCanvas* can12 = new TCanvas;
 
 
     //printf("number of entries: %d, number of events over that we looped: %d \n", numentries, counters[0]);
@@ -2906,6 +3207,12 @@ void Ali_Dark_Matter_Read::Save()
 
     can11->cd();
     histo_invariantmass_lambda->Draw();
+
+    can12->cd();
+    histo_invariantmass_K0->Draw();
+
+    can11->SaveAs("invariant_mass_lambda.png");
+    can12->SaveAs("invariant_mass_K0.png");
     /*
     vector<TCanvas*> vec_can;
 
@@ -2949,7 +3256,8 @@ void Ali_Dark_Matter_Read::Save()
 
     printf("antilambdas: %d, lambdas: %d \n",counter_anti_lambdas,counter_lambdas);
 
-
+    //int total_size = arr_distance_prim_sec.size()*arr_distance_daughter_particles.size()*arr_dca_daughter_prim.size();
+    int total_size = 15*15*2;
 
     output_histos->cd();
     histo_invariantmass_lambda->Write();
@@ -2961,6 +3269,19 @@ void Ali_Dark_Matter_Read::Save()
     mass_squared_kaons_and_background->Write();
     mass_squared_kaons->Write();
     histo_counter->Write();
+    for(int i=0;i<total_size;i++)
+    {
+        vec_histo_invariantmass_Lambda[i]->Write();
+        vec_histo_invariantmass_K0[i]->Write();
+    }
+
+    for(int i=0;i<45;i++)
+    {
+        vec_histo_radius_variation_invariantmass_K0[i]->Write();
+        vec_histo_radius_variation_invariantmass_Lambda[i]->Write();
+        cout<<"wrote"<<endl;
+    }
+
     Tree_AS_DM_particle->Write();
     /*
     for(int i=0;i<16;i++)
