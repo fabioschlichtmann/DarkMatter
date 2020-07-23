@@ -160,6 +160,35 @@ bool check_if_value_is_doppelt_in_vector(vector<int> vec)
     return false;
 }
 
+void copy_track_params(Ali_AS_Track* track_in, Ali_AS_Track* track_out)
+{
+    track_out ->setnsigma_e_TPC(track_in ->getnsigma_e_TPC());
+    track_out ->setnsigma_e_TOF(track_in ->getnsigma_e_TOF());
+    track_out ->setnsigma_pi_TPC(track_in ->getnsigma_pi_TPC());
+    track_out ->setnsigma_pi_TOF(track_in ->getnsigma_pi_TOF());
+    track_out ->setnsigma_K_TPC(track_in ->getnsigma_K_TPC());
+    track_out ->setnsigma_K_TOF(track_in ->getnsigma_K_TOF());
+    track_out ->setnsigma_p_TPC(track_in ->getnsigma_p_TPC());
+    track_out ->setnsigma_p_TOF(track_in ->getnsigma_p_TOF());
+    track_out ->setTRDSignal(track_in ->getTRDSignal());
+    track_out ->setTRDsumADC(track_in ->getTRDsumADC());
+    track_out ->setdca(track_in ->getdca());
+    track_out ->set_TLV_part(track_in ->get_TLV_part());
+    track_out ->setNTPCcls(track_in ->getNTPCcls());
+    track_out ->setNTRDcls(track_in ->getNTRDcls());
+    track_out ->setNITScls(track_in ->getNITScls());
+    track_out ->setStatus(track_in ->getStatus());
+    track_out ->setTPCchi2(track_in ->getTPCchi2());
+    for(Int_t i_layer = 0; i_layer < 6; i_layer++){track_out ->setTRD_layer(i_layer, track_in ->getTRD_layer(i_layer));}
+    track_out ->setimpact_angle_on_TRD(track_in ->getimpact_angle_on_TRD());
+    track_out ->setTPCdEdx(track_in ->getTPCdEdx());
+    track_out ->setTOFsignal(track_in ->getTOFsignal());
+    track_out ->setTrack_length(track_in ->getTrack_length());
+    track_out ->setHelix(track_in->getHelix_param(0),track_in->getHelix_param(1),track_in->getHelix_param(2),track_in->getHelix_param(3),track_in->getHelix_param(4),track_in->getHelix_param(5),track_in->getHelix_param(6),track_in->getHelix_param(7),track_in->getHelix_param(8));
+    track_out ->settrackid(track_in->gettrackid());
+}
+
+
 /*
 void fillV0andtrack(AliESDEvent* fESD, AliPIDResponse  *fPIDResponse)
 {
@@ -505,7 +534,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     counter_events++;
     cout<<"counter events: "<<counter_events<<endl;
 
-    //if(counter_events<250){return;}
+    //if(counter_events>25){return;}
 
     //-----------------------------------------------------------------------------------------------------
     //-----------------------------------------------------------------------------------------------------
@@ -593,7 +622,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     AS_Event ->setN_tracks(N_tracks);
     AS_Event ->setBeamIntAA(MeanBeamIntAA);
     AS_Event ->setT0zVertex(T0zVertex);
-    AS_Event ->setN_V0s(numberV0);
+    //AS_Event ->setN_V0s(numberV0);
    
 
     AliMultSelection *MultSelection = (AliMultSelection*) fESD->FindListObject("MultSelection");
@@ -634,9 +663,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      TLorentzVector* tlv_Kaon = new TLorentzVector();
      TLorentzVector* tlv_gamma = new TLorentzVector();
 
-     const Float_t mass_proton = 0.938 ;  //in GeV?
-     const Float_t mass_pion = 0.1396 ;  //in GeV?
-     const Float_t mass_electron = 0.510998 * 1e-3 ;  //in GeV?
+     const Float_t mass_proton = 0.93827208816 ;  //in GeV?
+     const Float_t mass_pion = 0.139657061 ;  //in GeV?
+     const Float_t mass_electron = 0.510998950 * 1e-3 ;  //in GeV?
      const double  mass_K = 0.493677 ;  //in GeV?
 
      TVector3 position_SV2;
@@ -661,7 +690,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      
      Ali_AS_V0* AS_V0 = new Ali_AS_V0;
      Ali_AS_Track* as_trackP = new Ali_AS_Track;
+     Ali_AS_Track* as_trackP_save = new Ali_AS_Track;
      Ali_AS_Track* as_trackN = new Ali_AS_Track;
+     Ali_AS_Track* as_trackN_save = new Ali_AS_Track;
 
      Float_t* pos = new Float_t[3];
      Float_t* momP = new Float_t[3];
@@ -707,8 +738,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         V0->AliESDv0::GetXYZ(x,y,z);
 
         //cout<<""<<endl;
-        //printf("V0 number: %d \n",V0_counter);
-        //printf("x: %f,y: %f, z: %f \n",x,y,z);
+       // printf("V0 number: %d \n",V0_counter);
+       // printf("x: %f,y: %f, z: %f \n",x,y,z);
         
         //-------------------------------
 
@@ -956,7 +987,42 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         path_initB = 30.0;
 
 
+        //lambda
+        if(fabs(sigma_proton_TPC) < 2.5 && fabs(sigma_pion_minus_TPC) < 2.5)
+        {
+            energy_pion  = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+            energy_proton       = sqrt(mass_proton*mass_proton+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+            //cout<<energy_proton<<endl;
+            //cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
+            tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_proton);
+            tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion);
 
+            *tlv_Lambda = *tlv_pos + *tlv_neg;
+            invariantmass = tlv_Lambda->M();
+
+            //cut on mass
+            if(invariantmass < (1.1157+0.001495*8) && invariantmass > (1.1157-0.001495*8))
+            {
+                //create V0
+                Ali_AS_V0* save_V0 = AS_Event->createV0();
+
+                //Setters
+                save_V0 -> setxyz(x,y,z);
+                save_V0 -> setNpxpypz(pxN,pyN,pzN);
+                save_V0 -> setPpxpypz(pxP,pyP,pzP);
+                save_V0 -> setdcaV0( V0->GetDcaV0Daughters() );
+
+                //createtracks
+                as_trackP_save = save_V0->createTrack();
+                as_trackN_save = save_V0->createTrack();
+
+                copy_track_params(as_trackP , as_trackP_save);
+                copy_track_params(as_trackN , as_trackN_save);
+
+            }
+        }
+
+        //antilambda
         if(fabs(sigma_antiproton_TPC) < 2.5 && fabs(sigma_pion_plus_TPC) < 2.5)
         {
             energy_antiproton = sqrt(mass_proton*mass_proton+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
@@ -970,8 +1036,25 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             invariantmass = tlv_Lambda->M();
 
             //cut on mass
-            if(invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
+            if(invariantmass < (1.1157+0.001495*8) && invariantmass > (1.1157-0.001495*8))
             {
+                //create V0
+                Ali_AS_V0* save_V0 = AS_Event->createV0();
+
+                //Setters
+                save_V0 -> setxyz(x,y,z);
+                save_V0 -> setNpxpypz(pxN,pyN,pzN);
+                save_V0 -> setPpxpypz(pxP,pyP,pzP);
+                save_V0 -> setdcaV0( V0->GetDcaV0Daughters() );
+
+                //createtracks
+                as_trackP_save = save_V0->createTrack();
+                as_trackN_save = save_V0->createTrack();
+
+                copy_track_params(as_trackP , as_trackP_save);
+                copy_track_params(as_trackN , as_trackN_save);
+
+                /*
                 position_SV3.SetXYZ(pos[0],pos[1],pos[2]);
                 vec_position_SV3.push_back(position_SV3);
 
@@ -985,7 +1068,10 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 vec_SV3_track_ids.push_back(trackidN);
 
                 vec_SV3_number.push_back(V0_counter);
-                cout<<"SV3"<<endl;
+                //cout<<"SV3"<<endl;
+                //cout<<"invariantmass: "<<invariantmass<<endl;
+                SV3_counter++;
+                */
             }
 
         }
@@ -1005,8 +1091,24 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             invariantmass = tlv_Kaon->M();
 
             //cut on mass
-            if(invariantmass< (0.4981+0.0042*2) && invariantmass > (0.4981-0.0042*2))
+            if(invariantmass< (0.4981+0.0042*8) && invariantmass > (0.4981-0.0042*8))
             {
+                Ali_AS_V0* save_V0 = AS_Event->createV0();
+
+                //Setters
+                save_V0 -> setxyz(x,y,z);
+                save_V0 -> setNpxpypz(pxN,pyN,pzN);
+                save_V0 -> setPpxpypz(pxP,pyP,pzP);
+                save_V0 -> setdcaV0( V0->GetDcaV0Daughters() );
+
+                //createtracks
+                as_trackP_save = save_V0->createTrack();
+                as_trackN_save = save_V0->createTrack();
+
+                copy_track_params(as_trackP , as_trackP_save);
+                copy_track_params(as_trackN , as_trackN_save);
+
+                /*
                 position_SV2.SetXYZ(pos[0],pos[1],pos[2]);
                 vec_position_SV2.push_back(position_SV2);
 
@@ -1020,7 +1122,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 vec_SV2_track_ids.push_back(trackidN);
 
                 vec_SV2_number.push_back(V0_counter);
-                cout<<"SV2"<<endl;
+                //cout<<"SV2"<<endl;
+                */
 
             }
         }
@@ -1069,7 +1172,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //cout << "Start matching " << N_tracks << " TPC tracks with " << TV3_TRD_hits_middle.size() << " TRD pads" << endl;
     N_good_tracks = 0;
 
-
+    /*
     for(Int_t iTracks = 0; iTracks < N_tracks; iTracks++)
     {
 	//---------------------------------------------------------------
@@ -1261,6 +1364,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     } // End of TPC track loop
     cout << "Tracks matched" << endl;
+    */
     //------------------------------------------------------------------------------------------------
     //------------------------------------------------------------------------------------------------
 
@@ -1296,9 +1400,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     vector<int> trackids;
     vector<int> alltrackids;
     vector<int> V0numbers;
+
+    int counter_V0s = 0;
     //-----------------------------------------------
     //find S-vertex:
-
+    /*
     for(Int_t vector_loop_SV3 = 0; vector_loop_SV3 < vec_position_SV3.size(); vector_loop_SV3++)
     {
         for(Int_t vector_loop_SV2 = 0; vector_loop_SV2 < vec_position_SV2.size(); vector_loop_SV2++)
@@ -1526,6 +1632,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                        Double_t z=0;
                        AliESDv0 *V0=fESD->GetV0(V0numbers[i]);
                        V0->AliESDv0::GetXYZ(x,y,z);
+
                        //get impulse of particle N and P by AliESDv0 class
                        Double_t pxN,pyN,pzN;
                        V0->GetNPxPyPz(pxN,pyN,pzN);
@@ -1554,12 +1661,47 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
                        AS_V0  = AS_Event ->createV0();
+                       counter_V0s++;
+                       //cout<<"NumV0s: "<<AS_Event->getN_V0s()<<endl;
                        
                        createdV0s.push_back(V0numbers[i]);
                        //use set functions
                        AS_V0 -> setxyz(x,y,z);
+                       //printf("V0 number: %d \n",V0_counter);
+                       printf("x: %f,y: %f, z: %f \n",x,y,z);
+                       //cout<<"x: "<<x<<endl;
+                       
+                       momP[0]=pxP;
+                       momP[1]=pyP;
+                       momP[2]=pzP;
+                       //get momentum for negative particle
+
+                       //momN = AS_V0 -> getNpxpypz();
+                       momN[0]=pxN;
+                       momN[1]=pyN;
+                       momN[2]=pzN;
+
+                       printf("pxP: %f,pyP: %f, pzP: %f \n",momP[0],momP[1],momP[2]);
+                       printf("pxN: %f,pyN: %f, pzN: %f \n",momN[0],momN[1],momN[2]);
+
                        AS_V0 -> setNpxpypz(pxN,pyN,pzN);
                        AS_V0 -> setPpxpypz(pxP,pyP,pzP);
+                       
+                       energy_antiproton = sqrt(mass_proton*mass_proton+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+                       energy_pion       = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+
+                       cout<<"unter Wurzel: "<<mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
+                       cout<<"masspion: "<<mass_pion<<endl;
+                       cout<<"energy_antiproton: "<<energy_antiproton<<endl;
+                       cout<<"energy_pion: "<<energy_pion<<endl;
+
+                       tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion);
+                       tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_antiproton);
+
+                       *tlv_Lambda = *tlv_pos + *tlv_neg;
+                       invariantmass = tlv_Lambda->M();
+
+                       cout<<"invariantmass: "<<invariantmass<<endl;
 
                        AS_V0 -> setdcaV0( V0->GetDcaV0Daughters() );
                        //create tracks for positive and negative particle
@@ -1691,6 +1833,22 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             }
 
         }
+    }
+    */
+
+    AS_Event->setN_V0s(counter_V0s);
+    //cout<<"NumV0s: "<<AS_Event->getN_V0s<<endl;
+
+    int numtracks = AS_Event->getNumTracks();
+    int id_of_track;
+
+    for(int i_track=0;i_track<numtracks;i_track++)
+    {
+        Ali_AS_Track* track = AS_Event->getTrack(i_track);
+        id_of_track = track -> gettrackid();
+        if (check_if_int_is_in_vector(id_of_track , brute_force) ) {continue;}
+        //delete track;
+
     }
 
 

@@ -72,7 +72,8 @@ public:
 	TTree       *Tree_AS_Event;
 
 	Int_t fEventNoInFile;
-	Int_t N_good_events;
+        Int_t N_good_events;
+        int SV3_counter=0;
 	//Int_t fDigitsLoadedFlag;
 
 	std::vector<TH1D*> h_dca;
