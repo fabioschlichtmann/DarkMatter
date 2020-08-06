@@ -211,7 +211,7 @@ AliAnalysisGrid* CreateAlienHandler(TString mode="test",Int_t sub=0,TString fnam
 
     //plugin->SetAdditionalLibs("Ali_AS_Event.cxx Ali_AS_Event.h Ali_DarkMatter_ESD_analysis.cxx Ali_DarkMatter_ESD_analysis.h");
     //plugin->SetAdditionalLibs("Ali_AS_Event.h Ali_AS_Event.cxx Ali_DarkMatter_ESD_analysis.h Ali_DarkMatter_ESD_analysis.cxx");
-    plugin->SetAdditionalLibs("Ali_AS_Event.h Ali_AS_EventLinkDef.h Ali_DarkMatter_ESD_analysis.h Ali_DarkMatter_ESD_analysis.cxx vertex_modified.h");
+    plugin->SetAdditionalLibs("Ali_AS_Event_V3.h Ali_AS_EventLinkDef.h Ali_DarkMatter_ESD_analysis.h Ali_DarkMatter_ESD_analysis.cxx vertex_modified.h");
     //plugin->SetAdditionalLibs("AliAnalysis_DarkMatter.h AliAnalysis_DarkMatter.cxx");
     //plugin->SetAdditionalLibs("Ali_AS_Event_cxx.so AliAnalysis_DarkMatter_cxx.so"); // doesn't work at all
     // needed if running over a local task, comment out if the task is in AliPhysics
@@ -233,8 +233,8 @@ AliAnalysisGrid* CreateAlienHandler(TString mode="test",Int_t sub=0,TString fnam
     //plugin->SetMaxMergeFiles(40);
     //plugin->SetMaxMergeStages(4);
 
-    //plugin->SetTTL(86399); // Time to live
-    plugin->SetTTL(19999); // Time to live in seconds
+    plugin->SetTTL(86399); // Time to live
+    //plugin->SetTTL(19999); // Time to live in seconds
     // Optionally set input format (default xml-single)
     plugin->SetInputFormat("xml-single");
     plugin->SetKeepLogs(kTRUE); // keeps the logs
