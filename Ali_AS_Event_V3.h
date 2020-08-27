@@ -675,7 +675,7 @@ public:
         TVector3 get_DirSV2()     const                  { return DirSV2;        }
         TVector3 get_DirSV3()     const                  { return DirSV3;        }
 	Int_t    getN_V0s()       const                  { return N_V0s;         }
-
+        int gettype(){return type_of_reaction_channel;}
 
         //----------------------------
 	Ali_AS_Track* createTrack()
@@ -708,6 +708,8 @@ public:
 	{
 	    return i < fNumTracks ? (Ali_AS_Track*)((*fTracks)[i]) : NULL;
         }
+
+        
         //----------------------------
 
 ClassDef(Ali_AS_DM_particle,1);  // A simple event compiled of tracks
@@ -967,6 +969,11 @@ public:
 	    return fNumV0s;
         }
 
+        int getNumDMs()
+        {
+            return fNumDMparticles;
+        }
+
 	Ali_AS_Track* getTrack(Int_t i) const
 	{
 	    return i < fNumTracks ? (Ali_AS_Track*)((*fTracks)[i]) : NULL;
@@ -980,6 +987,11 @@ public:
         Ali_AS_NUCLEV* getNUCLEV(Int_t i) const
 	{
 	    return i < fNumNUCLEVs ? (Ali_AS_NUCLEV*)((*fNUCLEVs)[i]) : NULL;
+        }
+
+        Ali_AS_DM_particle* getDMparticle(int i)
+        {
+            return i < fNumDMparticles ? (Ali_AS_DM_particle*)((*fDMparticles)[i]) : NULL;
         }
 
 

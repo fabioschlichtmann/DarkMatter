@@ -71,6 +71,7 @@
 #include <string>
 #include <iostream>
 #include <algorithm>
+#include "TMath.h"
 //------------------------
 
 #include "Ali_DarkMatter_ESD_analysis.h"
@@ -234,7 +235,559 @@ double calculate_m_squared_by_TOF(Ali_AS_Track* track_in_func)
 float calc_momentum_squared(float* mom)
 {
      return  mom[0]*mom[0]+mom[1]*mom[1]+mom[2]*mom[2] ;
+
 }
+
+
+void fHelixAtoPointdca(TVector3 space_vec, Ali_AS_Track* helixA, Float_t &pathA, Float_t &dcaAB)
+{
+    // V1.1
+    Float_t pA[2] = {100.0,-100.0}; // the two start values for pathB, 0.0 is the origin of the helix at the first measured point
+    Float_t distarray[2];
+    TVector3 testA;
+    Double_t helix_point[3];
+    for(Int_t r = 0; r < 2; r++)
+    {
+        helixA ->Evaluate(pA[r],helix_point);  // 3D-vector of helixB point at path pB[r]
+        testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+
+        distarray[r] = (testA-space_vec).Mag(); // dca between helixA and helixB
+    }
+    Int_t loopcounter = 0;
+    Float_t scale = 1.0;
+    Float_t flip  = 1.0; // checks if the minimization direction changed
+    Float_t scale_length = 100.0;
+    while(fabs(scale_length) > 0.01 && loopcounter < 100) // stops when the length is too small
+    {
+        //cout << "n = " << loopcounter << ", pA[0] = " << pA[0]
+        //    << ", pA[1] = " << pA[1] << ", d[0] = " << distarray[0]
+        //    << ", d[1] = " << distarray[1] << ", flip = " << flip
+        //    << ", scale_length = " << scale_length << endl;
+        if(distarray[0] > distarray[1])
+        {
+            if(loopcounter != 0)
+            {
+                if(flip == 1.0) scale = 0.4; // if minimization direction changes -> go back, but only the way * 0.4
+                else scale = 0.7; // go on in this direction but only by the way * 0.7
+            }
+            scale_length = (pA[1]-pA[0])*scale; // the next length interval
+            pA[0]     = pA[1] + scale_length; // the new path
+
+            helixA ->Evaluate(pA[0],helix_point);  // 3D-vector of helixB point at path pB[r]
+            testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+
+            distarray[0] = (testA-space_vec).Mag(); // new dca
+            flip = 1.0;
+        }
+        else
+        {
+            if(loopcounter != 0)
+            {
+                if(flip == -1.0) scale = 0.4;
+                else scale = 0.7;
+            }
+            scale_length = (pA[0]-pA[1])*scale;
+            pA[1]     = pA[0] + scale_length;
+            helixA ->Evaluate(pA[1],helix_point);  // 3D-vector of helixB point at path pB[r]
+            testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+            distarray[1] = (testA-space_vec).Mag();
+            flip = -1.0;
+        }
+        loopcounter++;
+    }
+    if(distarray[0] < distarray[1])
+    {
+        pathA = pA[0];
+        dcaAB = distarray[0];
+    }
+    else
+    {
+        pathA = pA[1];
+        dcaAB = distarray[1];
+    }
+    //cout << "pathA = " << pathA << ", dcaAB = " << dcaAB << endl;
+}
+
+Int_t fCircle_Interception(Double_t x1, Double_t y1, Double_t r1, Double_t x2, Double_t y2, Double_t r2,
+                                               Double_t &x1_c, Double_t &y1_c, Double_t &x2_c, Double_t &y2_c)
+{
+        Double_t dif_x = -(x1 - x2);
+	Double_t dif_y = -(y1 - y2);
+	Double_t dist=TMath::Sqrt( (dif_x*dif_x) + (dif_y*dif_y) );
+        if(dist==0) // circles overlap -> most likely identical helices
+        {
+            x1_c = 0.0;
+            y1_c = 0.0;
+            x2_c = 0.0;
+            y2_c = 0.0;
+            return 0;
+        };
+        Double_t dist_inv =1/dist;
+	
+        if((dist<(r1+r2))&& (dist> TMath::Abs(r1-r2)))
+        {
+	//2 intersections
+//		8<i<i<i<iii<i<iiii>ii
+
+
+		Double_t x_loc 		=((dist*dist +r1*r1 -r2*r2)*(0.5*dist_inv));
+		Double_t y_loc		=TMath::Sqrt(r1*r1 -x_loc*x_loc);
+		
+                x1_c	=(x1*dist+x_loc*dif_x -y_loc*dif_y)*dist_inv;
+                y1_c	=(y1*dist+x_loc*dif_y +y_loc*dif_x)*dist_inv;
+		
+                x2_c	=(x1*dist+x_loc*dif_x +y_loc*dif_y)*dist_inv;
+                y2_c	=(y1*dist+x_loc*dif_y -y_loc*dif_x)*dist_inv;
+
+                return 1;
+		}
+		else if (dist<= TMath::Abs(r1-r2))
+		{
+			Double_t normrad	=(r1-dist+r2)*dist_inv*0.5;
+            
+            //Double_t normrad	= (r1 + 0.5*(dist - r1 - r2))*dist_inv;
+			if(r2>r1)
+			{	
+                x1_c		=x1 - normrad*dif_x;
+                y1_c		=y1 - normrad*dif_y;
+			}
+			else
+			{
+				x1_c		=x2 + normrad*dif_x;
+                y1_c		=y2 + normrad*dif_y;
+			
+			}	
+                x2_c		=x1_c;
+                y2_c		=y1_c;
+        
+            	return 2;
+		}	
+        else
+        {
+	//no intersection (maybe 1)
+            Double_t normrad	=(r1+dist-r2)*dist_inv*0.5;
+            
+            //Double_t normrad	= (r1 + 0.5*(dist - r1 - r2))*dist_inv;
+           	x1_c		=x1 + normrad*dif_x;
+       	    y1_c		=y1 + normrad*dif_y;
+		
+  	        x2_c		=x1_c;
+            y2_c		=y1_c;
+        
+         	return 2;
+		}	
+	
+	return 3;
+        
+}    
+
+pair<Double_t,Double_t> fpathLength(Double_t r,Ali_AS_Track* helixA)
+{
+	//taken from https://www.star.bnl.gov/webdata/dox/html/StHelix_8cc_source.html
+	
+	pair<Double_t,Double_t> value;
+	pair<Double_t,Double_t> VALUE(999999999.,999999999.);
+	Double_t curvature		= fabs(helixA->getHelix_param(4));
+	Double_t radius			= fabs(1/curvature);
+	Double_t x0				= helixA->getHelix_param(5) +radius*TMath::Sin(helixA->getHelix_param(2));
+	Double_t y0				= helixA->getHelix_param(0) -radius*TMath::Cos(helixA->getHelix_param(2));
+	Double_t z0				= helixA->getHelix_param(1);
+
+	Double_t phase			= helixA->getHelix_param(2) -TMath::Pi()/2;
+	//Double_t phase=atan2f(-(x0-helixA->getHelix_param(5)),(y0-helixA->getHelix_param(0)));
+	
+	while(phase<-TMath::Pi()) phase	+= 2.*TMath::Pi() ;
+	while(phase>TMath::Pi()) phase	-= 2.*TMath::Pi() ;
+	
+	Double_t dipangle		= TMath::ATan(helixA->getHelix_param(3));
+	Double_t cosdipangle	= TMath::Cos(dipangle);
+	Double_t sindipangle	= TMath::Sin(dipangle);
+	Double_t h				= TMath::Sign(1.,(Float_t)helixA->getHelix_param(4));
+	if(phase> TMath::Pi()) phase	-= 2.*TMath::Pi() ;
+	Double_t cosphase		= TMath::Cos(phase);
+	Double_t sinphase		= TMath::Sin(phase);
+
+        //printf("h: %4.3f, phase: %4.3f, dipangle: %4.3f \n",h,phase,dipangle);
+
+	Double_t t1 	= y0*curvature;
+	Double_t t2 	= sinphase;
+  	Double_t t3 	= curvature*curvature;
+  	Double_t t4 	= y0*t2;
+	Double_t t5 	= cosphase;
+	Double_t t6 	= x0*t5;
+	Double_t t8 	= x0*x0;
+	Double_t t11	= y0*y0;
+	Double_t t14 	= r*r;
+	Double_t t15 	= t14*curvature;
+	Double_t t17 	= t8*t8;
+	Double_t t19 	= t11*t11;
+	Double_t t21 	= t11*t3;
+	Double_t t23 	= t5*t5;
+	Double_t t32 	= t14*t14;
+	Double_t t35 	= t14*t3;
+	Double_t t38 	= 8.0*t4*t6 - 4.0*t1*t2*t8 - 4.0*t11*curvature*t6 +
+				4.0*t15*t6 + t17*t3 + t19*t3 + 2.0*t21*t8 + 4.0*t8*t23 -
+				4.0*t8*x0*curvature*t5 - 4.0*t11*t23 -
+				4.0*t11*y0*curvature*t2 + 4.0*t11 - 4.0*t14 +
+				t32*t3 + 4.0*t15*t4 - 2.0*t35*t11 - 2.0*t35*t8;
+	//cout<<t38<<endl;
+	Double_t t40 	= (-t3*t38);
+	if (t40<0.) return VALUE;
+        t40 = ::sqrt(t40);
+
+        if (h<0) phase += TMath::Pi();
+	
+	if(phase>TMath::Pi()) phase	-= 2.*TMath::Pi();
+
+	Double_t t43 	= x0*curvature;
+	Double_t t45 	= 2.0*t5 - t35 + t21 + 2.0 - 2.0*t1*t2 -2.0*t43 - 2.0*t43*t5 + t8*t3;
+	Double_t t46 	= h*cosdipangle*curvature;
+
+	value.first 	= (-phase + 2.0*atan((-2.0*t1 + 2.0*t2 + t40)/t45))/t46;
+	value.second 	= -(phase + 2.0*atan((2.0*t1 - 2.0*t2 + t40)/t45))/t46;
+
+	//
+	//   Solution can be off by +/- one period, select smallest
+	//
+	Double_t p 		= fabs(2*TMath::Pi()/(h*curvature*cosdipangle));
+	if (! std::isnan(value.first)) {
+		if (fabs(value.first-p) < fabs(value.first)) value.first = value.first-p;
+	   	else if (fabs(value.first+p) < fabs(value.first)) value.first = value.first+p;
+	}
+	if (! std::isnan(value.second)) {
+	   	if (fabs(value.second-p) < fabs(value.second)) value.second = value.second-p;
+	   	else if (fabs(value.second+p) < fabs(value.second)) value.second = value.second+p;
+	}
+	
+	if (value.first > value.second)
+	swap(value.first,value.second);
+	return(value);
+
+	
+}
+
+Int_t fDCA_Helix_Estimate(Ali_AS_Track* helixA, Ali_AS_Track* helixB, Float_t &pathA, Float_t &pathB, Float_t &dcaAB)
+{
+
+    // Calculates the 2D crossing point, calculates the corresponding 3D point and returns pathA and pathB
+    //cout<<"a"<<endl;
+    Double_t helix_point[3];
+
+    Double_t x1 = helixA->getHelix_param(5);
+    Double_t y1 = helixA->getHelix_param(0);
+    Double_t x2 = helixB->getHelix_param(5);
+    Double_t y2 = helixB->getHelix_param(0);
+    Double_t c1 = helixA->getHelix_param(4);
+    Double_t c2 = helixB->getHelix_param(4);
+    Double_t r1 = 0.0;
+    Double_t r2 = 0.0;
+    if(c1 != 0 && c2 != 0)
+    {
+        r1 = fabs(1.0/c1);
+        r2 = fabs(1.0/c2);
+    } else return 0;
+    //cout<<"B"<<endl;
+    Double_t x1_c = 0.0;
+    Double_t y1_c = 0.0;
+    Double_t x2_c = 0.0;
+    Double_t y2_c = 0.0;
+
+    //Int_t bCross_points = fCross_points_Circles(x1,y1,r1,x2,y2,r2,x1_c,y1_c,x2_c,y2_c);
+    //printf("2D circle cross points (Alex): {%4.3f, %4.3f}, {%4.3f, %4.3f} \n",x1_c,y1_c,x2_c,y2_c);
+
+    pathA = 0.0;
+    pathB = 0.0;
+    dcaAB = 0.0;
+
+    //cout<<"C"<<endl;
+    Int_t cCross_points = fCircle_Interception(x1,y1,r1,x2,y2,r2,x1_c,y1_c,x2_c,y2_c);
+    //printf("2D circle cross points (Sven): {%4.3f, %4.3f}, {%4.3f, %4.3f}, return: %d \n",x1_c,y1_c,x2_c,y2_c,cCross_points);
+    //cout<<"C1"<<endl;
+    Double_t radiusA = sqrt(x1_c*x1_c+y1_c*y1_c);
+    Double_t radiusB = sqrt(x2_c*x2_c+y2_c*y2_c);
+    //printf("radiusA: %4.3f, radiusB: %4.3f \n",radiusA,radiusB);
+    //cout<<"C2"<<endl;
+    ////cout << "bCross_points = " << bCross_points << ", xyr(1) = {" << x1 << ", " << y1 << ", " << r1
+    //    << "}, xyr(2) = {"  << x2 << ", " << y2 << ", " << r2 << "}, p1 = {" << x1_c << ", " << y1_c << "}, p2 = {" << x2_c << ", " << y2_c << "}" << endl;
+
+    //if(bCross_points == 0) return 0;
+    //cout<<"D"<<endl;
+    TVector3 pointA,pointB,pointA1,pointB1,pointA2,pointB2;
+
+    Double_t path_lengthA_c1,path_lengthA_c2,path_lengthB_c1,path_lengthB_c2;
+
+    // first crossing point for helix A
+    pair< double, double > path_lengthA = fpathLength(radiusA,helixA);
+    Double_t path_lengthA1 = path_lengthA.first;
+    Double_t path_lengthA2 = path_lengthA.second;
+
+    helixA ->Evaluate(path_lengthA1,helix_point);
+    pointA1.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+    helixA ->Evaluate(path_lengthA2,helix_point);
+    pointA2.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+    //cout<<"E"<<endl;
+    if( ((x1_c-pointA1.x())*(x1_c-pointA1.x()) + (y1_c-pointA1.y())*(y1_c-pointA1.y())) <
+       ((x1_c-pointA2.x())*(x1_c-pointA2.x()) + (y1_c-pointA2.y())*(y1_c-pointA2.y())))
+    {
+        path_lengthA_c1 = path_lengthA1;
+    }
+    else
+    {
+        path_lengthA_c1 = path_lengthA2;
+    }
+    //cout<<"f"<<endl;
+    // second crossing point for helix A
+    path_lengthA = fpathLength(radiusB,helixA);
+    path_lengthA1 = path_lengthA.first;
+    path_lengthA2 = path_lengthA.second;
+    //cout<<"G"<<endl;
+    helixA ->Evaluate(path_lengthA1,helix_point);
+    pointA1.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+    helixA ->Evaluate(path_lengthA2,helix_point);
+    pointA2.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+
+    if( ((x2_c-pointA1.x())*(x2_c-pointA1.x()) + (y2_c-pointA1.y())*(y2_c-pointA1.y())) <
+       ((x2_c-pointA2.x())*(x2_c-pointA2.x()) + (y2_c-pointA2.y())*(y2_c-pointA2.y())))
+    {
+        path_lengthA_c2 = path_lengthA1;
+    }
+    else
+    {
+        path_lengthA_c2 = path_lengthA2;
+    }
+    //cout<<"H"<<endl;
+    // first crossing point for helix B
+    pair< double, double > path_lengthB = fpathLength(radiusA,helixB);
+    Double_t path_lengthB1 = path_lengthB.first;
+    Double_t path_lengthB2 = path_lengthB.second;
+
+    helixB ->Evaluate(path_lengthB1,helix_point);
+    pointB1.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+    helixB ->Evaluate(path_lengthB2,helix_point);
+    pointB2.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+    //cout<<"I"<<endl;
+    if( ((x1_c-pointB1.x())*(x1_c-pointB1.x()) + (y1_c-pointB1.y())*(y1_c-pointB1.y())) <
+       ((x1_c-pointB2.x())*(x1_c-pointB2.x()) + (y1_c-pointB2.y())*(y1_c-pointB2.y())))
+    {
+        path_lengthB_c1 = path_lengthB1;
+    }
+    else
+    {
+        path_lengthB_c1 = path_lengthB2;
+    }
+    //cout<<"J"<<endl;
+    // second crossing point for helix B
+    path_lengthB = fpathLength(radiusB,helixB);
+    path_lengthB1 = path_lengthB.first;
+    path_lengthB2 = path_lengthB.second;
+
+    helixB ->Evaluate(path_lengthB1,helix_point);
+    pointB1.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+    helixB ->Evaluate(path_lengthB2,helix_point);
+    pointB2.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+    //cout<<"K"<<endl;
+    if( ((x2_c-pointB1.x())*(x2_c-pointB1.x()) + (y2_c-pointB1.y())*(y2_c-pointB1.y())) <
+       ((x2_c-pointB2.x())*(x2_c-pointB2.x()) + (y2_c-pointB2.y())*(y2_c-pointB2.y())))
+    {
+        path_lengthB_c2 = path_lengthB1;
+    }
+    else
+    {
+        path_lengthB_c2 = path_lengthB2;
+    }
+    //cout<<"L"<<endl;
+    helixA ->Evaluate(path_lengthA_c1,helix_point);
+    pointA1.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+    helixA ->Evaluate(path_lengthA_c2,helix_point);
+    pointA2.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+
+    helixB ->Evaluate(path_lengthB_c1,helix_point);
+    pointB1.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+    helixB ->Evaluate(path_lengthB_c2,helix_point);
+    pointB2.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+    //cout<<"m"<<endl;
+
+    Double_t dcaAB1 = (pointA1-pointB1).Mag();
+    Double_t dcaAB2 = (pointA2-pointB2).Mag();
+    Double_t dcaAB3 = (pointA1-pointB2).Mag();
+    Double_t dcaAB4 = (pointA2-pointB1).Mag();
+
+#if 0
+    printf("pointA1: {%4.3f, %4.3f, %4.3f} \n",pointA1.X(),pointA1.Y(),pointA1.Z());
+    printf("pointA2: {%4.3f, %4.3f, %4.3f} \n",pointA2.X(),pointA2.Y(),pointA2.Z());
+    printf("pointB1: {%4.3f, %4.3f, %4.3f} \n",pointB1.X(),pointB1.Y(),pointB1.Z());
+    printf("pointB2: {%4.3f, %4.3f, %4.3f} \n",pointB2.X(),pointB2.Y(),pointB2.Z());
+    printf("dcaAB1: %4.3f, dcaAB2: %4.3f, dcaAB3: %4.3f, dcaAB4: %4.3f \n",dcaAB1,dcaAB2,dcaAB3,dcaAB4);
+#endif
+    //cout<<"N"<<endl;
+    if(dcaAB1 < dcaAB2)
+    {
+        pathA = path_lengthA_c1;
+        pathB = path_lengthB_c1;
+        dcaAB = dcaAB1;
+    }
+    else
+    {
+        pathA = path_lengthA_c2;
+        pathB = path_lengthB_c2;
+        dcaAB = dcaAB2;
+    }
+    //cout<<"O"<<endl;
+
+    return 1;
+
+}
+
+
+
+void fHelixABdca(Ali_AS_Track* helixA, Ali_AS_Track* helixB, Float_t &pathA, Float_t &pathB, Float_t &dcaAB,
+                                    Float_t pathA_in, Float_t pathB_in)
+{
+    //cout << "Standard fHelixABdca called..." << endl;
+    Float_t pA[2];
+    Float_t pB[2]; // the two start values for pathB, 0.0 is the origin of the helix at the first measured point
+    if(pathA_in < -9990.0 && pathB_in < -9990.0)
+    {
+        pA[0] = 0.0;
+        pA[1] = 0.0;
+        pB[0] = 0.0;
+        pB[1] = -70.0;
+    }
+    else
+    {
+        pA[0] = pathA_in+5.0;
+        pA[1] = pathA_in-5.0;
+        pB[0] = pathB_in+5.0;
+        pB[1] = pathB_in-5.0;
+    }
+    Float_t distarray[2];
+    TVector3 testA, testB;
+    Double_t helix_point[3];
+    for(Int_t r = 0; r < 2; r++)
+    {
+        helixB ->Evaluate(pB[r],helix_point);  // 3D-vector of helixB point at path pB[r]
+        testB.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+
+        Float_t pathA_dca = -999.0;
+        Float_t dcaAB_dca = -999.0;
+        fHelixAtoPointdca(testB,helixA,pathA_dca,dcaAB_dca); // new helix to point dca calculation
+
+        helixA ->Evaluate(pathA_dca,helix_point);  // 3D-vector of helixB point at path pB[r]
+        testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+
+        distarray[r] = (testA-testB).Mag(); // dca between helixA and helixB
+    }
+    Int_t loopcounter = 0;
+    Float_t scale = 1.0;
+    Float_t flip  = 1.0; // checks if the minimization direction changed
+    Float_t scale_length = 100.0;
+    while(fabs(scale_length) > 0.05 && loopcounter < 100) // stops when the length is too small
+    {
+        //cout << "n = " << loopcounter << ", pB[0] = " << pB[0]
+        //    << ", pB[1] = " << pB[1] << ", d[0] = " << distarray[0]
+        //    << ", d[1] = " << distarray[1] << ", flip = " << flip
+        //    << ", scale_length = " << scale_length << endl;
+        if(distarray[0] > distarray[1])
+        {
+            if(loopcounter != 0)
+            {
+                if(flip == 1.0) scale = 0.4; // if minimization direction changes -> go back, but only the way * 0.4
+                else scale = 0.7; // go on in this direction but only by the way * 0.7
+            }
+            scale_length = (pB[1]-pB[0])*scale; // the next length interval
+            pB[0]     = pB[1] + scale_length; // the new path
+            helixB ->Evaluate(pB[0],helix_point);  // 3D-vector of helixB point at path pB[r]
+            testB.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+
+            Float_t pathA_dca = -999.0;
+            Float_t dcaAB_dca = -999.0;
+            fHelixAtoPointdca(testB,helixA,pathA_dca,dcaAB_dca); // new helix to point dca calculation
+            pA[0] = pathA_dca;
+            //pA[0]     = helixA.pathLength(testB); // pathA at dca to helixB
+
+            helixA ->Evaluate(pA[0],helix_point);  // 3D-vector of helixB point at path pB[r]
+            testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+            distarray[0] = (testA-testB).Mag(); // new dca
+            flip = 1.0;
+        }
+        else
+        {
+            if(loopcounter != 0)
+            {
+                if(flip == -1.0) scale = 0.4;
+                else scale = 0.7;
+            }
+            scale_length = (pB[0]-pB[1])*scale;
+            pB[1]     = pB[0] + scale_length;
+            helixB ->Evaluate(pB[1],helix_point);  // 3D-vector of helixB point at path pB[r]
+            testB.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+
+            Float_t pathA_dca = -999.0;
+            Float_t dcaAB_dca = -999.0;
+            fHelixAtoPointdca(testB,helixA,pathA_dca,dcaAB_dca); // new helix to point dca calculation
+            pA[1] = pathA_dca;
+            //pA[1]     = helixA.pathLength(testB); // pathA at dca to helixB
+
+            helixA ->Evaluate(pA[1],helix_point);  // 3D-vector of helixB point at path pB[r]
+            testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]);
+            distarray[1] = (testA-testB).Mag();
+            flip = -1.0;
+        }
+        loopcounter++;
+    }
+    if(distarray[0] < distarray[1])
+    {
+        pathB = pB[0];
+        pathA = pA[0];
+        dcaAB = distarray[0];
+    }
+    else
+    {
+        pathB = pB[1];
+        pathA = pA[1];
+        dcaAB = distarray[1];
+    }
+}
+
+
+TVector3 find_sec_vertex(Ali_AS_Track* tracka, Ali_AS_Track* trackb )
+{
+    //cout<<"1"<<endl;
+    Float_t pathA_est, pathB_est, dcaAB_est;
+    //printf("i_track_A: %d, i_track_B: %d, i_comb: %d \n",i_track_A,i_track_B,i_comb);
+    //printf("3D cross point: {%4.3f, %4.3f, %4.3f} \n",vertex_point[0],vertex_point[1],vertex_point[2]);
+    Int_t est_return = fDCA_Helix_Estimate(tracka,trackb,pathA_est,pathB_est,dcaAB_est);
+    //cout<<"2"<<endl;
+    Float_t pathA, pathB, dcaAB;
+    fHelixABdca(tracka,trackb,pathA,pathB,dcaAB,pathA_est,pathB_est);
+    //cout<<"3"<<endl;
+    double vec_a[3];
+    double vec_b[3];
+    tracka->Evaluate(pathA,vec_a);
+    trackb->Evaluate(pathB,vec_b);
+    //cout<<"4"<<endl;
+    TVector3 sec_vertex;
+    sec_vertex.SetXYZ( (vec_a[0]+vec_b[0])*0.5, (vec_a[1]+vec_b[1])*0.5 , (vec_a[2]+vec_b[2])*0.5 );
+
+    return sec_vertex;
+
+}
+
+double get_dca_between_track(Ali_AS_Track* tracka, Ali_AS_Track* trackb )
+{
+    Float_t pathA_est, pathB_est, dcaAB_est;
+    //printf("i_track_A: %d, i_track_B: %d, i_comb: %d \n",i_track_A,i_track_B,i_comb);
+    //printf("3D cross point: {%4.3f, %4.3f, %4.3f} \n",vertex_point[0],vertex_point[1],vertex_point[2]);
+    Int_t est_return = fDCA_Helix_Estimate(tracka,trackb,pathA_est,pathB_est,dcaAB_est);
+    //cout<<"2"<<endl;
+    Float_t pathA, pathB, dcaAB;
+    fHelixABdca(tracka,trackb,pathA,pathB,dcaAB,pathA_est,pathB_est);
+
+    return dcaAB;
+
+}
+
+
 
 
 //_______________________________________________________________________
@@ -342,7 +895,32 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
     fListOfHistos = new TList();
     fListOfHistos ->SetOwner();
 
-   
+
+    histo_delta.resize(3);
+    delta_dca_vs_delta.resize(3);
+
+    histo_delta[0] = new TH1D("deltax","deltax",120,-20,20);
+    fListOfHistos->Add(histo_delta[0]);
+
+    histo_delta[1] = new TH1D("deltay","deltay",120,-20,20);
+    fListOfHistos->Add(histo_delta[1]);
+
+    histo_delta[2] = new TH1D("deltaz","deltaz",120,-20,20);
+    fListOfHistos->Add(histo_delta[2]);
+
+    TString arrn[3]={"x","y","z"};
+
+    for(int i=0;i<3;i++)
+    {
+        TString n = "delta_dca_vs_delta_";
+        n+=arrn[i];
+        delta_dca_vs_delta[i]= new TH2D(n.Data(),n.Data(),120,-20,20,120,-20,20);
+        fListOfHistos->Add(delta_dca_vs_delta[i]);
+
+
+    }
+
+
     OpenFile(2);
     cout << "File opened" << endl;
 
@@ -462,7 +1040,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     Int_t numberV0  =  fESD ->GetNumberOfV0s () ;
 
 
-    cout<<"numberV0: "<<numberV0<<endl;
+    //cout<<"numberV0: "<<numberV0<<endl;
     /*
     if(numberV0>60000)
     {
@@ -558,8 +1136,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      vector<int> vec_SV2_number;
      vector<int> vec_SV3_number;
 
-     vector<Ali_AS_Track*> vec_SV2_tracks;
-     vector<Ali_AS_Track*> vec_SV3_tracks;
+     vector<Ali_AS_Track> vec_SV2_tracks;
+     vector<Ali_AS_Track> vec_SV3_tracks;
 
      vector<int> vec_SV2_track_ids;
      vector<int> vec_SV3_track_ids;
@@ -570,6 +1148,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      Ali_AS_Track* as_trackP_save = new Ali_AS_Track;
      Ali_AS_Track* as_trackN = new Ali_AS_Track;
      Ali_AS_Track* as_trackN_save = new Ali_AS_Track;
+     Ali_AS_Track* tracka  =  new Ali_AS_Track;
+     Ali_AS_Track* trackb  =  new Ali_AS_Track;
 
      Float_t* pos = new Float_t[3];
      Float_t* momP = new Float_t[3];
@@ -606,12 +1186,13 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      double radius;
      TVector3 vec_primtoV0;
 
-     vector<Ali_AS_Track*> vec_antip_and_K_plus_V0s;
+     vector<Ali_AS_Track> vec_antip_and_K_plus_V0s;
+     vector<Ali_AS_Track> vec_antip_and_pi_plus;
      vector<TVector3> vec_S_vertex_positions;
-     vector<Ali_AS_Track*> vec_K0_V0s;
-     vector<TLorentzVector*> vec_K0_tlvs;
+     vector<TVector3> vec_ch4_S_vertex_positions;
+     vector<Ali_AS_Track> vec_K0_V0s;
+     vector<TLorentzVector> vec_K0_tlvs;
      vector<TVector3> vec_K0_V0_pos;
-;
 
 
     for(Int_t iTracks = 0; iTracks < N_tracks; iTracks++)
@@ -809,6 +1390,72 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //-----------------------------------------------------
     UShort_t NumTracks            = AS_Event ->getNumTracks(); // number of tracks in this event
 
+    //find similiar tracks
+    vector<int> trackids_bits_shared;
+    vector<int> trackids_similiar_tracks;
+    vector<int> trackids_similiar_used;
+
+    for(Int_t atrack = 0; atrack < NumTracks; atrack++)
+    {
+        tracka =  AS_Event -> getTrack(atrack);
+        TLorentzVector tlva = tracka->get_TLV_part();
+        int trackida = tracka->gettrackid();
+        if ( check_if_int_is_in_vector(trackida,trackids_similiar_used)){continue;}
+
+        for(int btrack=0; btrack<NumTracks; btrack++)
+        {
+            if(btrack==atrack){continue;}
+
+            trackb = AS_Event -> getTrack(btrack);
+            int trackidb = trackb->gettrackid();
+            if ( check_if_int_is_in_vector(trackidb,trackids_similiar_used)){continue;}
+
+            TLorentzVector tlvb = trackb->get_TLV_part();
+
+            TBits tbitsshared = tracka->getbitsshared();
+            int numbitsshared = tbitsshared.CountBits();
+
+
+            if( fabs( 1-tlva[0]/tlvb[0]) < 0.05 && fabs( 1-tlva[1]/tlvb[1]) < 0.05 && fabs( 1-tlva[2]/tlvb[2]) < 0.05)
+            {
+                
+                printf("tracka: %d, trackb %d \n",trackida,trackidb);
+                cout<<"numbitsshared: "<<numbitsshared<<endl;
+                cout<<"+++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+
+                Float_t path_closest_to_point = 0;
+                Float_t dca_closest_to_point  = 0;
+                Float_t path_initA = 0.0;
+                Float_t path_initB = 30.0;
+                double  pos[3];
+                float dca=-1;
+
+                tracka->Evaluate(0,pos);
+                TVector3 position;
+                position[0]=pos[0];
+                position[1]=pos[1];
+                position[2]=pos[2];
+                FindDCAHelixPoint2(position,trackb,path_initA,path_initB,path_closest_to_point,dca);
+                cout<<"dca: "<<dca<<endl;
+                if(dca<0.5)
+                {
+                    cout<<"pushed back"<<endl;
+                    trackids_similiar_tracks.push_back(trackidb);
+
+                    trackids_similiar_used.push_back(trackida);
+                    trackids_similiar_used.push_back(trackidb);
+                }
+
+
+            }
+
+
+        }
+
+    }
+
+
+
     for (Int_t V0_counter=0; V0_counter<numberV0; V0_counter++)
     {
         //get position of V0-----------------------
@@ -817,6 +1464,10 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         y=0;
         z=0;
         V0->AliESDv0::GetXYZ(x,y,z);
+
+        TVector3 V0_position;
+        V0_position.SetXYZ(x,y,z);
+
 
         //cout<<""<<endl;
        // printf("V0 number: %d \n",V0_counter);
@@ -1031,7 +1682,28 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
         //AS_V0->clearTrackList();
         //end of filling for N particle track-------------------------------------------------------------------
+        //FindDCAHelixPoint2()
 
+        //cout<<"a"<<endl;
+        /*
+        TVector3 sec_vertex_found = find_sec_vertex(as_trackP,as_trackN);
+
+        double delta_x = sec_vertex_found[0]-V0_position[0];
+        double delta_y = sec_vertex_found[1]-V0_position[1];
+        double delta_z = sec_vertex_found[2]-V0_position[2];
+
+        histo_delta[0]->Fill(delta_x);
+        histo_delta[1]->Fill(delta_y);
+        histo_delta[2]->Fill(delta_z);
+
+        double dca_wir = get_dca_between_track(as_trackP,as_trackN);
+        double dca_ESD = AS_V0 -> getdcaV0();
+
+        delta_dca_vs_delta[0]->Fill(delta_x,dca_wir-dca_ESD);
+        delta_dca_vs_delta[1]->Fill(delta_y,dca_wir-dca_ESD);
+        delta_dca_vs_delta[2]->Fill(delta_z,dca_wir-dca_ESD);
+        */
+        //cout<<"b"<<endl;
 
         //start of analysis-----------------------------------------------------------
         //variables:
@@ -1076,8 +1748,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         FindDCAHelixPoint2(pos_primary_vertex,as_trackN,path_initA,path_initB,path_closest_to_point,dcaBprim);
 
         
-        FindDCAHelixPoint2(pos,as_trackP,path_initA,path_initB,path_closest_to_point,dcaV01);
-        FindDCAHelixPoint2(pos,as_trackN,path_initA,path_initB,path_closest_to_point,dcaV02);
+        //FindDCAHelixPoint2(pos,as_trackP,path_initA,path_initB,path_closest_to_point,dcaV01);
+        //FindDCAHelixPoint2(pos,as_trackN,path_initA,path_initB,path_closest_to_point,dcaV02);
 
         //printf("dcaV0(esd): %f, dcaV01: %f, dcaV02: %f \n",dcaV0,dcaV01,dcaV02);
         //printf("dcaprim1(esd): %f, dcaprim2: %f, dcaprim1(calc): %f dcaprim2: %f \n",dcaP,dcaN,dcaAprim,dcaBprim);
@@ -1087,6 +1759,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
         trackidP = as_trackP->gettrackid();
         trackidN = as_trackN->gettrackid();
+
+        if ( check_if_int_is_in_vector(trackidP,trackids_similiar_tracks)){continue;}
+        if ( check_if_int_is_in_vector(trackidN,trackids_similiar_tracks)){continue;}
+
+        
 
         //momentumP = sqrt( momP[0]*momP[0] + momP[1]*momP[1]+ momP[2]*momP[2] );
         //momentumN = sqrt( momN[0]*momN[0] + momN[1]*momN[1]+ momN[2]*momN[2] );
@@ -1133,13 +1810,13 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             //cout<<energy_proton<<endl;
             //cout<<sqrt(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion);
-            tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_antiproton);
+            tlv_neg -> SetPxPyPzE(momN[0],momN[1] ,momN[2],energy_antiproton);
 
             *tlv_Lambda = *tlv_pos + *tlv_neg;
             invariantmass = tlv_Lambda->M();
 
             //cut on mass
-            if(invariantmass < (1.1157+0.001495*8) && invariantmass > (1.1157-0.001495*8))
+            if(invariantmass < (1.1157+0.001495*6) && invariantmass > (1.1157-0.001495*6))
             {
                 //create V0
                 /*
@@ -1166,8 +1843,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 direction_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
                 vec_direction_SV3.push_back(direction_SV3);
 
-                vec_SV3_tracks.push_back(as_trackP);
-                vec_SV3_tracks.push_back(as_trackN);
+                vec_SV3_tracks.push_back(*as_trackP);
+                vec_SV3_tracks.push_back(*as_trackN);
 
                 vec_SV3_track_ids.push_back(trackidP);
                 vec_SV3_track_ids.push_back(trackidN);
@@ -1197,7 +1874,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             invariantmass = tlv_Kaon->M();
 
             //cut on mass
-            if(invariantmass< (0.4981+0.0042*8) && invariantmass > (0.4981-0.0042*8))
+            if(invariantmass< (0.4981+0.0042*6) && invariantmass > (0.4981-0.0042*6))
             {
                 /*
                 Ali_AS_V0* save_V0 = AS_Event->createV0();
@@ -1222,8 +1899,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 direction_SV2.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
                 vec_direction_SV2.push_back(direction_SV2);
 
-                vec_SV2_tracks.push_back(as_trackP);
-                vec_SV2_tracks.push_back(as_trackN);
+                vec_SV2_tracks.push_back(*as_trackP);
+                vec_SV2_tracks.push_back(*as_trackN);
 
                 vec_SV2_track_ids.push_back(trackidP);
                 vec_SV2_track_ids.push_back(trackidN);
@@ -1239,7 +1916,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //**********************************************************************************+
         //**********************************************************************************+
 
-        //channel 2: antiS + p -> antiproton + K+ + K+ + (pi0)
+        //channel2: antiS + p -> antiproton + K+ + K+ + (pi0)
 
         //search for V0 coming from anti-proton and K+
         if (fabs(sigma_antiproton_TPC) < 2.5 && fabs(sigma_K_plus_TPC < 2.5))
@@ -1269,6 +1946,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                 AS_Track = AS_Event->getTrack(i_track_A);
                 Int_t Trackid  = AS_Track->gettrackid();
+                if ( check_if_int_is_in_vector(Trackid,trackids_similiar_tracks)){continue;}
                 //cout<<Trackid<<endl;
 
                 if(Trackid==trackidP){continue;}
@@ -1347,19 +2025,26 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                     //printf("mass squared Kaon 1: %f, Kaon 2: %f \n",m_squared1,m_squared2);
                     //printf("trackids: %d %d %d \n",trackidP,trackidN,Trackid);
-                    if(m_squared1>0.2 && m_squared1<0.35 && m_squared2>0.2 && m_squared2<0.35)
-                    {
+
+                    //if(m_squared1>0.2 && m_squared1<0.35 && m_squared2>0.2 && m_squared2<0.35)
+                   // {
                         //histo_counter->Fill(7.5);
                         ////cout<<"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
                         ////cout<<"hi"<<endl;
                         ////cout<<"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<<endl;
+
+                        TVector3 S_vertex_pos;
+                        //S_vertex_pos.SetXYZ(pos[0],pos[1],pos[2]);
+                        S_vertex_pos = V0_position;
 
                         Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
 
                         DMparticle->settype(2);
 
                         DMparticle->set_primVertex(pos_primary_vertex);
-                        DMparticle->set_S1Vertex(pos);
+                        DMparticle->set_S1Vertex(S_vertex_pos);
+
+                     
 
                         //DMparticle->set_S2Vertex(vec_position_SV2[vector_loop_SV2]);
                         //DMparticle->set_S3Vertex(vec_position_SV3[vector_loop_SV3]);
@@ -1376,6 +2061,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                         Ali_AS_Track* dmtrack2 = DMparticle->createTrack();
                         copy_track_params(AS_Track,dmtrack2);
+
+                        printf("type2; position x: %f, y: %f, z: %f \n",S_vertex_pos[0],S_vertex_pos[1],S_vertex_pos[2]);
 
                         /*
                         AS_DM_particle ->set_primVertex(pos_primary_vertex);
@@ -1409,7 +2096,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                         //cout<<"numbitsshared: "<<numbitsshared<<endl;
                         //histo_counter->SetBinContent(7,numbitsshared);
                         */
-                    }
+                   // }
 
                 }
 
@@ -1424,15 +2111,15 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //**********************************************************************************+
 
 
-        //channel 3:
+        //channel3:
         //AntiS + p  ->  antip + K+  + K0 + pi+
 
-        
+        //mass_squared mitnehmen zusaetzlich
 
         if( fabs(sigma_p_N)<2.5  && fabs(sigma_K_P)<2.5 )
         {
-            vec_antip_and_K_plus_V0s.push_back(as_trackP);
-            vec_antip_and_K_plus_V0s.push_back(as_trackN);
+            vec_antip_and_K_plus_V0s.push_back(*as_trackP);
+            vec_antip_and_K_plus_V0s.push_back(*as_trackN);
             TVector3 S_vertex_position;
             S_vertex_position.SetXYZ(pos[0],pos[1],pos[2]);
             vec_S_vertex_positions.push_back(S_vertex_position);
@@ -1452,16 +2139,38 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             invariantmass = tlv_Kaon->M();
 
             //cut on mass
-            if(invariantmass< (0.4981+0.0042*8) && invariantmass > (0.4981-0.0042*8))
+            if(invariantmass< (0.4981+0.0042*6) && invariantmass > (0.4981-0.0042*6))
             {
-                vec_K0_V0s.push_back(as_trackP);
-                vec_K0_V0s.push_back(as_trackN);
-                vec_K0_tlvs.push_back(tlv_Kaon);
+                vec_K0_V0s.push_back(*as_trackP);
+                vec_K0_V0s.push_back(*as_trackN);
+                vec_K0_tlvs.push_back(*tlv_Kaon);
                 TVector3 K0_V0_position;
                 K0_V0_position.SetXYZ(pos[0],pos[1],pos[2]);
                 vec_K0_V0_pos.push_back(K0_V0_position);
             }
         }
+
+
+        //**********************************************************************************+
+        //**********************************************************************************+
+        //channel4
+
+        //antiS  +  n  -> antip  +  2*K0  +  pi+
+
+        if( fabs(sigma_p_N)<2.5  &&  fabs(sigma_pi_P)<2.5 )
+        {
+            vec_antip_and_pi_plus.push_back(*as_trackP);
+            vec_antip_and_pi_plus.push_back(*as_trackN);
+            TVector3 S_vertex_position;
+            S_vertex_position.SetXYZ(pos[0],pos[1],pos[2]);
+            vec_ch4_S_vertex_positions.push_back(S_vertex_position);
+
+        }
+
+        //use K0s from above!
+
+
+
 
 
 
@@ -1619,6 +2328,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
             AS_Track = AS_Event->getTrack(i_track_A);
             Int_t Trackid  = AS_Track->gettrackid();
+            if ( check_if_int_is_in_vector(Trackid,trackids_similiar_tracks)){continue;}
             //cout<<Trackid<<endl;
 
             if(Trackid==trackidP){continue;}
@@ -1645,7 +2355,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         }
 
         //if(vec_tracks.size()>=1)
-       // {
+        // {
+
+            /*
             AS_NUCLEV = AS_Event->createNUCLEV();
 
             AS_NUCLEV ->set_secVertex(pos);
@@ -1671,6 +2383,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 AS_NUCLEV->adddca(vec_dca_to_V0[i]);
 
             }
+            */
+
        // }
 
 
@@ -1825,8 +2539,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
     }
-    cout<<"end of V0 loop"<<endl;
-    cout<<""<<endl;
+    //cout<<"end of V0 loop"<<endl;
+    //cout<<""<<endl;
     //end of V0 loop
 
     
@@ -2095,6 +2809,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     int counter_V0s = 0;
     //-----------------------------------------------
     //find S-vertex:
+    //channel1
 
     for(Int_t vector_loop_SV3 = 0; vector_loop_SV3 < vec_position_SV3.size(); vector_loop_SV3++)
     {
@@ -2149,6 +2864,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 {
                     AS_Track = AS_Event->getTrack(i_track_A);
                     int trackid2 = AS_Track->gettrackid();
+                    if ( check_if_int_is_in_vector(trackid2,trackids_similiar_tracks)){continue;}
 
                     if( check_if_int_is_in_vector(trackid2,trackidsSV2andSV3) ){continue;}
 
@@ -2295,7 +3011,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     //cout<<"falsche S-mass: "<<S_mass<<endl;
                     //cout<<"korrekte S-mass: "<<S_mass_correct<<endl;
 
-                    //if(radiusS<5){continue;}
+                    if(radiusS<5){continue;}
 
                     
                     alltrackids.clear();
@@ -2308,6 +3024,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                    if ( check_if_value_is_doppelt_in_vector(alltrackids) ) {continue;}
 
+
+                   cout<<"all trackids: "<<endl;
+                   printf("%d %d %d %d %d %d \n",alltrackids[0],alltrackids[1],alltrackids[2],alltrackids[3],alltrackids[4],alltrackids[5]);
                    //vertices that fulfill all cuts
 
                    //after all cuts store all 6 tracks in brute force
@@ -2347,16 +3066,40 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                    copy_track_params(ASTrack2,dmtrack1);   //second pion
 
                    Ali_AS_Track* dmtrack2 = DMparticle->createTrack();
-                   copy_track_params(vec_SV2_tracks[2*vector_loop_SV2],dmtrack2);
+                   Ali_AS_Track* ptr_track = &vec_SV2_tracks[2*vector_loop_SV2];
+                   copy_track_params(ptr_track,dmtrack2);
 
                    Ali_AS_Track* dmtrack3 = DMparticle->createTrack();
-                   copy_track_params(vec_SV2_tracks[2*vector_loop_SV2+1],dmtrack3);
+                   ptr_track = &vec_SV2_tracks[2*vector_loop_SV2+1];
+                   copy_track_params(ptr_track,dmtrack3);
 
                    Ali_AS_Track* dmtrack4 = DMparticle->createTrack();
-                   copy_track_params(vec_SV3_tracks[2*vector_loop_SV3],dmtrack4);
+                   ptr_track = &vec_SV3_tracks[2*vector_loop_SV3];
+                   copy_track_params(ptr_track,dmtrack4);
 
                    Ali_AS_Track* dmtrack5 = DMparticle->createTrack();
-                   copy_track_params(vec_SV3_tracks[2*vector_loop_SV3+1],dmtrack5);
+                   ptr_track = &vec_SV3_tracks[2*vector_loop_SV3+1];
+                   copy_track_params(ptr_track,dmtrack5);
+
+                   //cout<<"trackids: "<<endl;
+                   cout<<ASTrack1->gettrackid()<<endl;
+                   cout<<ASTrack2->gettrackid()<<endl;
+                   cout<<vec_SV2_tracks[2*vector_loop_SV2].gettrackid()<<endl;
+                   cout<<vec_SV2_tracks[2*vector_loop_SV2+1].gettrackid()<<endl;
+                   cout<<vec_SV3_tracks[2*vector_loop_SV3].gettrackid()<<endl;
+                   cout<<vec_SV3_tracks[2*vector_loop_SV3+1].gettrackid()<<endl;
+
+                   for(int i=0;i<6;i++)
+                   {
+                       Ali_AS_Track* track = DMparticle->getTrack(i);
+                       int trackid = track->gettrackid();
+                      // cout<<"trackid: "<<trackid<<endl;
+
+                   }
+
+                   //cout<<"all trackids: "<<endl;
+                   printf("%d %d %d %d %d %d \n",trackids[0],trackids[1],vec_SV2_track_ids[2*vector_loop_SV2],vec_SV2_track_ids[2*vector_loop_SV2+1],
+                          vec_SV3_track_ids[2*vector_loop_SV3],vec_SV3_track_ids[2*vector_loop_SV3+1]);
 
 
                        /*
@@ -2561,7 +3304,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                        */
                 //-----------------------------------------------------------------------------------------------
                 //-----------------------------------------------------------------------------------------------
-                //-----------------------------------------
+                   //-----------------------
+                   //------------------
 
                 }
 
@@ -2584,17 +3328,23 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     {
         for(int K0_loop=0; K0_loop<sizeV2; K0_loop++)
         {
-            vector<Ali_AS_Track*> all_tracks_channel3;
+            vector<Ali_AS_Track> all_tracks_channel3;
             all_tracks_channel3.resize(5);
 
             vector<int> all_tracks_ids_channel3;
             all_tracks_ids_channel3.resize(5);
 
             TVector3 S_vertex_pos = vec_S_vertex_positions[antipKplus_loop];
-            TLorentzVector* tlv_K0_V0 = vec_K0_tlvs[K0_loop];
+            TLorentzVector tlv_K0_V0 = vec_K0_tlvs[K0_loop];
             TVector3 dir_K0_V0;
-            dir_K0_V0.SetXYZ(tlv_K0_V0->X(),tlv_K0_V0->Y(),tlv_K0_V0->Z());
+            dir_K0_V0.SetXYZ(tlv_K0_V0.X(),tlv_K0_V0.Y(),tlv_K0_V0.Z());
             TVector3 pos_K0_V0 = vec_K0_V0_pos[K0_loop];
+
+            TVector3 vec_prim_to_S_vertex;
+            vec_prim_to_S_vertex.SetXYZ(S_vertex_pos[0]-xprim,S_vertex_pos[1]-yprim,S_vertex_pos[2]-zprim);
+            double radiusS = vec_prim_to_S_vertex.Mag();
+
+            if(radiusS<5.){continue;}
 
             all_tracks_channel3[0] = vec_antip_and_K_plus_V0s[2*antipKplus_loop];
             all_tracks_channel3[1] = vec_antip_and_K_plus_V0s[2*antipKplus_loop+1];
@@ -2603,7 +3353,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
             for(int i=0;i<4;i++)
             {
-                int trackid = all_tracks_channel3[i]->gettrackid();
+                int trackid = all_tracks_channel3[i].gettrackid();
                 all_tracks_ids_channel3[i]= trackid;
             }
 
@@ -2612,24 +3362,27 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
             if(distance>0.5){continue;}
 
-            vector<Ali_AS_Track*> vec_pion_track;
+            vector<Ali_AS_Track> vec_pion_track;
             for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
             {
                 AS_Track = AS_Event->getTrack(i_track_A);
                 int trackid = AS_Track->gettrackid();
+                if ( check_if_int_is_in_vector(trackid,trackids_similiar_tracks)){continue;}
                 if (check_if_int_is_in_vector(trackid , all_tracks_ids_channel3) ) {continue;}
 
                 path_closest_to_point = 0;
                 dca_closest_to_point  = 0;
                 FindDCAHelixPoint2(S_vertex_pos, AS_Track, path_initA, path_initB, path_closest_to_point,dca_closest_to_point);
                 if(dca_closest_to_point>0.5){continue;}
-                vec_pion_track.push_back(AS_Track);
+                vec_pion_track.push_back(*AS_Track);
 
             }
 
             if(vec_pion_track.size()==1)
             {
                 all_tracks_channel3[4]=vec_pion_track[0];
+
+                if ( check_if_value_is_doppelt_in_vector(all_tracks_ids_channel3) ){continue;}
 
                 Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
 
@@ -2638,7 +3391,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 DMparticle->set_primVertex(pos_primary_vertex);
                 DMparticle->set_S1Vertex(S_vertex_pos);
 
-                printf("type3; position x: %f, y: %f, z: %f \n",S_vertex_pos[0],S_vertex_pos[1],S_vertex_pos[2]);
+                //printf("type3; position x: %f, y: %f, z: %f \n",S_vertex_pos[0],S_vertex_pos[1],S_vertex_pos[2]);
 
                 DMparticle->set_S2Vertex(pos_K0_V0);
                 //DMparticle->set_DirSV1(momentum_SV1);
@@ -2649,7 +3402,10 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 for(int i=0;i<5;i++)
                 {
                     Ali_AS_Track* dmtrack = DMparticle->createTrack();
-                    copy_track_params(all_tracks_channel3[i],dmtrack);
+                    Ali_AS_Track* ptr_all_tracks = &all_tracks_channel3[i];
+                    copy_track_params(ptr_all_tracks,dmtrack);
+                    int trackid = all_tracks_channel3[i].gettrackid();
+                    //cout<<"trackid: "<<trackid<<endl;
 
                 }
 
@@ -2658,6 +3414,99 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
         }
     }
+
+
+    //********************************************************************************
+    //********************************************************************************
+    //channel4  do combinatoric
+
+    //from vector of K0s choose 2
+    //build lines from each vector
+    //for each line calculate dca to S_vertex pos
+
+    int size3 =  vec_ch4_S_vertex_positions.size();
+
+    for(int K0_loop1=0; K0_loop1<sizeV2; K0_loop1++)
+    {
+        for(int K0_loop2=K0_loop1+1; K0_loop2<sizeV2; K0_loop2++)
+        {
+            for(int S_vertex_loop=0;S_vertex_loop<size3;S_vertex_loop++)
+            {
+                TVector3 S_vertex_pos =  vec_ch4_S_vertex_positions[S_vertex_loop];
+                TVector3 pos_K0_V01 = vec_K0_V0_pos[K0_loop1];
+                TVector3 pos_K0_V02 = vec_K0_V0_pos[K0_loop2];
+
+                TVector3 vec_prim_to_S_vertex;
+                vec_prim_to_S_vertex.SetXYZ(S_vertex_pos[0]-xprim,S_vertex_pos[1]-yprim,S_vertex_pos[2]-zprim);
+                double radiusS = vec_prim_to_S_vertex.Mag();
+
+                if(radiusS<5.){continue;}
+
+                TLorentzVector tlv_K0_V01 = vec_K0_tlvs[K0_loop1];
+                TVector3 dir_K0_V01;
+                dir_K0_V01.SetXYZ(tlv_K0_V01.X(),tlv_K0_V01.Y(),tlv_K0_V01.Z());
+
+                TLorentzVector tlv_K0_V02 = vec_K0_tlvs[K0_loop2];
+                TVector3 dir_K0_V02;
+                dir_K0_V02.SetXYZ(tlv_K0_V02.X(),tlv_K0_V02.Y(),tlv_K0_V02.Z());
+
+                double dist1 = calculateMinimumDistanceStraightToPoint(pos_K0_V01,dir_K0_V01,S_vertex_pos);
+                if(dist1>0.5) {continue;}
+
+                double dist2 = calculateMinimumDistanceStraightToPoint(pos_K0_V02,dir_K0_V02,S_vertex_pos);
+                if(dist2>0.5) {continue;}
+
+                vector<Ali_AS_Track> all_tracks;
+                vector<int> all_track_ids;
+
+                all_tracks.push_back( vec_antip_and_pi_plus[2*S_vertex_loop] );
+                all_tracks.push_back( vec_antip_and_pi_plus[2*S_vertex_loop + 1] );
+                all_tracks.push_back( vec_K0_V0s[2*K0_loop1] );
+                all_tracks.push_back( vec_K0_V0s[2*K0_loop1 + 1] );
+                all_tracks.push_back( vec_K0_V0s[2*K0_loop2] );
+                all_tracks.push_back( vec_K0_V0s[2*K0_loop2 + 1] );
+
+                for(int i=0;i<6;i++)
+                {
+                    int trackid = all_tracks[i].gettrackid();
+                    all_track_ids.push_back(trackid);
+
+                }
+
+                if ( check_if_value_is_doppelt_in_vector(all_track_ids) ){continue;}
+
+                Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
+
+                DMparticle->settype(4);
+
+                DMparticle->set_primVertex(pos_primary_vertex);
+                DMparticle->set_S1Vertex(S_vertex_pos);
+                DMparticle->set_S2Vertex(pos_K0_V01);
+                DMparticle->set_S3Vertex(pos_K0_V02);
+
+                for(int i=0;i<6;i++)
+                {
+                    Ali_AS_Track* dmtrack = DMparticle->createTrack();
+                    Ali_AS_Track* ptr_all_tracks = &all_tracks[i];
+                    copy_track_params(ptr_all_tracks,dmtrack);
+                    //int trackid = all_tracks_channel3[i].gettrackid();
+                    //cout<<"trackid: "<<trackid<<endl;
+
+                }
+
+
+
+                //printf("type4; position x: %f, y: %f, z: %f \n",S_vertex_pos[0],S_vertex_pos[1],S_vertex_pos[2]);
+
+            }
+
+        }
+
+    }
+
+
+
+
 
 
 
@@ -2683,11 +3532,12 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     AS_Event->clearTrackList();
 
 
+
     Tree_AS_Event ->Fill();
     //Ali_AS_V0* AS_V0;
 
     numberV0 = AS_Event->getNumV0s();
-    cout<<"numberV0: "<<numberV0<<endl;
+    //cout<<"numberV0: "<<numberV0<<endl;
     for (Int_t V0_counter=0; V0_counter<numberV0; V0_counter++)
     {
         //if(counter_events>280) {cout<<"V0 counter2: "<<V0_counter<<endl;}
@@ -2990,6 +3840,8 @@ void Ali_DarkMatter_ESD_analysis::FindDCAHelixPoint2(TVector3 space_vec, Ali_AS_
 	dcaAB = distarray[1];
     }
 }
+
+
 
 
 

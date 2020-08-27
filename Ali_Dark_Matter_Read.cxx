@@ -1,6 +1,11 @@
 
 #include "Ali_Dark_Matter_Read.h"
 #include "Ali_Dark_Matter_Read_LinkDef.h"
+//#include "TRD_ST_Analyze_tracklets.cxx"
+#include "TEveLine.h"
+#include "TEvePointSet.h"
+#include <TEveManager.h>
+//#incclude "additionalfunc.h"
 
 ClassImp(Ali_Dark_Matter_Read)
 
@@ -309,6 +314,103 @@ TVector3 calcVertexAnalytical(TVector3 &base1, TVector3 &dir1,
 }
 
 
+/*
+void Draw_TPC_track(Ali_AS_Track* TRD_ST_TPC_Track, Int_t color, Double_t line_width, int i_track,TVector3 pos_prim)
+{
+    Double_t track_pos[3];
+    Double_t radius_helix;
+
+   // Ali_AS_Track* TRD_ST_TPC_Track = TRD_ST_Event ->getTrack(i_track);
+    vector<TEveLine*> vec_TPL3D_helix;
+    vector<TEveLine*> vec_TPL3D_helix_inner;
+    vector<TEveLine*> vec_TPL3D_helix_hull;
+
+    vec_TPL3D_helix.resize(i_track+1);
+    vec_TPL3D_helix_hull.resize(i_track+1);
+    vec_TPL3D_helix_inner.resize(i_track+1);
+    vec_TPL3D_helix[i_track] = new TEveLine();
+    vec_TPL3D_helix_hull[i_track] = new TEveLine();
+    vec_TPL3D_helix_inner[i_track] = new TEveLine();
+    //for(Int_t i_param=0;i_param<6;i_param++)
+    //    cout<<TRD_ST_TPC_Track ->getHelix_param(i_param)<<" ";
+    //cout<<endl;
+    for(Double_t track_path = 0.0; track_path < 1000; track_path += 1.0)
+    {
+        TRD_ST_TPC_Track ->Evaluate(track_path,track_pos);
+        radius_helix = TMath::Sqrt( TMath::Power(track_pos[0],2) + TMath::Power(track_pos[1],2) );
+        if(radius_helix > 370.0) break;
+        if(fabs(track_pos[2]) > 360.0) break;
+        if(radius_helix > 80.0)
+        {
+            vec_TPL3D_helix[i_track]        ->SetNextPoint(track_pos[0],track_pos[1],track_pos[2]);
+            vec_TPL3D_helix_hull[i_track]   ->SetNextPoint(track_pos[0],track_pos[1],track_pos[2]);
+        }
+        if(radius_helix < 80.0)
+        {
+            vec_TPL3D_helix_inner[i_track] ->SetNextPoint(track_pos[0],track_pos[1],track_pos[2]);
+        }
+
+
+        //if(i_track == 0) printf("track_path: %4.3f, pos: {%4.2f, %4.2f, %4.2f} \n",track_path,track_pos[0],track_pos[1],track_pos[2]);
+    }
+
+    TString HistName = "track ";
+    HistName += i_track;
+    vec_TPL3D_helix[i_track]    ->SetName(HistName.Data());
+    vec_TPL3D_helix[i_track]    ->SetLineStyle(1);
+    vec_TPL3D_helix[i_track]    ->SetLineWidth(line_width);
+    vec_TPL3D_helix[i_track]    ->SetMainColor(color);
+    vec_TPL3D_helix[i_track]    ->SetMainAlpha(1.0);
+
+    HistName = "track (h) ";
+    HistName += i_track;
+    vec_TPL3D_helix_hull[i_track]    ->SetName(HistName.Data());
+    vec_TPL3D_helix_hull[i_track]    ->SetLineStyle(1);
+    vec_TPL3D_helix_hull[i_track]    ->SetLineWidth(8);
+    vec_TPL3D_helix_hull[i_track]    ->SetMainColor(kWhite);
+    vec_TPL3D_helix_hull[i_track]    ->SetMainAlpha(0.3);
+
+    HistName = "track (h) ";
+    HistName += i_track;
+    vec_TPL3D_helix_inner[i_track]    ->SetName(HistName.Data());
+    vec_TPL3D_helix_inner[i_track]    ->SetLineStyle(1);
+    vec_TPL3D_helix_inner[i_track]    ->SetLineWidth(2);
+    vec_TPL3D_helix_inner[i_track]    ->SetMainColor(kGray);
+    vec_TPL3D_helix_inner[i_track]    ->SetMainAlpha(0.8);
+    //if(i_track == 3)
+    
+    {
+        gEve->AddElement(vec_TPL3D_helix[i_track]);
+        gEve->AddElement(vec_TPL3D_helix_hull[i_track]);
+        gEve->AddElement(vec_TPL3D_helix_inner[i_track]);
+    }
+
+    TEvePointSet* TEvePoint_vertex   = NULL;
+    TEveLine*     TEveLine_beam_axis = NULL;
+
+    TEvePoint_vertex = new TEvePointSet();
+    TEveLine_beam_axis = new TEveLine();
+
+    TEvePoint_vertex ->SetPoint(0,pos_prim[0],pos_prim[1],pos_prim[2]);
+    TEvePoint_vertex-> SetMarkerSize(3);
+    TEvePoint_vertex->  SetMarkerStyle(20);
+    TEvePoint_vertex-> SetMarkerColor(kGray+1);
+    gEve->AddElement(TEvePoint_vertex);
+
+    TEveLine_beam_axis ->SetNextPoint(0.0,0.0,-30.0);
+    TEveLine_beam_axis ->SetNextPoint(0.0,0.0,30.0);
+    TEveLine_beam_axis ->SetName("beam axis");
+    TEveLine_beam_axis ->SetLineStyle(1);
+    TEveLine_beam_axis ->SetLineWidth(4);
+    TEveLine_beam_axis ->SetMainColor(kGray+2);
+    gEve->AddElement(TEveLine_beam_axis);
+
+    //printf("%s Ali_TRD_ST_Analyze::Draw_TPC_track, i_track: %d %s \n",KRED,i_track,KNRM);
+}
+
+*/
+
+
 
 
 bool check_if_int_is_in_vector(int a, vector<int> vec)
@@ -344,6 +446,42 @@ bool check_if_value_is_doppelt_in_vector(vector<int> vec)
     }
     return false;
 }
+
+
+vector<int> inttobinaryarray(int x)
+{
+    double quotient = x;
+    double remainder;
+    vector<int> res;
+
+
+    while(quotient!=0)
+    {
+        quotient = x/2;
+        remainder = x%2;
+        x = quotient;
+        //cout<<"remainder: "<<remainder<<endl;
+        res.insert(res.begin(),remainder);
+    }
+    while(res.size()<8)
+    {
+        res.insert(res.begin(),0);
+
+    }
+    return res;
+}
+
+int getnumones(vector<int> vec)
+{
+    int counter = 0;
+    for(int i=0;i<vec.size();i++)
+    {
+        if(vec[i]==1){counter++;}
+    }
+    return counter;
+
+}
+
 
 double calculate_m_squared_by_TOF(Ali_AS_Track* track_in_func)
 {
@@ -385,6 +523,8 @@ double calculate_m_squared_by_TOF(Ali_AS_Track* track_in_func)
         double m_squared = ( momentum / velocity)  *  ( momentum /velocity) * 1./gamma_squared ;
         return m_squared;
 }
+
+
 
 
 
@@ -541,6 +681,87 @@ void fHelixAtoLinedca(TVector3 dirB, TVector3 spaceB, Ali_AS_Track* helixA, Floa
     }
 }
 
+double get_invariant_mass(Ali_AS_Track* trackK0P, Ali_AS_Track* trackK0N, double mass, TVector3 K0_vertex)
+{
+    Float_t path_initA = 0.0;
+    Float_t path_initB = 30.0;
+
+    TLorentzVector tlvP = trackK0P->get_TLV_part();
+    TLorentzVector tlvN = trackK0N->get_TLV_part();
+
+    double momentumP = tlvP.P();
+    double momentumN = tlvN.P();
+
+    double energy_pion_plus  = sqrt(mass*mass+momentumP*momentumP);
+    double energy_pion_minus  = sqrt(mass*mass+momentumN*momentumN);
+
+    Float_t path_closest_to_point,dca_closest_to_point;
+    Double_t r1[3];
+    Double_t r2[3];
+
+    //track1
+    FindDCAHelixPoint(K0_vertex,trackK0P,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+    trackK0P->Evaluate(path_closest_to_point,r1);
+    trackK0P->Evaluate(path_closest_to_point+0.01,r2);
+    TVector3 dir;
+    dir.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
+    TVector3 unit_dir = dir.Unit();
+    TVector3 momentum_vec = unit_dir * momentumP;
+    tlvP.SetPxPyPzE(momentum_vec[0],momentum_vec[1],momentum_vec[2],energy_pion_plus);
+
+    //track2
+    FindDCAHelixPoint(K0_vertex,trackK0N,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+    trackK0N->Evaluate(path_closest_to_point,r1);
+    trackK0N->Evaluate(path_closest_to_point+0.01,r2);
+    dir.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
+    unit_dir = dir.Unit();
+    momentum_vec = unit_dir * momentumN;
+    tlvN.SetPxPyPzE(momentum_vec[0],momentum_vec[1],momentum_vec[2],energy_pion_minus);
+
+    TLorentzVector tlvK0 = tlvP + tlvN;
+    double invariantmass = tlvK0.M();
+
+    return invariantmass;
+}
+
+
+
+bool checkifsimiliar(Ali_AS_Track* tracka,Ali_AS_Track* trackb)
+{
+    TLorentzVector tlva = tracka->get_TLV_part();
+    TLorentzVector tlvb = trackb->get_TLV_part();
+
+    if( fabs( 1-tlva[0]/tlvb[0]) < 0.05 && fabs( 1-tlva[1]/tlvb[1]) < 0.05 && fabs( 1-tlva[2]/tlvb[2]) < 0.05)
+    {
+        double  pos[3];
+        float dca=-1;
+        Float_t path_closest_to_point = 0;
+        Float_t dca_closest_to_point  = 0;
+        Float_t path_initA = 0.0;
+        Float_t path_initB = 30.0;
+        int counter=0;
+
+        for(int i=0;i<100;i+=10)
+        {
+            tracka->Evaluate(i,pos);
+            TVector3 position;
+            position[0]=pos[0];
+            position[1]=pos[1];
+            position[2]=pos[2];
+            FindDCAHelixPoint(position,trackb,path_initA,path_initB,path_closest_to_point,dca);
+            if(dca<0.5)
+            {
+                counter++;
+            }
+            if(counter>2){return 1;}
+        }
+
+    }
+
+    return 0;
+
+}
+
 
 
 //----------------------------------------------------------------------------------------
@@ -572,7 +793,7 @@ Ali_Dark_Matter_Read::Ali_Dark_Matter_Read(TString list)
 {
     TString in_list_name = list;
     TString outfile_dir = "/misc/alidata120/alice_u/schlichtmann/out/";
-    TString outfile_name = outfile_dir + in_list_name + "_out.root";
+    TString outfile_name = outfile_dir + in_list_name + "NUCLEV_out.root";
     //outputfile = new TFile("./TRD_Calib.root","RECREATE");
     //outputfile = new TFile(outfile_name.Data(),"RECREATE");
     output_histos = new TFile(outfile_name.Data(),"RECREATE");
@@ -607,7 +828,9 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
     //TString pinputdir = "/home/ceres/schlichtmann/ESD_Analysis/";
     TString inlistdir = "/home/ceres/schlichtmann/ESD_Analysis/Lists/";
 
-    TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/Pb_Pb_V3/";
+    TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/p_Pb_S_search_V9_more_stat/";
+    //TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/p_Pb_NUCLEV_V4/";
+    //TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/Pb_Pb_V3/";
 
     //TString pinputdir = "/misc/alidata120/alice_u/schlichtmann/dark_matter_V11/";
     //
@@ -818,11 +1041,119 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
 
     }
 
+    for(int i=2;i<6;i++)
+    {
+        TString name = "radius_ortho_vs_z_";
+        name+=i;
+        TH2D* radius_ortho_vs_z = new TH2D(name.Data(),name.Data(),500,-200,200,500,0,200);
+        vec_radius_ortho_vs_z.push_back(radius_ortho_vs_z);
+    }
+
+    for(int i=2;i<6;i++)
+    {
+        TString name = "radius_ortho_vs_z_";
+        name+=i;
+        name+=" dcaprim>2";
+        TH2D* radius_ortho_vs_z = new TH2D(name.Data(),name.Data(),500,-200,200,500,0,200);
+        vec_radius_ortho_vs_z.push_back(radius_ortho_vs_z);
+    }
+
+    for(int i=2;i<6;i++)
+    {
+        TString name = "radius_ortho_vs_z_";
+        name+=i;
+        name+=" dcaprim>5";
+        TH2D* radius_ortho_vs_z = new TH2D(name.Data(),name.Data(),500,-200,200,500,0,200);
+        vec_radius_ortho_vs_z.push_back(radius_ortho_vs_z);
+    }
+
+    TString name = "radius_ortho_vs_z_";
+    name+=4;
+    name+=" dcaprim>5 momentum cut";
+    TH2D* radius_ortho_vs_z = new TH2D(name.Data(),name.Data(),500,-200,200,500,0,200);
+    vec_radius_ortho_vs_z.push_back(radius_ortho_vs_z);
+
+    name = "radius_ortho_vs_z_";
+    name+=4;
+    name+=" dcaprim>7";
+    TH2D* radius_ortho_vs_z2 = new TH2D(name.Data(),name.Data(),500,-200,200,500,0,200);
+    vec_radius_ortho_vs_z.push_back(radius_ortho_vs_z2);
+
+    name = "radius_ortho_vs_z_";
+    name+=4;
+    name+=" dcaprim>7 momentum cut";
+    TH2D* radius_ortho_vs_z3 = new TH2D(name.Data(),name.Data(),500,-200,200,500,0,200);
+    vec_radius_ortho_vs_z.push_back(radius_ortho_vs_z3);
+
+    int binning_nuclev=300;
+    int range_min_nuclev=0;
+    int range_max_nuclev=200;
+
+    TString names[] ={"nuclev_radius_4_or_less","nuclev_radius_4_or_less dcaprim>5","nuclev_radius_4_or_less dcaprim>5 and momentum",
+    "nuclev_radius_4_or_less dcaprim>7","nuclev_radius_4_or_less dcaprim>7 and momentum","nuclev_radius_4_or_less dcaprim>5 and momentum and its","nuclev_radius_4_or_less dcaprim>5 and its"} ;
+    TString names2[] ={"nuclev_radius_4_or_less_vs_z","nuclev_radius_4_or_less dcaprim>5_vs_z",
+    "nuclev_radius_4_or_less dcaprim>5 and momentum_vs_Z","nuclev_radius_4_or_less dcaprim>7_vs_z","nuclev_radius_4_or_less dcaprim>7 and momentum_vs_z",
+    "nuclev_radius_4_or_less dcaprim>5 and momentum and its_vs_z","nuclev_radius_4_or_less dcaprim>5 and its_vs_z"} ;
+
+    for(int i=0;i<sizeof(names)/sizeof(names[0]);i++)
+    {
+        TH1D* histo_radius_nuclev_4_or_less = new TH1D(names[i].Data(),names[i].Data(),binning_nuclev,range_min_nuclev,range_max_nuclev);
+        vec_histo_radius_nuclev.push_back(histo_radius_nuclev_4_or_less);
+
+        TH2D* radius_ortho_vs_z3 = new TH2D(names2[i].Data(),names[i].Data(),500,-200,200,500,0,200);
+        vec_radius_ortho_vs_z.push_back(radius_ortho_vs_z3);
+        
+    }
+
     
 
+    for(int i=0;i<10;i++)
+    {
+        int range_min=-100+ i*20;
+        int range_max=-80 + i*20;
+        TString name ="x_y_slices_z";
+        name+=to_string(range_min);
+        name+=to_string(range_max);
+        TH2D* histo_x_y_slices = new TH2D(name.Data(),name.Data(),500,-200,200,500,-200,200);
+        vec_x_y_slices.push_back(histo_x_y_slices);
 
-    
+        name = "radius_slices_z";
+        name+=to_string(range_min);
+        name+=to_string(range_max);
+        TH1D* histo_radius = new TH1D(name.Data(),name.Data(),binning_nuclev,range_min_nuclev,range_max_nuclev);
+        vec_radius_slices.push_back(histo_radius);
+    }
 
+    for(int i=0;i<20;i++)
+    {
+        int range_min=0+ i*10;
+        int range_max=10 + i*10;
+        name = "z_for_slice_r_";
+        name+=to_string(range_min);
+        name+=to_string(range_max);
+        TH1D* histo_radius = new TH1D(name.Data(),name.Data(),500,-200,200);
+        vec_z_slices_in_radius.push_back(histo_radius);
+
+    }
+
+    TString nameshist[3] = {"deltax,deltay,deltaz"};
+
+    for(int i=0;i<3;i++)
+    {
+        TH1D* hist = new TH1D(nameshist[i].Data(),nameshist[i].Data(),40,-20,20);
+        histo_delta.push_back(hist);
+    }
+
+    TString str_type[4]={"type1","type2","type3","type4"};
+
+    for(int i=0;i<4;i++)
+    {
+        TString n = "S_radius_from_origin_";
+        n+=str_type[i];
+        TH1D* histo = new TH1D(n.Data(),n.Data(),200,0,200);
+        vec_S_radius_from_origin.push_back(histo);
+    }
+   
 
     
 }
@@ -860,6 +1191,33 @@ void Ali_Dark_Matter_Read::copy_track_params(Ali_AS_Track* track_in, Ali_AS_Trac
 }
 //----------------------------------------------------------------------------------------
 
+
+void Ali_Dark_Matter_Read::copy_dm_params(Ali_AS_DM_particle* dm_in, Ali_AS_DM_particle* dm_out)
+{
+    dm_out->  set_primVertex(dm_in->get_primVertex());
+    dm_out->  set_S1Vertex(dm_in->get_S1Vertex());
+    dm_out->  set_S2Vertex(dm_in->get_S2Vertex()) ;
+    dm_out->  set_S3Vertex(dm_in->get_S3Vertex()) ;
+    dm_out->  set_DirSV1(dm_in->get_DirSV1());
+    dm_out->  set_DirSV2(dm_in->get_DirSV2());
+    dm_out->  set_DirSV3(dm_in->get_DirSV3());
+    dm_out->  setN_V0s(dm_in->getN_V0s());
+    dm_out->  settype(dm_in->gettype());
+
+    int numtracks = dm_in->getNumTracks();
+
+    for(int i=0;i<numtracks;i++)
+    {
+        Ali_AS_Track* track_in = dm_in -> getTrack(i);
+        Ali_AS_Track* track_out = dm_out->createTrack();
+        copy_track_params(track_in,track_out);
+    }
+}
+
+
+//
+
+
 float calc_momentum(float* mom)
 {
      return sqrt( mom[0]*mom[0]+mom[1]*mom[1]+mom[2]*mom[2] );
@@ -877,9 +1235,10 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     {
         printf("Loop event number: %lld \n",event);
     }
-    printf("Loop event number: %lld \n",event);
+    //printf("Loop event number: %lld \n",event);
     counters[0]++;
     //cout<<""<<endl;
+    histo_counter_S->Fill(1);
 
 
     Event_active = event;
@@ -912,8 +1271,10 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     //-------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------
     Int_t NumV0s = AS_Event ->getNumV0s();
+    int numDMs = AS_Event->getNumDMs();
+    //if(numDMs==0){return 0;}
 
-    cout<<"NumV0s: "<<NumV0s<<endl;
+    //cout<<"NumV0s: "<<NumV0s<<endl;
 
     Float_t* pos = new Float_t[3];
     Float_t* momP = new Float_t[3];
@@ -1034,6 +1395,9 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     vector<int> trackids_bits_shared;
     vector<int> trackids_similiar_tracks;
     vector<int> trackids_similiar_used;
+
+    Float_t path_initA = 0.0;
+    Float_t path_initB = 30.0;
 
      //cout<<"c"<<endl;
 
@@ -1242,12 +1606,653 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
     bool V0_is_used = 0;
 
+    Float_t path_closest_to_point = 0;
+    Float_t dca_closest_to_point  = 0;
+    //Float_t path_initA = 0.0;
+    //Float_t path_initB = 30.0;
+
     vector<vector<int>> track_ids_all;
     track_ids_all.resize(NumV0s);
 
-  
+
+    int numNUCLEV = AS_Event->getNumNUCLEVs();
+    vector<int> vec_trackids;
+    
+    vector<int> vec_skipped_nuclevs;
+
+    //nuclear event loop
+    //find double used tracks
+    for(int i=0;i<numNUCLEV;i++)
+    {
+        //cout<<"nuclev: "<<i<<endl;
+        bool skip=0;
+
+        Ali_AS_NUCLEV* nuc = AS_Event-> getNUCLEV(i);
+        TVector3 sec_vertex = nuc->get_secVertex();
+        int numtracks = nuc ->getNumTracks();
+        vector<int> vec_trackids_in_loop;
+
+        //cout<<"numtracks: "<<numtracks<<endl;
+        for(int track=0;track<numtracks;track++)
+        {
+           Ali_AS_Track* as_track = nuc->getTrack(track);
+           int trackid = as_track->gettrackid();
+           if ( check_if_int_is_in_vector(trackid,vec_trackids_in_loop) )
+           {
+                skip=1;
+                break;
+           }
+           vec_trackids_in_loop.push_back(trackid);
+        }
+
+        if(skip)
+        {
+            vec_skipped_nuclevs.push_back(i);
+            continue;
+        }
+        for(int track=0;track<numtracks;track++)
+        {
+            Ali_AS_Track* as_track = nuc->getTrack(track);
+            int trackid = as_track->gettrackid();
+            if ( check_if_int_is_in_vector(trackid,vec_trackids) )
+            {
+                skip=1;
+                break;
+            }
+        }
+        if(skip)
+        {
+            vec_skipped_nuclevs.push_back(i);
+            continue;
+        }
+
+        for(int track=0;track<numtracks;track++)
+        {
+            Ali_AS_Track* as_track = nuc->getTrack(track);
+            int trackid = as_track->gettrackid();
+            vec_trackids.push_back(trackid);
+        }
+
+
+        //FindDCAHelixPoint(sec_vertex,as_track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+        //   if(path_closest_to_point<0)
+        //   {
+               //skip=1;
+               //break;
+        //   }
+        counter_NUCLEV++;
+        //cout<<""<<endl;
+    }
+
+
+
+    
+    //TEveManager::Create();
+
+    //numNUCLEV = -1;
+
+    for(int i=0;i<numNUCLEV;i++)
+    {
+        if(check_if_int_is_in_vector(i,vec_skipped_nuclevs)){continue;}
+
+        Ali_AS_NUCLEV* nuc = AS_Event-> getNUCLEV(i);
+        int numtracks = nuc ->getNumTracks();
+        TVector3 sec_vertex = nuc->get_secVertex();
+        double radius = sqrt ( (sec_vertex[0]-EventVertexX)*(sec_vertex[0]-EventVertexX)+ (sec_vertex[1]-EventVertexY)*(sec_vertex[1]-EventVertexY ) + (sec_vertex[2]-EventVertexZ)*(sec_vertex[2]-EventVertexZ ) );
+        //double radius_ortho = sqrt ((sec_vertex[0]-EventVertexX)*(sec_vertex[0]-EventVertexX)+ (sec_vertex[1]-EventVertexY)*(sec_vertex[1]-EventVertexY ));
+        double radius_ortho = sqrt (sec_vertex[0]*sec_vertex[0]+ sec_vertex[1]*sec_vertex[1]);
+
+        TVector3 vec_primtosec;
+        vec_primtosec.SetXYZ((sec_vertex[0]-EventVertexX),(sec_vertex[1]-EventVertexY),(sec_vertex[2]-EventVertexZ));
+        TVector3 unit_prim_to_sec;
+        unit_prim_to_sec = vec_primtosec.Unit();
+
+        Ali_AS_Track* track0 = nuc->getTrack(0);
+        Ali_AS_Track* track1 = nuc->getTrack(1);
+
+        double dcaAprim = track0->getdca();
+        double dcaBprim = track1->getdca();
+
+        int itscls0 = track0->getNITScls();
+        int itscls1 = track1->getNITScls();
+
+        histo_its->Fill(itscls0);
+        histo_its->Fill(itscls1);
+
+        vector<int> binary_array0 = inttobinaryarray(itscls0);
+        vector<int> binary_array1 = inttobinaryarray(itscls1);
+
+        int firstlayer0 = -1;
+        int firstlayer1 = -1;
+
+        float arr_its[6]={4.,7.,15.,24.,39.,44.};
+
+        /*
+        TVector3 sec_vertex_found = find_sec_vertex(track0,track1);
+        double delta_x = sec_vertex_found[0]-sec_vertex[0];
+        double delta_y = sec_vertex_found[1]-sec_vertex[1];
+        double delta_z = sec_vertex_found[2]-sec_vertex[2];
+
+        histo_delta[0]->Fill(delta_x);
+        histo_delta[1]->Fill(delta_y);
+        histo_delta[2]->Fill(delta_z);
+        */
+
+        for(int j=7;j>=0;j--)
+        {
+            if(binary_array0[j]==1)
+            {
+                firstlayer0 = 7-j;
+                break;
+            }
+        }
+
+        for(int j=7;j>=0;j--)
+        {
+            if(binary_array1[j]==1)
+            {
+                firstlayer1 = 7-j;
+                break;
+            }
+        }
+
+        bool itscut=1;
+
+        if(firstlayer0!=-1)
+        {
+            if(radius>arr_its[firstlayer0]){itscut=0;}
+        }
+
+        if(firstlayer1!=-1)
+        {
+            if(radius>arr_its[firstlayer1]){itscut=0;}
+        }
+
+
+
+        if(i==0 && firstlayer0!=-1)
+        {
+            printf("itscls0: %d \n",itscls0);
+            print_int_vector(binary_array0);
+            cout<<"firstlayer0: "<<firstlayer0<<endl;
+        }
+
+
+        TLorentzVector tlv0 = track0->get_TLV_part();
+        TLorentzVector tlv1 = track1->get_TLV_part();
+
+        TLorentzVector tlv_ges = tlv0 + tlv1;
+        TVector3 dir;
+        TVector3 unit_dir;
+        dir.SetXYZ(tlv_ges.Px(),tlv_ges.Py(),tlv_ges.Pz());
+        unit_dir = dir.Unit();
+
+        double dot_product = unit_dir.Dot(unit_prim_to_sec);
+
+        if(dot_product<0.8){continue;}
+
+
+        UShort_t ntpcclsP = track0->getNTPCcls();
+        UShort_t nitsclsP = track0->getNITScls();
+        UShort_t statusP = track0->getStatus();
+        Float_t tpcchi2P = track0->getTPCchi2();
+
+        UShort_t ntpcclsN = track1->getNTPCcls();
+        UShort_t nitsclsN = track1->getNITScls();
+        UShort_t statusN = track1->getStatus();
+        Float_t tpcchi2N = track1->getTPCchi2();
+
+        //if(ntpcclsP<120 || ntpcclsN<120){continue;}
+
+        bool dcaprim2check=1;
+        bool dcaprim5check=1;
+        bool dcaprim7check=1;
+        bool sigmacheck=0;
+        bool momentumcheck=1;
+
+        if(radius<2){continue;}
+
+        TLorentzVector tlv = track0->get_TLV_part();
+        double momentum = tlv.P();
+        //if(momentum<0.1){continue;}
+
+        tlv = track1->get_TLV_part();
+        momentum = tlv.P();
+        //if(momentum<0.1){continue;}
+
+        float dcaA,dcaB;
+        FindDCAHelixPoint(sec_vertex,track0,path_initA,path_initB,path_closest_to_point,dcaA);
+        //cout<<"dca: "<<dca_closest_to_point<<endl;
+        if(dcaA>0.5){continue;}
+
+        FindDCAHelixPoint(sec_vertex,track1,path_initA,path_initB,path_closest_to_point,dcaB);
+        if(dcaB>0.5){continue;}
+
+        double dcaV0_ESD = nuc->getdcaV0_ESD();
+        if(dcaV0_ESD>0.5){continue;}
+
+        vector<TVector3> vec_unit_dir;
+        Double_t r1[3];
+        Double_t r2[3];
+
+        for(int track=0;track<2;track++)
+        //for(int track=0;track<numtracks;track++)
+        {
+            Ali_AS_Track* as_track = nuc->getTrack(track);
+            double dcaprim = fabs ( as_track->getdca() );
+
+            float dca_closest_to_point;
+            FindDCAHelixPoint(pos_primary_vertex,as_track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+            dcaprim = dca_closest_to_point;
+
+            if(dcaprim<2.){dcaprim2check=0;}
+            if(dcaprim<5.){dcaprim5check=0;}
+            if(dcaprim<7.){dcaprim7check=0;}
+
+            TLorentzVector tlv = as_track->get_TLV_part();
+            double momentum = tlv.P();
+            if(0.5>momentum || momentum>2){momentumcheck=0;}
+
+            FindDCAHelixPoint(sec_vertex,as_track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+            as_track->Evaluate(path_closest_to_point,r1);
+            as_track->Evaluate(path_closest_to_point+0.01,r2);
+
+            TVector3 dir;
+            dir.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
+            TVector3 unit_dir = dir.Unit();
+            vec_unit_dir.push_back(unit_dir);
+
+        }
+
+        double angle = vec_unit_dir[0].Angle(vec_unit_dir[1]);
+        histo_angle->Fill(angle);
+
+        double z = sec_vertex[2];
+
+        if(z>0 && z<10){ histo_angle_z_0_10 ->Fill(angle); }
+        if(z>50 && z<60){ histo_angle_z_50_60 ->Fill(angle); }
+
+
+        for(int i=2;i<numtracks;i++)
+        {
+            Ali_AS_Track* as_track = nuc->getTrack(i);
+            double sigma = fabs ( as_track-> getnsigma_pi_TPC() );
+            if(sigma>2.5){sigmacheck=1;}
+
+        }
+        //if(dcacheck){continue;}
+        if(angle<1.){continue;}
+        if(sigmacheck){continue;}
+
+        if(numtracks==2)
+        {
+            histo_radius_nuclev_2_or_more-> Fill(radius_ortho);
+            x_and_y_nuclev_3->Fill(sec_vertex[0],sec_vertex[1]);
+            vec_radius_ortho_vs_z[0]->Fill(sec_vertex[2],radius_ortho);
+            if(dcaprim2check){ vec_radius_ortho_vs_z[0+4]->Fill(sec_vertex[2],radius_ortho); }
+            if(dcaprim5check){ vec_radius_ortho_vs_z[0+8]->Fill(sec_vertex[2],radius_ortho); }
+        }
+
+        if(numtracks==3)
+        {
+            histo_radius_nuclev_3_or_more-> Fill(radius_ortho);
+            x_and_y_nuclev_4->Fill(sec_vertex[0],sec_vertex[1]);
+            vec_radius_ortho_vs_z[1]->Fill(sec_vertex[2],radius_ortho);
+            if(dcaprim2check){ vec_radius_ortho_vs_z[1+4]->Fill(sec_vertex[2],radius_ortho); }
+            if(dcaprim5check && momentumcheck){ vec_radius_ortho_vs_z[1+8]->Fill(sec_vertex[2],radius_ortho); }
+        }
+
+        if(numtracks<=4)
+        {
+            if(dcaprim5check){histo_radius_nuclev_4_or_more-> Fill(radius_ortho);}
+            if(dcaprim5check && momentumcheck){histo_radius_nuclev_4_or_more_momentum-> Fill(radius_ortho);}
+            x_and_y_nuclev_5->Fill(sec_vertex[0],sec_vertex[1]);
+            vec_radius_ortho_vs_z[2]->Fill(sec_vertex[2],radius_ortho);
+            vec_histo_radius_nuclev[0]->Fill(radius_ortho);
+            vec_radius_ortho_vs_z[15]->Fill(sec_vertex[2],radius_ortho);
+            if(dcaprim2check){ vec_radius_ortho_vs_z[2+4]->Fill(sec_vertex[2],radius_ortho);}
+
+            if(dcaprim5check)
+            {
+                for(Int_t i=0;i<10;i++)
+                {
+                    int range_min=-100+ i*20;
+                    int range_max=-80 + i*20;
+                    if(range_min<sec_vertex[2] && range_max>sec_vertex[2])
+                    {
+                        vec_x_y_slices[i]->Fill(sec_vertex[0],sec_vertex[1]);
+                        vec_radius_slices[i]->Fill(radius_ortho);
+                    }
+                }
+                for(Int_t i=0;i<20;i++)
+                {
+                    int range_min=0+ i*10;
+                    int range_max=10 + i*10;
+
+                    if(range_min<radius_ortho && radius_ortho<range_max)
+                    {
+                        vec_z_slices_in_radius[i]->Fill(sec_vertex[2]);
+                    }
+                    
+                }
+
+
+                vec_radius_ortho_vs_z[2+8]->Fill(sec_vertex[2],radius_ortho);
+                vec_histo_radius_nuclev[1]->Fill(radius_ortho);
+                vec_radius_ortho_vs_z[16]->Fill(sec_vertex[2],radius_ortho);
+
+                if(itscut)
+                {
+                    vec_histo_radius_nuclev[6]->Fill(radius_ortho);
+                    vec_radius_ortho_vs_z[21]->Fill(sec_vertex[2],radius_ortho);
+                }
+
+                if(momentumcheck)
+                {
+                    vec_radius_ortho_vs_z[12]->Fill(sec_vertex[2],radius_ortho);
+                    vec_histo_radius_nuclev[2]->Fill(radius_ortho);
+                    vec_radius_ortho_vs_z[17]->Fill(sec_vertex[2],radius_ortho);
+                    
+                    if(itscut)
+                    {
+                        vec_histo_radius_nuclev[5]->Fill(radius_ortho);
+                        vec_radius_ortho_vs_z[20]->Fill(sec_vertex[2],radius_ortho);
+                    }
+                }
+            }
+
+            if(dcaprim7check)
+            {
+                vec_radius_ortho_vs_z[13]->Fill(sec_vertex[2],radius_ortho);
+                vec_histo_radius_nuclev[3]->Fill(radius_ortho);
+                vec_radius_ortho_vs_z[18]->Fill(sec_vertex[2],radius_ortho);
+                if(momentumcheck)
+                {
+                    vec_radius_ortho_vs_z[14]->Fill(sec_vertex[2],radius_ortho);
+                    vec_histo_radius_nuclev[4]->Fill(radius_ortho);
+                    vec_radius_ortho_vs_z[19]->Fill(sec_vertex[2],radius_ortho);
+
+                }
+            }
+        }
+
+        if(numtracks>=5)
+        {
+            histo_radius_nuclev_5_or_more-> Fill(radius_ortho);
+            x_and_y_nuclev_3->Fill(sec_vertex[0],sec_vertex[1]);
+            vec_radius_ortho_vs_z[3]->Fill(sec_vertex[2],radius_ortho);
+            if(dcaprim2check){ vec_radius_ortho_vs_z[3+4]->Fill(sec_vertex[2],radius_ortho); }
+            if(dcaprim5check && momentumcheck){ vec_radius_ortho_vs_z[3+8]->Fill(sec_vertex[2],radius_ortho); }
+        }
+
+        if(dcaprim5check && radius_ortho<1.)
+        {
+            for(int track=0;track<numtracks;track++)
+            {
+                //cout<<"track: "<<track<<endl;
+                Ali_AS_Track* as_track = nuc->getTrack(track);
+
+                FindDCAHelixPoint(pos_primary_vertex,as_track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+                double dcaprim = fabs ( as_track->getdca() );
+
+                //cout<<"dcaprim1: "<<dca_closest_to_point<<endl;
+                //cout<<"dcaprim2: "<<dcaprim<<endl;
+                //if(counter_draw==-1) { Draw_TPC_track(as_track, kGreen, 2.,track,pos_primary_vertex); }
+            }
+            draw=0;
+            counter_draw++;
+        }
+
+        for(int track=0;track<numtracks;track++)
+        {
+            Ali_AS_Track* as_track = nuc->getTrack(track);
+
+            FindDCAHelixPoint(sec_vertex,as_track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+            //cout<<"path: "<<path_closest_to_point<<endl;
+            //histo_path->Fill(path_closest_to_point);
+
+            double path = path_closest_to_point;
+            //double path = nuc->getpath(track);
+            histo_path->Fill(path);
+
+            int itscls = as_track->getNITScls();
+            //cout<<"nitscls: "<<itscls<<endl;
+            histo_nitscls->Fill(itscls);
+
+            if(radius>30)
+            {
+                if(itscls>0){histo_path_has_its -> Fill(path);}
+                if(itscls==0){histo_path_has_no_its -> Fill(path);}
+            }
+
+            vector<int> binary_array = inttobinaryarray(itscls);
+            if(getnumones(binary_array)>2 && radius>30)
+            {
+                histo_path_has_atleast_3_its_hits->Fill(path);
+
+            }
+
+
+        }
+
+        
+
+
+    }
+    
+
+    //end of nuclear event loop
+
+    //DM loop
+    //int numDMs = AS_Event->getNumDMs();
+    histo_numberDMs->Fill(numDMs);
+    
+
+    for(int dm_loop = 0; dm_loop<numDMs; dm_loop++)
+    {
+        histo_counter_S->Fill(2);
+
+        Ali_AS_DM_particle* DM  = AS_Event->getDMparticle(dm_loop);
+        int type = DM->gettype();
+        int numtracks = DM->getNumTracks();
+        TVector3 S_vertex_pos = DM->get_S1Vertex();
+        TVector3 vec_primtosec;
+        vec_primtosec.SetXYZ((S_vertex_pos[0]-EventVertexX),(S_vertex_pos[1]-EventVertexY),(S_vertex_pos[2]-EventVertexZ));
+        double radius = vec_primtosec.Mag();
+        double radius_from_origin = S_vertex_pos.Mag();
+
+        S_radius_from_origin->Fill(radius_from_origin);
+
+        for(int i=0;i<4;i++)
+        {
+            if(type==i){vec_S_radius_from_origin[i]->Fill(radius_from_origin);}
+        }
+
+
+        if(type==1) {cout<<"numtracks: "<<numtracks<<endl;  }
+        for(int i=0;i<numtracks;i++)
+        {
+            Ali_AS_Track* track = DM->getTrack(i);
+            int trackid = track->gettrackid();
+            if(type==1){cout<<"trackid: "<<trackid<<endl;}
+        }
+
+        
+
+        if(type==1)
+        {
+            if(radius>20)
+            {
+                histo_counter_S->Fill(3);
+
+                AS_DM_particle->clearTrackList();
+                copy_dm_params(DM,AS_DM_particle);
+                Tree_AS_DM_particle ->Fill();
+
+            }
+
+        }
+
+
+        if(type==2)
+        {
+            cout<<"type2: "<<endl;
+            TVector3 S_vertex;
+            S_vertex = DM->get_S1Vertex();
+            printf("S vertex: %f %f %f \n",S_vertex[0],S_vertex[1],S_vertex[2]);
+
+            Ali_AS_Track* track0 = DM->getTrack(0);
+            Ali_AS_Track* track1 = DM->getTrack(1);
+            Ali_AS_Track* track2 = DM->getTrack(2);
+
+            if(checkifsimiliar(track0,track1)){continue;}
+            if(checkifsimiliar(track0,track2)){continue;}
+            if(checkifsimiliar(track1,track2)){continue;}
+
+                                
+            if(radius>20)
+            {
+                histo_counter_S->Fill(4);
+                AS_DM_particle->clearTrackList();
+                copy_dm_params(DM,AS_DM_particle);
+                Tree_AS_DM_particle ->Fill();
+            }
+        }
+
+        if(type==2)
+        {
+            //get track of additional Kaon
+            Ali_AS_Track* track = DM->getTrack(2);    //additional Kaon+
+            int trackid = track->gettrackid();
+            cout<<"trackid: "<<trackid<<endl;
+            TLorentzVector tlv = track->get_TLV_part();
+            double invariantmass_add_Kaon = tlv.M();
+            printf("invariantmass:  %f \n",invariantmass_add_Kaon);
+
+            double m_squared_add_Kaon = calculate_m_squared_by_TOF(track);
+            histo_m_squared_kaon_no_other_cuts_type2->Fill(m_squared_add_Kaon);
+            histo_invariant_mass_kaon_no_other_cuts->Fill(invariantmass_add_Kaon);
+
+
+            Ali_AS_Track* V0_track0 = DM->getTrack(0);     //Kaon+
+            Ali_AS_Track* V0_track1 = DM->getTrack(1);     //Antiproton
+
+            double m_squared_Kaon =calculate_m_squared_by_TOF(V0_track0);
+            double m_squared_antip =calculate_m_squared_by_TOF(V0_track1);
+
+            m_squared_anti_proton_type2->Fill(m_squared_antip);
+            mass_squared_all_kaons_type2->Fill(m_squared_add_Kaon);
+            mass_squared_all_kaons_type2->Fill(m_squared_Kaon);
+
+            if( m_squared_Kaon> 0.2 && m_squared_Kaon < 0.35  && m_squared_antip > 0.8  &&  m_squared_antip< 1.1  )
+            {
+                histo_m_squared_kaon_with_all_other_cuts_type2->Fill(m_squared_add_Kaon);
+                histo_invariant_mass_kaon_with_other_cuts->Fill(invariantmass_add_Kaon);
+
+            }
+
+            if(m_squared_antip > 0.8  &&  m_squared_antip< 1.1  )
+            {
+                histo_m_squared_kaon_with_some_other_cuts_type2->Fill(m_squared_add_Kaon);
+            }
+
+        }
+
+        if(type==3)
+        {
+            if(radius>20)
+            {
+                histo_counter_S->Fill(5);
+            }
+
+        }
+
+        if(type==3)
+        {
+
+            //dca prim >1
+            //radius > 10
+
+
+            TVector3 K0_vertex = DM->get_S2Vertex();
+
+            Ali_AS_Track* trackK0P = DM->getTrack(2);
+            Ali_AS_Track* trackK0N = DM->getTrack(3);
+
+            Ali_AS_Track* track_K_plus  = DM->getTrack(0);
+            Ali_AS_Track* track_antip  = DM->getTrack(1);
+            Ali_AS_Track* track_pion  = DM->getTrack(4);
+
+            Float_t dca_prim_K,dca_prim_antip,dca_prim_pion;
+            FindDCAHelixPoint(pos_primary_vertex,track_K_plus,path_initA,path_initB,path_closest_to_point,dca_prim_K);
+            FindDCAHelixPoint(pos_primary_vertex,track_antip,path_initA,path_initB,path_closest_to_point,dca_prim_antip);
+            FindDCAHelixPoint(pos_primary_vertex,track_pion,path_initA,path_initB,path_closest_to_point,dca_prim_pion);
+
+            if(dca_prim_K >1. && dca_prim_antip >1. && dca_prim_pion >1.)
+            {
+                double invariantmass = get_invariant_mass( trackK0P, trackK0N, mass_pion,  K0_vertex);
+                histo_invariantmass_K0_type3 ->Fill(invariantmass);
+    
+                double m_squared_K_plus = calculate_m_squared_by_TOF(track_K_plus);
+                double m_squared_antip = calculate_m_squared_by_TOF(track_antip);
+                double m_squared_pion = calculate_m_squared_by_TOF(track_pion);
+    
+                mass_squared_kaons_type3->Fill(m_squared_K_plus);
+                mass_squared_antip_type3->Fill(m_squared_antip);
+    
+                if(m_squared_K_plus>0.2 && m_squared_K_plus < 0.35 && m_squared_antip>0.6
+                   && m_squared_antip <1.2)
+                {
+                    histo_invariantmass_K0_type3_with_cuts->Fill(invariantmass);
+    
+                }
+    
+                if(m_squared_antip>0.6 && m_squared_antip <1.2)
+                {
+                    histo_invariantmass_K0_type3_with_some_cuts->Fill(invariantmass);
+                }
+
+                AS_DM_particle->clearTrackList();
+                copy_dm_params(DM,AS_DM_particle);
+                Tree_AS_DM_particle ->Fill();
+
+            }
+
+
+
+
+
+
+
+        }
+
+        if(type==4)
+        {
+            if(radius>20)
+            {
+                histo_counter_S->Fill(6);
+                AS_DM_particle->clearTrackList();
+                copy_dm_params(DM,AS_DM_particle);
+                Tree_AS_DM_particle ->Fill();
+            }
+
+        }
+
+        histo_type_of_S->Fill(type);
+
+
+
+
+    }
+
+    //
+
+
+
+
     //cout<<"b"<<endl;
     //loop over V0s
+    /*
     for(Int_t V0counter = 0; V0counter < NumV0s; V0counter++)
     {
        // cout<<"c"<<endl;
@@ -1946,7 +2951,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             }
         }
-        //if(V0_is_used==1){continue;}  */
+        //if(V0_is_used==1){continue;}
 
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
         //-------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2099,7 +3104,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                         int numbitsshared = tbitsshared.CountBits();
                         //cout<<"numbitsshared: "<<numbitsshared<<endl;
                         //histo_counter->SetBinContent(7,numbitsshared);
-                        */
+
                     }
 
                 }
@@ -2233,7 +3238,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         tracks_of_V0.clear();
 
 
-        */
+
 
 
 
@@ -2277,11 +3282,11 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
         //if(ntpcclsP<120 || ntpcclsN<120){continue;}
 
-        /*//cout<<"tpccls: "<<ntpcclsP<<" "<<ntpcclsN<<endl;
+        //cout<<"tpccls: "<<ntpcclsP<<" "<<ntpcclsN<<endl;
         //cout<<"nitscls: "<<nitsclsP<<" "<<nitsclsN<<endl;
         //cout<<"status: "<<statusP<<" "<<statusN<<endl;
         //cout<<"tpcchi2: "<<tpcchi2P<<" "<<tpcchi2N<<endl;
-        */
+
         
         //printf("track ids: %d %d %d %d \n",all_tracks_of_pions[0],all_tracks_of_pions[1],all_tracks_of_pions[2],all_tracks_of_pions[3]);
         //if(!AS_TrackA || !AS_TrackB ){continue;}
@@ -2688,7 +3693,9 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
     }     //end of V0 loop
 
-    cout<<"end of V0 loop"<<endl;
+cout<<"end of V0 loop"<<endl;
+*/
+
     trackids_bits_shared.clear();
     brute_force.clear();
   
@@ -2733,15 +3740,15 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
     TVector3 unit_momentum_SV1;
 
     TVector3 S_vertex_pos;
-
+    /*
     float path_closest_to_point = 0;
     float dca_closest_to_point  = 0;
     float path_initA = 0.0;
     float path_initB = 30.0;
+     */
 
 
-
-
+    /*
     for(Int_t vector_loop_SV3 = 0; vector_loop_SV3 < (Int_t)vec_position_SV3.size(); vector_loop_SV3++)
     {
         for(Int_t vector_loop_SV2 = 0; vector_loop_SV2 < (Int_t)vec_position_SV2.size(); vector_loop_SV2++)
@@ -3103,6 +4110,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
     }  //end of vector loop
     cout<<"end of vector loop"<<endl;
+    */
 
     /*for (int i = 0;i<3;i++)
      {
@@ -3133,15 +4141,24 @@ void Ali_Dark_Matter_Read::Save()
     Tree_AS_DM_particle->Write();
     histo_counter->Write();
     */
-    
+
     TCanvas* can6 = new TCanvas;
     TCanvas* can7 = new TCanvas;
     TCanvas* can8 = new TCanvas;
     TCanvas* can9 = new TCanvas;
     TCanvas* can10 = new TCanvas;
+
+    /*
+    TCanvas* can10 = new TCanvas;
     TCanvas* can11 = new TCanvas;
     TCanvas* can12 = new TCanvas;
-
+    TCanvas* can13 = new TCanvas;
+    TCanvas* can14 = new TCanvas;
+    TCanvas* can15 = new TCanvas;
+    TCanvas* can16 = new TCanvas;
+    TCanvas* can17 = new TCanvas;
+    TCanvas* can18 = new TCanvas;
+    */
 
     //printf("number of entries: %d, number of events over that we looped: %d \n", numentries, counters[0]);
     cout<<""<<endl;
@@ -3189,7 +4206,7 @@ void Ali_Dark_Matter_Read::Save()
     can5->cd();
     histo_invariantmass_electron_minus->Draw();
     */
-
+    /*
     can6->cd();
     histo_invariantmass_xi_minus_baryon->Draw();
 
@@ -3258,7 +4275,7 @@ void Ali_Dark_Matter_Read::Save()
 
     //int total_size = arr_distance_prim_sec.size()*arr_distance_daughter_particles.size()*arr_dca_daughter_prim.size();
     int total_size = 15*15*2;
-
+    /*
     output_histos->cd();
     histo_invariantmass_lambda->Write();
     histo_invariantmass_anti_lambda->Write();
@@ -3290,6 +4307,144 @@ void Ali_Dark_Matter_Read::Save()
         vec_histo_omega_plus[i]->Write();
     }
     */
+    printf("nuclear events: %d \n",counter_NUCLEV);
+
+
+    can6->cd();
+    histo_radius_nuclev_3_or_more->Draw();
+    can7->cd();
+    histo_radius_nuclev_4_or_more->Draw();
+    can8->cd();
+    histo_radius_nuclev_5_or_more->Draw();
+    can9->cd();
+    histo_radius_nuclev_2_or_more->Draw();
+
+
+    //sum up one histo
+    //TAxis* axis = histo_radius_nuclev_4_or_more->GetXaxis();
+    int nbins = histo_radius_nuclev_4_or_more->GetNbinsX();
+    cout<<"nbins: "<<nbins<<endl;
+
+    for(int bin = 1;bin<nbins+1;bin++)
+    {
+        double integral = histo_radius_nuclev_4_or_more->Integral(1,bin);
+        cout<<"integral: "<<integral<<endl;
+        histo_radius_nuclev_4_or_more_sum->SetBinContent(bin,integral);
+    }
+
+    can10->cd();
+    histo_radius_nuclev_4_or_more_sum->Draw();
+    
+
+    /*
+    can10->cd();
+    x_and_y_nuclev_3->Draw("colz");
+    can11->cd();
+    x_and_y_nuclev_4->Draw("colz");
+    can12->cd();
+    x_and_y_nuclev_5->Draw("colz");
+    can13->cd();
+    x_and_y_nuclev_6->Draw("colz");
+    */
+
+    //for(int i=0;i<12;i++)
+    //{
+    int i =10;
+    TCanvas* cani = new TCanvas();
+    cani->cd();
+    vec_radius_ortho_vs_z[i]->Draw("colz");
+    TString name ="/home/ceres/schlichtmann/ESD_Analysis/Plots/";
+    name+=vec_radius_ortho_vs_z[i]->GetTitle();
+    name+=".png";
+    cani->SaveAs(name.Data());
+
+    TCanvas* cani2 = new TCanvas();
+    cani2->cd();
+    histo_radius_nuclev_4_or_more_momentum->Draw();
+
+    for(int i=15;i<=19;i++)
+    {
+        TCanvas* cani3 = new TCanvas();
+        cani3->cd();
+        vec_radius_ortho_vs_z[i]->Draw("colz");
+    }
+
+    for(int i=0;i<5;i++)
+    {
+        TCanvas* cani3 = new TCanvas();
+        cani3->cd();
+        vec_histo_radius_nuclev[i]->Draw();
+    }
+
+
+    output_histos->cd();
+
+    if (histo_numberDMs->GetEntries()>0) {histo_numberDMs->Write();}
+    histo_counter_S->Write();
+    histo_type_of_S->Write();
+    histo_angle->Write();
+    histo_angle_z_0_10->Write();
+    histo_angle_z_50_60->Write();
+    Tree_AS_DM_particle->Write();
+    histo_m_squared_kaon_no_other_cuts_type2->Write();
+    histo_m_squared_kaon_with_all_other_cuts_type2->Write();
+    histo_m_squared_kaon_with_some_other_cuts_type2->Write();
+    mass_squared_all_kaons_type2->Write();
+    histo_invariant_mass_kaon_no_other_cuts->Write();
+    histo_invariant_mass_kaon_with_other_cuts->Write();
+    m_squared_anti_proton_type2->Write();
+    histo_invariantmass_K0_type3->Write();
+    mass_squared_kaons_type3->Write();
+    mass_squared_antip_type3->Write();
+    histo_invariantmass_K0_type3_with_cuts->Write();
+    histo_invariantmass_K0_type3_with_some_cuts->Write();
+
+    S_radius_from_origin->Write();
+    /*
+    histo_delta[0] ->Write();
+    histo_delta[1] ->Write();
+    histo_delta[2] ->Write();
+    */
+    vec_radius_ortho_vs_z[10]->Write();
+    for(int i=15;i<=21;i++)
+    {
+        vec_radius_ortho_vs_z[i]->Write();
+    }
+
+    for(int i=0;i<7;i++)
+    {
+        vec_histo_radius_nuclev[i]->Write();
+    }
+    for(int i=0;i<10;i++)
+    {
+        vec_x_y_slices[i]->Write();
+        vec_radius_slices[i]->Write();
+    }
+
+    for(int i=0;i<20;i++){vec_z_slices_in_radius[i]->Write();}
+
+    TCanvas* mycan = new TCanvas();
+    mycan->cd();
+    histo_its->Draw();
+    //}
+    /*
+    can14->cd();
+    histo_path->Draw();
+
+    can15->cd();
+    histo_nitscls->Draw();
+
+    can16->cd();
+    histo_path_has_no_its->Draw();
+
+    can17->cd();
+    histo_path_has_its->Draw();
+
+    can18->cd();
+    histo_path_has_atleast_3_its_hits->Draw();
+    */
+
+    cout<<"counterdraw: "<<counter_draw<<endl;
 
 }
 #endif

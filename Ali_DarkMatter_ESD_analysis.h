@@ -9,11 +9,12 @@ class AliTRDdigitsManager;
 #include "TObject.h"
 #include "TClonesArray.h"
 #include "TLorentzVector.h"
-#include "Ali_AS_Event.h"
+#include "Ali_AS_Event_V3.h"
 #include "Ali_AS_EventLinkDef.h"
 
 ClassImp(Ali_AS_TRD_digit)
 ClassImp(Ali_AS_Track)
+ClassImp(Ali_AS_NUCLEV)
 ClassImp(Ali_AS_Tracklet)
 ClassImp(Ali_AS_offline_Tracklet)
 ClassImp(Ali_AS_V0)
@@ -25,8 +26,8 @@ class Ali_DarkMatter_ESD_analysis : public AliAnalysisTaskSE
 public:
     Ali_DarkMatter_ESD_analysis()
 	: AliAnalysisTaskSE(),
-	AS_Event(0),AS_V0(0),AS_Track(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
-	h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),counter_events(0)
+	AS_Event(0),AS_V0(0),AS_Track(0),AS_NUCLEV(),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
+        h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),delta_dca_vs_delta(0x0),histo_delta(0x0),counter_events(0)
     {
 	cout << "" << endl;
 	cout << "***************************************************************************************" << endl;
@@ -67,7 +68,9 @@ public:
 
         Ali_AS_Event* AS_Event;
         Ali_AS_V0* AS_V0;
+        //Ali_AS_NUCLEV* AS_NUCLEV;
         Ali_AS_Track* AS_Track;
+        Ali_AS_NUCLEV* AS_NUCLEV;
        
 	TTree       *Tree_AS_Event;
 
@@ -79,6 +82,12 @@ public:
 	std::vector<TH1D*> h_dca;
 	std::vector< std::vector<TH1D*> > h_dca_xyz;
         TH2D* h2D_TPC_dEdx_vs_momentum;
+
+        vector<TH2D*>  delta_dca_vs_delta;
+
+        vector<TH1D*> histo_delta;
+        //vector<TH2D*> histo_delta;
+
 
 	Ali_DarkMatter_ESD_analysis(const Ali_DarkMatter_ESD_analysis&); // not implemented
 	Ali_DarkMatter_ESD_analysis& operator=(const Ali_DarkMatter_ESD_analysis&); // not implemented

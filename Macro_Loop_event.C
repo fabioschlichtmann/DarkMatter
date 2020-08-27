@@ -8,7 +8,7 @@ void Macro_Loop_event()
     //TFile* outputfile = new TFile("Histos.root","RECREATE");
     
     Dark_Matter_Read* DM_Read = new Dark_Matter_Read();
-    DM_Read ->Init_tree("file_list.txt");
+    DM_Read ->Init_tree("file_list2.txt");
 
     Long64_t numentries = DM_Read -> getnumberentries();
     printf("num entries: %i \n",numentries);

@@ -33,7 +33,7 @@ using namespace std;
 #include "AliTRDpadPlane.h"
 
 
-#include "Ali_AS_Event.h"
+#include "Ali_AS_Event_V3.h"
 #include "Ali_AS_EventLinkDef.h"
 
 ClassImp(Ali_AS_TRD_digit)
@@ -74,6 +74,7 @@ private:
 
     int counter_lambdas = 0;
     int counter_anti_lambdas = 0;
+    int counter_NUCLEV = 0;
 
     TH2D* mass_squared_vs_charge_dot_momentum = new TH2D("mass_squared_vs_charge_dot_momentum","mass_squared_vs_charge_dot_momentum",
                                                          200,-8,8,200,-0.5,0.5);
@@ -92,14 +93,39 @@ private:
 
     TH1D* histo_invariantmass_K0 = new TH1D("histo inv mass K0","histo inv mass K0",50*3,0.4,0.6);
 
+    TH1D* histo_invariantmass_K0_type3 = new TH1D("histo_invariantmass_K0_type3","histo_invariantmass_K0_type3",50*3,0.4,0.6);
+    TH1D* histo_invariantmass_K0_type3_with_cuts =
+        new TH1D("histo_invariantmass_K0_type3_with_cuts","histo_invariantmass_K0_type3_with_cuts",50*3,0.4,0.6);
+
+    TH1D* histo_invariantmass_K0_type3_with_some_cuts =
+        new TH1D("histo_invariantmass_K0_type3_with_some_cuts","histo_invariantmass_K0_type3_with_some_cuts",50*3,0.4,0.6);
+
+
     TH1D* histo_lambda_vertex_radius = new TH1D("histo lambda vertex radius ","histo lambda vertex radius ",50,0,200);
     TH1D* histo_K0_vertex_radius = new TH1D("histo K0 vertex radius ","histo K0 vertex radius ",50,0,200);
 
     TH1D* mass_squared_kaons = new TH1D("mass_squared_kaons", "mass_squared_kaons",100,-0.1,0.4);
+    TH1D* mass_squared_kaons_type3 = new TH1D("mass_squared_kaons_type3", "mass_squared_kaons_type3",100,-0.4,1.4);
+    TH1D* mass_squared_antip_type3 = new TH1D("mass_squared_antip_type3", "mass_squared_antip_type3",100,-0.4,1.4);
     TH1D* mass_squared_kaons_and_background = new TH1D("mass_squared_kaons_and_background", "mass_squared_kaons_and_background",100,-0.1,0.4);
+
+    //type2
+    TH1D* mass_squared_all_kaons_type2 = new TH1D("mass_squared_all_kaons_type2", "mass_squared_all_kaons_type2",100,-0.4,1.4);
+    TH1D* histo_m_squared_kaon_no_other_cuts_type2 = new TH1D("histo_m_squared_kaon_no_other_cuts_type2", "histo_m_squared_kaon_no_other_cuts_type2",100,-0.1,0.4);
+    TH1D* m_squared_anti_proton_type2= new TH1D("m_squared_anti_proton_type2", "m_squared_anti_proton_type2",100,-0.1,1.5);
+    TH1D* histo_m_squared_kaon_with_all_other_cuts_type2 = new TH1D("histo_m_squared_kaon_with_all_other_cuts_type2", "histo_m_squared_kaon_with_all_other_cuts_type2",100,-0.1,0.4);
+    TH1D* histo_m_squared_kaon_with_some_other_cuts_type2 = new TH1D("histo_m_squared_kaon_with_some_other_cuts_type2", "histo_m_squared_kaon_with_some_other_cuts_type2",100,-0.1,0.4);
+
+
+
+    TH1D* histo_invariant_mass_kaon_no_other_cuts = new TH1D("histo_invariant_mass_kaon_no_other_cuts", "histo_invariant_mass_kaon_no_other_cuts",100,-0.1,0.4);
+    TH1D* histo_invariant_mass_kaon_with_other_cuts = new TH1D("histo_invariant_mass_kaon_with_other_cuts", "histo_invariant_mass_kaon_with_other_cuts",100,-0.1,0.4);
 
     TH1D* histo_counter = new TH1D("histo counter 1.5: S-vertices with two pions; 2.5: S-vertices that fulfill all cuts",
                                    "histo counter 1.5: S-vertices with two pions; 2.5: S-vertices that fulfill all cuts",10,0,10);
+
+    TH1D* histo_counter_S = new TH1D("histo_counter_S","histo_counter_S",10,0.5,10.5);
+    TH1D* histo_numberDMs = new TH1D("histo_number_DMs","histo_number_DMs",10,0,10);
 
     int binning2D = 400;
     TH2D* histo_lambda_x_and_y = new TH2D("histo lambda x and y ","histo lambda x and y ",binning2D,-200,200,binning2D,-200,200);
@@ -122,6 +148,8 @@ private:
 
     vector<TH1D*> histos_1D;
     vector<TH2D*> histos_2D;
+
+     vector<TH1D*> histo_delta;
     //--------------------------------------------------------------
 
     //counters----------------------------------------------------
@@ -137,6 +165,7 @@ private:
     int counter_vertices_antip_K_plus_K_plus_r_larger_5=0;
     int counter_vertices_antip_K_plus_K_plus_r_larger_5_and_dot_product=0;
     int counter_skipped_track=0;
+    int counter_draw =0;
 
     vector<int> counters;
 
@@ -191,6 +220,7 @@ private:
     Long64_t file_entries_total;
 
     Float_t digit_pos[3];
+    bool draw=1;
 
 
     TString HistName;
@@ -198,10 +228,50 @@ private:
 
     double counter =0;
 
+    int binning_nuclev=300;
+    int range_min_nuclev=0;
+    int range_max_nuclev=200;
+
+    TH1D* histo_radius_nuclev_2_or_more = new TH1D("nuclev_radius_2_or_more_tracks ","nuclev_radius_2_or_more_tracks",binning_nuclev,range_min_nuclev,range_max_nuclev);
+    TH1D* histo_radius_nuclev_4_or_more = new TH1D("nuclev_radius_4_or_more_tracks ","nuclev_radius_4_or_more_tracks",binning_nuclev,range_min_nuclev,range_max_nuclev);
+    TH1D* histo_radius_nuclev_4_or_more_momentum = new TH1D("nuclev_radius_4_or_more_tracks_momentum_cut ","nuclev_radius_4_or_more_tracks_momentum_cut",binning_nuclev,range_min_nuclev,range_max_nuclev);
+    TH1D* histo_radius_nuclev_5_or_more = new TH1D("nuclev_radius_5_or_more_tracks ","nuclev_radius_5_or_more_tracks",binning_nuclev,range_min_nuclev,range_max_nuclev);
+    TH1D* histo_radius_nuclev_3_or_more = new TH1D("nuclev_radius_3_or_more_tracks ","nuclev_radius_3_or_more_tracks",binning_nuclev,range_min_nuclev,range_max_nuclev);
+
+    vector<TH1D*> vec_histo_radius_nuclev;
+
+    TH2D* x_and_y_nuclev_3 = new TH2D("x_and_y_nuclev_3","x_and_y_nuclev_3",200,-100,100,200,-100,100);
+    TH2D* x_and_y_nuclev_4 = new TH2D("x_and_y_nuclev_4","x_and_y_nuclev_4",200,-100,100,200,-100,100);
+    TH2D* x_and_y_nuclev_5 = new TH2D("x_and_y_nuclev_5","x_and_y_nuclev_5",200,-100,100,200,-100,100);
+    TH2D* x_and_y_nuclev_6 = new TH2D("x_and_y_nuclev_6","x_and_y_nuclev_6",200,-100,100,200,-100,100);
+
+    vector<TH2D*> vec_radius_ortho_vs_z;
+
+    vector<TH2D*> vec_x_y_slices;
+    vector<TH1D*> vec_radius_slices;
+    vector<TH1D*> vec_z_slices_in_radius;
     
+    TH1D* histo_path = new TH1D("histo_path ","histo_path",100,-10,10);
+    TH1D* histo_nitscls = new TH1D("histo_nitscls ","histo_nitscls",80,0,80);
+    TH1D* histo_path_has_its = new TH1D("histo_path_has_its","histo_path_has_its",50,-100,100);
+    TH1D* histo_path_has_no_its = new TH1D("histo_path_has_no_its","histo_path_has_no_its",50,-100,100);
+    TH1D* histo_path_has_atleast_3_its_hits = new TH1D("histo_path_has_atleast_3_its_hits","histo_path_has_atleast_3_its_hits",80,-100,100);
+
+    //TH1D* histo_ = new TH1D("histo_path_has_atleast_3_its_hits","histo_path_has_atleast_3_its_hits",80,-100,100);
+    TH1D* histo_radius_nuclev_4_or_more_sum = new TH1D("nuclev_radius_4_or_more_tracks_sum","nuclev_radius_4_or_more_tracks_sum",binning_nuclev,range_min_nuclev,range_max_nuclev);
+
+    TH1D* histo_its = new TH1D("its number","its number",70,0,70);
+
 
     //TNtuple* tpl = new TNtuple ("ntuple","ntuple","x:y:z:dcaA:dcaB:dcaC:dcaD:pA:pB:pC:pD:dcaAprim:dcaBprim:dcaCprim:dcaDprim");
 
+    TH1D* histo_type_of_S = new TH1D("S_type","S_type",4,0.5,4.5);
+    TH1D* histo_angle = new TH1D("histo_angle","histo_angle",100,0,7);
+    TH1D* histo_angle_z_0_10 = new TH1D("histo_angle_z_0_10","histo_angle_z_0_10",100,0,7);
+    TH1D* histo_angle_z_50_60 = new TH1D("histo_angle_z_50_60","histo_angle_z_50_60",100,0,7);
+
+    TH1D* S_radius_from_origin = new TH1D("S_radius_from_origin","S_radius_from_origin",200,0,200);
+    vector<TH1D*> vec_S_radius_from_origin;
 
 public:
     Ali_Dark_Matter_Read(){}
@@ -210,8 +280,10 @@ public:
     ~Ali_Dark_Matter_Read();
     void Init_tree(TString SEList);
     Int_t Loop_event(Long64_t event );
+    Int_t Loop_event_S_search(Long64_t event );
     Long64_t getnumberentries(){return file_entries_total;};
     void copy_track_params(Ali_AS_Track* track_in, Ali_AS_Track* track_out);
+    void copy_dm_params(Ali_AS_DM_particle* dm_in, Ali_AS_DM_particle* dm_out);
     void Save();
 
     float arr_distance_prim_sec[15]={};
