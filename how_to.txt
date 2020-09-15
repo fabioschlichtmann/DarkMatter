@@ -1,0 +1,36 @@
+Download something from Grid
+
+Login to GRID, run GRID job, delete/download data
+Login with: aliroot5  (alifull5 ?)
+type aliensh  to login to the GRID
+type ls to get a list of directories you have there.
+The direcotory Ali_AS_analysis_TRD_digits contains your data.
+If you want to delete it then type rmdir Ali_AS_analysis_TRD_digits. Do that before you loop over a new dataset with different settings. 
+type exit to leave the aliensh GRID area
+type data to get to your /misc/alidata120/ area where you put your data.
+Get to your directory where you want to have the data and type aliensh
+type . ./download_data_from_GRID.sh (you need to have the .sh file in this directory). The data will be downloaded one-by-one
+Once all data is on you /misc/data120/ directory you can merge the files via hadd Merge_V1.root Ali_TRD*_{0..10}.root (here the  files with numbers 0 to 10 are merged into the file Merge_V1.root)
+Run new jobs via: aliroot runGridESD.C\(\"full\",702,\"Ali_AS_analysis_TRD_digits\",1\)
+Check the jobs online via MonaLisa tool.
+
+
+
+How to work with batch farm:
+
+Kompilieren: .x filename.cxx++
+
+Submittieren: . ./submit_to_condor.sh List_of_lists_test.txt  (nicht auf Alice-head!)
+
+Laufende Jobs sehen: condor_q schlichtmann
+
+Logfiles loeschen:  rm *.log  (im Ordner log)
+
+Im Ordner out (unter data) sind die root files, diese hadd Merge_condor_Vnumber
+
+Damit Trees richtig gefuellt werden im LinkDef jeweils ein + ergänzen
+(welches LinkDef?)
+
+
+
+
