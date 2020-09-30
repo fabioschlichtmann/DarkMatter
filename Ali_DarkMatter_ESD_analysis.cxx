@@ -3590,6 +3590,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 dca_closest_to_point  = 0;
                 FindDCAHelixPoint2(S_vertex_pos, AS_Track, path_initA, path_initB, path_closest_to_point,dca_closest_to_point);
                 if(dca_closest_to_point>0.5){continue;}
+
+                float dcaprim;
+                FindDCAHelixPoint2(pos_primary_vertex, AS_Track, path_initA, path_initB, path_closest_to_point,dcaprim);
+                if(dcaprim<1.){continue;}
+
                 vec_pion_track.push_back(*AS_Track);
 
             }
@@ -3731,6 +3736,15 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 tlv_type4 += tlv_K0_V01;
                 tlv_type4 += tlv_K0_V02;
                 tlv_type4 -= *tlv_neutron;
+
+                TVector3 dir_type4;
+                TVector3 unit_dir_type4;
+                dir_type4.SetXYZ(tlv_type4[0],tlv_type4[1],tlv_type4[2]);
+                unit_dir_type4 = dir_type4.Unit();
+
+                if ( unit_vec_prim_to_S_vertex.Dot(unit_dir_type4) < 0.8 ) {continue;}
+
+
 
 
                 Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
