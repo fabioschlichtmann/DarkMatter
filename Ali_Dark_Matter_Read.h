@@ -26,6 +26,7 @@ using namespace std;
 #include "TNtuple.h"
 #include "TCanvas.h"
 #include "TFile.h"
+#include "TProfile.h"
 
 #include "TChain.h"
 #include "TTree.h"
@@ -94,19 +95,27 @@ private:
     TH1D* histo_invariantmass_K0 = new TH1D("histo inv mass K0","histo inv mass K0",50*3,0.4,0.6);
 
     TH1D* histo_invariantmass_K0_type3 = new TH1D("histo_invariantmass_K0_type3","histo_invariantmass_K0_type3",50*3,0.4,0.6);
-    TH1D* histo_invariantmass_K0_type3_with_cuts =
-        new TH1D("histo_invariantmass_K0_type3_with_cuts","histo_invariantmass_K0_type3_with_cuts",50*3,0.4,0.6);
+    TH1D* histo_invariantmass_K0_type3_with_cuts_on_antip_and_K =
+        new TH1D("histo_invariantmass_K0_type3_with_cuts_on_antip_and_K","histo_invariantmass_K0_type3_with_cuts_on_antip_and_K",50*3,0.4,0.6);
 
-    TH1D* histo_invariantmass_K0_type3_with_some_cuts =
-        new TH1D("histo_invariantmass_K0_type3_with_some_cuts","histo_invariantmass_K0_type3_with_some_cuts",50*3,0.4,0.6);
+    TH1D* histo_invariantmass_K0_type3_with_cut_on_antip =
+        new TH1D("histo_invariantmass_K0_type3_with_cut_on_antip","histo_invariantmass_K0_type3_with_cut_on_antip",50*3,0.4,0.6);
+
+    TH1D* histo_invariantmass_K0_type3_with_cuts_on_K =
+        new TH1D("histo_invariantmass_K0_type3_with_cuts_on_K","histo_invariantmass_K0_type3_with_cuts_on_K",50*3,0.4,0.6);
+
 
 
     TH1D* histo_lambda_vertex_radius = new TH1D("histo lambda vertex radius ","histo lambda vertex radius ",50,0,200);
     TH1D* histo_K0_vertex_radius = new TH1D("histo K0 vertex radius ","histo K0 vertex radius ",50,0,200);
 
     TH1D* mass_squared_kaons = new TH1D("mass_squared_kaons", "mass_squared_kaons",100,-0.1,0.4);
-    TH1D* mass_squared_kaons_type3 = new TH1D("mass_squared_kaons_type3", "mass_squared_kaons_type3",100,-0.4,1.4);
-    TH1D* mass_squared_antip_type3 = new TH1D("mass_squared_antip_type3", "mass_squared_antip_type3",100,-0.4,1.4);
+    TH1D* mass_squared_kaons_type3 = new TH1D("mass_squared_kaons_type3", "mass_squared_kaons_type3",100,-1.1,1.4);
+    TH1D* mass_squared_kaons_type3_with_cut_on_antip = new TH1D("mass_squared_kaons_type3_with_cut_on_antip", "mass_squared_kaons_type3_with_cut_on_antip",100,-0.4,1.4);
+    TH1D* mass_squared_kaons_type3_with_cut_on_invmass_K0 = new TH1D("mass_squared_kaons_type3_with_cut_on_invmass_K0", "mass_squared_kaons_type3_with_cut_on_invmass_K0",100,-0.4,1.4);
+    TH1D* mass_squared_antip_type3 = new TH1D("mass_squared_antip_type3", "mass_squared_antip_type3",100,-1.1,1.4);
+    TH1D* mass_squared_antip_type3_with_cut_on_K = new TH1D("mass_squared_antip_type3_with_cut_on_K", "mass_squared_antip_type3_with_cut_on_K",100,-0.4,1.4);
+    TH1D* mass_squared_antip_type3_with_cut_on_invmass_K0 = new TH1D("mass_squared_antip_type3_with_cut_on_invmass_K0", "mass_squared_antip_type3_with_cut_on_invmass_K0",100,-0.4,1.4);
     TH1D* mass_squared_kaons_and_background = new TH1D("mass_squared_kaons_and_background", "mass_squared_kaons_and_background",100,-0.1,0.4);
 
     //type2
@@ -116,6 +125,7 @@ private:
     TH1D* histo_m_squared_kaon_with_all_other_cuts_type2 = new TH1D("histo_m_squared_kaon_with_all_other_cuts_type2", "histo_m_squared_kaon_with_all_other_cuts_type2",100,-0.1,0.4);
     TH1D* histo_m_squared_kaon_with_some_other_cuts_type2 = new TH1D("histo_m_squared_kaon_with_some_other_cuts_type2", "histo_m_squared_kaon_with_some_other_cuts_type2",100,-0.1,0.4);
 
+    vector<TH1D*> vec_mass_squared_dEdx_selected;
 
 
     TH1D* histo_invariant_mass_kaon_no_other_cuts = new TH1D("histo_invariant_mass_kaon_no_other_cuts", "histo_invariant_mass_kaon_no_other_cuts",100,-0.1,0.4);
@@ -124,7 +134,9 @@ private:
     TH1D* histo_counter = new TH1D("histo counter 1.5: S-vertices with two pions; 2.5: S-vertices that fulfill all cuts",
                                    "histo counter 1.5: S-vertices with two pions; 2.5: S-vertices that fulfill all cuts",10,0,10);
 
-    TH1D* histo_counter_S = new TH1D("histo_counter_S","histo_counter_S",10,0.5,10.5);
+    TH1D* histo_counter_S = new TH1D("histo_counter_S","histo_counter_S",40,0.5,40.5);
+    TH1D* histo_counter_type5 = new TH1D("histo_counter_type5","histo_counter_type5",40,0.5,40.5);
+
     TH1D* histo_numberDMs = new TH1D("histo_number_DMs","histo_number_DMs",10,0,10);
 
     int binning2D = 400;
@@ -138,6 +150,15 @@ private:
     
     TH2D* histo_S_x_and_y = new TH2D("histo S x and y ","histo S x and y ",binning2D,-100,100,binning2D,-100,100);
 
+    TH2D* histo_eta = new TH2D("histo_eta","histo_eta",100,-1,1,100,-1,1);
+    TH2D* histo_eta_larger_range = new TH2D("histo_eta_-3_3","histo_eta-3_3",300,-3,3,300,-3,3);
+    TH2D* histo_eta_z_cut = new TH2D("histo_eta_z_cut","histo_eta_z_cut",300,-3,3,300,-3,3);
+
+    TH1D* histo_delta_eta = new TH1D("histo_delta_eta","histo_delta_eta",400,-4,4);
+    TH1D* histo_delta_eta_z_cut = new TH1D("histo_delta_eta_z_cut","histo_delta_eta_z_cut",400,-4,4);
+
+    TH1D* histo_sum_eta_z_cut = new TH1D("histo_sum_eta_z_cut","histo_sum_eta_z_cut",400,-4,4);
+
     TH1D* histo_S_mass_r_larger_10 = new TH1D("histo S mass r>10","histo S mass r>10",200,0,20);
     TH1D* histo_S_mass_r_larger_20 = new TH1D("histo S mass r>20","histo S mass r>20",200,0,20);
 
@@ -149,7 +170,9 @@ private:
     vector<TH1D*> histos_1D;
     vector<TH2D*> histos_2D;
 
-     vector<TH1D*> histo_delta;
+    vector<TH1D*> histo_delta;
+
+    vector<TH1D*> histos_m_squared_type5;
     //--------------------------------------------------------------
 
     //counters----------------------------------------------------
@@ -173,6 +196,13 @@ private:
 
 
     TH2D* dEdx_vs_charge_dot_momentum;
+    TH2D* dEdx_vs_charge_dot_momentum_S_cand;
+
+    TH2D* dEdx_type5_anticuts;
+
+    vector<TH2D*> vec_dEdx_S;
+
+    vector<TH2D*> vec_dEdx;
     //TH2D* mass_squared_vs_charge_dot_momentum_kaons;
 
     TH1D* mass_squared_no_pions = new TH1D("mass squared no pions", "mass squared no pions",100,-0.1,0.1);
@@ -265,13 +295,46 @@ private:
 
     //TNtuple* tpl = new TNtuple ("ntuple","ntuple","x:y:z:dcaA:dcaB:dcaC:dcaD:pA:pB:pC:pD:dcaAprim:dcaBprim:dcaCprim:dcaDprim");
 
-    TH1D* histo_type_of_S = new TH1D("S_type","S_type",4,0.5,4.5);
+    TH1D* histo_type_of_S = new TH1D("S_type","S_type",10,0.5,10.5);
     TH1D* histo_angle = new TH1D("histo_angle","histo_angle",100,0,7);
     TH1D* histo_angle_z_0_10 = new TH1D("histo_angle_z_0_10","histo_angle_z_0_10",100,0,7);
     TH1D* histo_angle_z_50_60 = new TH1D("histo_angle_z_50_60","histo_angle_z_50_60",100,0,7);
 
     TH1D* S_radius_from_origin = new TH1D("S_radius_from_origin","S_radius_from_origin",200,0,200);
     vector<TH1D*> vec_S_radius_from_origin;
+
+    TH2D* radius_ortho_vs_z_eta = new TH2D("R_vs_z_sum_and_diff_eta_larger0.2","R_vs_z_sum_and_diff_eta_larger0.2",500,-200,200,500,0,200);
+    TH2D* radius_ortho_vs_z_eta2 = new TH2D("R_vs_z_sum_and_diff_eta_smaller0.2","R_vs_z_sum_and_diff_eta_smaller0.2",500,-200,200,500,0,200);
+    TH2D* radius_ortho_vs_z_eta3 = new TH2D("R_vs_z_sum_and_diff_eta_both_smaller0.2","R_vs_z_sum_and_diff_eta_both_smaller0.2",500,-200,200,500,0,200);
+    TH2D* radius_ortho_vs_z_eta4 = new TH2D("R_vs_z_sum_and_diff_eta_larger0.2andmom","R_vs_z_sum_and_diff_eta_larger0.2andmom",500,-200,200,500,0,200);
+    TH2D* radius_ortho_vs_z_eta5 = new TH2D("R_vs_z_sum_and_diff_eta_larger0.2andangle","R_vs_z_sum_and_diff_eta_larger0.2andangle",500,-200,200,500,0,200);
+
+    TH1D* histo_pt_S = new TH1D("histo_pt_S","histo_pt_S",100,0.,10.);
+
+    TProfile* tprof = new TProfile("tprof","tprof",20,0.5,1.5);
+
+    TH1D* histo_invmass_Lambda_type5 = new TH1D("histo_invmass_lambda_type5","histo_invmass_lambda_type5",50*2,1.1,1.13);
+
+    TH1D* histo_S_mass_type5 = new TH1D("histo_S_mass_type5","histo_S_mass_type5",200,0,10);
+    TH1D* histo_S_mass_type5_cut_on_antip = new TH1D("histo_S_mass_type5_cut_on_antip","histo_S_mass_type5_cut_on_antip",200,0,10);
+    TH1D* histo_S_mass_type5_anticuts = new TH1D("histo_S_mass_type5_anticuts","histo_S_mass_type5_anticuts",200,0,10);
+
+    TH1D* histo_S_mass_type5_anticuts_angle_90 = new TH1D("histo_S_mass_type5_anticuts_angle_90","histo_S_mass_type5_anticuts_angle_90",200,0,10);
+    TH1D* histo_S_mass_type5_anticuts_angle_120 = new TH1D("histo_S_mass_type5_anticuts_angle_120","histo_S_mass_type5_anticuts_angle_120",200,0,10);
+    TH1D* histo_S_mass_type5_anticuts_angle_150 = new TH1D("histo_S_mass_type5_anticuts_angle_150","histo_S_mass_type5_anticuts_angle_150",200,0,10);
+
+    TH1D* histo_S_mass_type5_dcaprim = new TH1D("histo_S_mass_type5_dcaprim","histo_S_mass_type5_dcaprim",200,0,10);
+
+    TH1D* histo_S_mass_type5_angle_lambda = new TH1D("histo_S_mass_type5_angle_lambda","histo_S_mass_type5_angle_lambda",200,0,10);
+
+    TH1D* histo_S_mass_type5_angle_lambda_and_dcaprim =
+        new TH1D("histo_S_mass_type5_angle_lambda_and_dcaprim","histo_S_mass_type5_angle_lambda_and_dcaprim",200,0,10);
+
+
+    TH1D* histo_S_mass_type5_anticuts_dcaprim_angle_120_and_radius_10
+        = new TH1D("histo_S_mass_type5_anticuts_dcaprim_angle_120_and_radius_10","histo_S_mass_type5_anticuts_dcaprim_angle_120_and_radius_10",200,0,10);
+
+
 
 public:
     Ali_Dark_Matter_Read(){}

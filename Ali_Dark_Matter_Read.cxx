@@ -45,6 +45,8 @@ Double_t calcDeterminant(TVector3& v1,TVector3& v2,TVector3& v3)
 }
 
 
+
+
 TVector3 calculatePointOfClosestApproach(TVector3 &base1, TVector3 &dir1,
 								    TVector3 &base2, TVector3 &dir2)
 {
@@ -424,6 +426,20 @@ bool check_if_int_is_in_vector(int a, vector<int> vec)
 
 }
 
+bool check_if_two_vectors_have_same_element(vector<int> vec1, vector<int> vec2)
+{
+    for(int i=0;i<vec1.size();i++)
+    {
+        for(int j=0;j<vec2.size();j++)
+        {
+            if(vec1[i]==vec2[j]){return 1;}
+        }
+
+    }
+    return 0;
+
+}
+
 void print_int_vector(vector<int> vec)
 {
     for(int i=0;i<(Int_t)vec.size();i++)
@@ -681,6 +697,32 @@ void fHelixAtoLinedca(TVector3 dirB, TVector3 spaceB, Ali_AS_Track* helixA, Floa
     }
 }
 
+TLorentzVector get_tlv(Ali_AS_Track* track, double mass, TVector3 vertex)
+{
+    Float_t path_initA = 0.0;
+    Float_t path_initB = 30.0;
+
+    TLorentzVector tlv = track->get_TLV_part();
+    double momentum = tlv.P();
+    double energy  = sqrt(mass*mass+momentum*momentum);
+
+    Float_t path_closest_to_point,dca_closest_to_point;
+    Double_t r1[3];
+    Double_t r2[3];
+    FindDCAHelixPoint(vertex,track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+    track->Evaluate(path_closest_to_point,r1);
+    track->Evaluate(path_closest_to_point+0.01,r2);
+    TVector3 dir;
+    dir.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
+    TVector3 unit_dir = dir.Unit();
+    TVector3 momentum_vec = unit_dir * momentum;
+    tlv.SetPxPyPzE(momentum_vec[0],momentum_vec[1],momentum_vec[2],energy);
+
+    return tlv;
+
+
+}
+
 double get_invariant_mass(Ali_AS_Track* trackK0P, Ali_AS_Track* trackK0N, double massP, double massN , TVector3 K0_vertex)
 {
     Float_t path_initA = 0.0;
@@ -723,6 +765,7 @@ double get_invariant_mass(Ali_AS_Track* trackK0P, Ali_AS_Track* trackK0N, double
 
     return invariantmass;
 }
+
 
 
 
@@ -832,11 +875,15 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
     //TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/Pb_Pb_S_Search_V2/";
 
     //newest p-Pb
-    TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/p_Pb_S_search_V10_more_stat/";
+    //TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/p_Pb_S_search_V10_more_stat/";
     //TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/p_Pb_S_search_V9_more_stat/";
 
     //nuclev
     //TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/p_Pb_S_search_V3/";
+
+    //Pb-Pb type5
+    TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/Pb_Pb_ch5_2/";
+    //TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/Pb_Pb_ch5_1/";
 
 
 
@@ -951,6 +998,10 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         vec_dEdx_S.push_back(histo);
 
     }
+
+    TString nom= "dEdx_type5_anticuts";
+    dEdx_type5_anticuts = new TH2D(nom.Data(),nom.Data(),199,x_vals,199,y_vals);
+
 
     histos_1D.push_back(histo_invariantmass_lambda);
     histos_1D.push_back(histo_invariantmass_K0);
@@ -1199,6 +1250,17 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         vec_mass_squared_dEdx_selected[i]=histo;
     }
 
+    histos_m_squared_type5.resize(4);
+
+    TString part[4]={"K+","pi-","pi+","antip"};
+    for(int i=0;i<4;i++)
+    {
+        TString n = "m_squared_ch5_for_";
+        n+=part[i];
+        histos_m_squared_type5[i] = new TH1D(n.Data(),n.Data(),100,-0.4,1.4);
+    }
+
+
 
    
 
@@ -1278,10 +1340,10 @@ float calc_momentum_squared(float* mom)
 //----------------------------------------------------------------------------------------
 Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 {
-    if(event%100==0)
-    {
+   // if(event%100==0)
+   // {
         printf("Loop event number: %lld \n",event);
-    }
+   // }
     //printf("Loop event number: %lld \n",event);
     counters[0]++;
     ////cout<<""<<endl;
@@ -1443,6 +1505,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
 
     vector<int> brute_force;
+    vector<int> brute_force_type5;
 
     vector<int> trackids_bits_shared;
     vector<int> trackids_similiar_tracks;
@@ -2180,6 +2243,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
         //if(type==1) {cout<<"numtracks: "<<numtracks<<endl;  }
         for(int i=0;i<numtracks;i++)
         {
+            if(type==5){continue;}
             Ali_AS_Track* track = DM->getTrack(i);
             int trackid = track->gettrackid();
 
@@ -2563,6 +2627,224 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                     Tree_AS_DM_particle ->Fill();
                 }
             }
+
+
+
+
+        }
+
+        if(type==5)
+        {
+            histo_counter_type5->Fill(1);
+
+            TVector3 S_vertex_pos = DM->get_S1Vertex();
+            TVector3 Lambda_vertex_pos = DM->get_S2Vertex();
+            TVector3 prim_to_S = S_vertex_pos-pos_primary_vertex;
+            TVector3 prim_to_Lambda = Lambda_vertex_pos - pos_primary_vertex;
+
+            double eta_for_cat = prim_to_S.Eta();
+            double phi_for_cat = prim_to_S.Phi();
+
+
+            Ali_AS_Track* track_kaon = DM->getTrack(0);
+            Ali_AS_Track* track_pi_minus = DM->getTrack(1);
+            Ali_AS_Track* track_pi_plus = DM->getTrack(2);
+            Ali_AS_Track* track_lambda_pi = DM->getTrack(3);
+            Ali_AS_Track* track_lambda_antip = DM->getTrack(4);
+
+            TLorentzVector tlv_lambda_pi = get_tlv(track_lambda_pi,mass_pion,Lambda_vertex_pos);
+            TLorentzVector tlv_lambda_antip = get_tlv(track_lambda_antip,mass_proton,Lambda_vertex_pos);
+            TLorentzVector tlv_lambda = tlv_lambda_pi + tlv_lambda_antip;
+            TVector3 p_lambda = tlv_lambda.Vect();
+            TVector3 p_lambda2 = DM->get_DirSV2();
+
+            printf("x: %f, y: %f, z: %f \n",p_lambda[0],p_lambda[1],p_lambda[2]);
+            printf("x: %f, y: %f, z: %f \n",p_lambda2[0],p_lambda2[1],p_lambda2[2]);
+                                         
+            
+
+            vector<Ali_AS_Track*> all_tracks_ch5;
+            vector<int> all_track_ids_ch5;
+            all_tracks_ch5.resize(5);
+            all_track_ids_ch5.resize(5);
+
+            for(int i=0;i<5;i++)
+            {
+                all_tracks_ch5[i]= DM->getTrack(i);
+                all_track_ids_ch5[i] = all_tracks_ch5[i]->gettrackid();
+            }
+
+            if(check_if_two_vectors_have_same_element(all_track_ids_ch5,brute_force_type5)){continue;}
+
+            for(int i=0;i<5;i++)
+            {
+                brute_force_type5.push_back(all_track_ids_ch5[i]);
+            }
+
+
+
+ 
+            //check dca to vertices
+            bool dca_check=1;
+            for(int i=0;i<5;i++)
+            {
+                Ali_AS_Track* track = all_tracks_ch5[i];
+                float dca;
+ 
+                if(i==0 || i==1 || i==2){ FindDCAHelixPoint(S_vertex_pos,track,path_initA,path_initB,path_closest_to_point,dca);}
+                if(i==3 || i==4){ FindDCAHelixPoint(Lambda_vertex_pos,track,path_initA,path_initB,path_closest_to_point,dca);}
+                if(dca>0.5){dca_check=0;}
+            }
+ 
+            if(!dca_check){continue;}
+
+            histo_counter_type5->Fill(2);
+ 
+            
+            TVector3 S_to_L = Lambda_vertex_pos-S_vertex_pos;
+
+            double dist_S_to_L = S_to_L.Mag();
+            if(dist_S_to_L<1.){continue;}
+
+            histo_counter_type5->Fill(3);
+ 
+ 
+            double invmass_Lambda =  get_invariant_mass(track_lambda_pi, track_lambda_antip , mass_pion, mass_proton , Lambda_vertex_pos);
+ 
+            double m_squared_kaon = calculate_m_squared_by_TOF(track_kaon);
+            double m_squared_pi_minus = calculate_m_squared_by_TOF(track_pi_minus);
+            double m_squared_pi_plus = calculate_m_squared_by_TOF(track_pi_plus);
+            double m_squared_lambda_antip = calculate_m_squared_by_TOF(track_lambda_antip);
+ 
+            histos_m_squared_type5[0]->Fill(m_squared_kaon);
+            histos_m_squared_type5[1]->Fill(m_squared_pi_minus);
+            histos_m_squared_type5[2]->Fill(m_squared_pi_plus);
+            histos_m_squared_type5[3]->Fill(m_squared_lambda_antip);
+ 
+            histo_invmass_Lambda_type5 -> Fill(invmass_Lambda);
+ 
+            TLorentzVector tlv_proton;
+            tlv_proton.SetPxPyPzE(0.,0.,0.,mass_proton);
+ 
+            TLorentzVector tlv_type5 = DM->get_tlv();
+ 
+            //cout<<"tlv: "<<tlv_type5[0]<<" "<<tlv_type5[1]<<" "<<tlv_type5[2]<<endl;
+ 
+            tlv_type5-=tlv_proton;
+ 
+            double S_mass_type5 = tlv_type5.M();
+            histo_S_mass_type5->Fill(S_mass_type5);
+ 
+            /*
+            if(S_mass_type5<0.9)
+            {
+                cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+                cout<<"tlv: "<<tlv_type5[0]<<" "<<tlv_type5[1]<<" "<<tlv_type5[2]<<"  "<<tlv_type5[3]<<endl;
+            }
+                */
+ 
+            if(0.6<m_squared_lambda_antip && m_squared_lambda_antip<1.2)
+            {
+                histo_S_mass_type5_cut_on_antip->Fill(S_mass_type5);
+ 
+            }
+ 
+           
+            double sigma_kaon = track_kaon -> getnsigma_K_TPC();
+            double sigma_pi_minus = track_pi_minus -> getnsigma_pi_TPC();
+            double sigma_pi_plus = track_pi_plus -> getnsigma_pi_TPC();
+            double sigma_lambda_antip = track_lambda_antip -> getnsigma_p_TPC();
+            double sigma_lambda_pi = track_lambda_pi -> getnsigma_p_TPC();
+
+            //show that if no anticuts apply, then no overlap
+            Float_t TPCdEdx   = track_kaon->getTPCdEdx();
+            Float_t tofsignal = track_kaon->getTOFsignal();
+            Float_t dca       = track_kaon->getdca();
+            int charge;
+            if(dca>0){charge = 1;}
+            else {charge = -1;}
+            TLorentzVector tlv = track_kaon->get_TLV_part();
+            double momentum = tlv.P();
+
+            if(fabs(track_kaon->getnsigma_pi_TPC() )>2.5 &&  fabs(track_kaon->getnsigma_p_TPC() )>2.5 && fabs(track_kaon->getnsigma_e_TPC() )>2.5 )
+            {
+                dEdx_type5_anticuts->Fill(charge*momentum,TPCdEdx);
+            }
+            TPCdEdx   = track_lambda_antip->getTPCdEdx();
+            tofsignal = track_lambda_antip->getTOFsignal();
+            dca       = track_lambda_antip->getdca();
+            if(dca>0){charge = 1;}
+            else {charge = -1;}
+            tlv = track_lambda_antip->get_TLV_part();
+            momentum = tlv.P();
+            if(fabs(track_lambda_antip->getnsigma_pi_TPC() )>2.5 && fabs(track_lambda_antip->getnsigma_K_TPC() )>2.5 && fabs(track_lambda_antip->getnsigma_e_TPC() )>2.5)
+            {
+                dEdx_type5_anticuts->Fill(charge*momentum*-1,TPCdEdx);
+            }
+            //---------------------------------------------------------------------------------------------
+            //anticuts decide if TOF-hit is needed  //********************************anticuts******************************************
+            if(fabs(track_kaon->getnsigma_pi_TPC() )<2.5 || fabs(track_kaon->getnsigma_p_TPC() )<2.5 || fabs(track_kaon->getnsigma_e_TPC() )<2.5 )
+            {
+                if(m_squared_kaon<0.2 || m_squared_kaon>0.35 ){continue;}
+            }
+ 
+            if(fabs(track_lambda_antip->getnsigma_pi_TPC() )<2.5 || fabs(track_lambda_antip->getnsigma_K_TPC() )<2.5 || fabs(track_lambda_antip->getnsigma_e_TPC() )<2.5)
+            {
+                if(m_squared_lambda_antip<0.6 || m_squared_lambda_antip>1.2 ){continue;}
+ 
+            }
+            histo_counter_type5->Fill(4);
+ 
+            histo_S_mass_type5_anticuts->Fill(S_mass_type5);
+
+            double angle = S_to_L.Angle(prim_to_S);
+            if(angle<90*3.14159/180.){histo_S_mass_type5_anticuts_angle_90->Fill(S_mass_type5);}
+            if(angle<120*3.14159/180.){histo_S_mass_type5_anticuts_angle_120->Fill(S_mass_type5);}
+            if(angle<150*3.14159/180.){histo_S_mass_type5_anticuts_angle_150->Fill(S_mass_type5);}
+ 
+            bool check_dcaprim=1;
+            for(int i=0;i<5;i++)
+            {
+                Ali_AS_Track* track = all_tracks_ch5[i];
+                float dcaprim;
+                FindDCAHelixPoint(pos_primary_vertex,track,path_initA,path_initB,path_closest_to_point,dcaprim);
+                if(dcaprim<0.5){check_dcaprim=0;}
+ 
+            }
+
+            if(check_dcaprim)
+            {
+                histo_counter_type5->Fill(5);
+                histo_S_mass_type5_dcaprim->Fill(S_mass_type5);
+            }
+            histo_counter_type5->Fill(6);
+
+            if(p_lambda.Angle(prim_to_Lambda)<10 /180.*3.141){continue;}
+            histo_counter_type5->Fill(7);
+            histo_S_mass_type5_angle_lambda->Fill(S_mass_type5);
+            if(check_dcaprim)histo_S_mass_type5_angle_lambda_and_dcaprim->Fill(S_mass_type5);
+
+            //fill AS_DM_particle
+            if(check_dcaprim && angle<120*3.14159/180. && radius > 10)
+            {
+                histo_counter_type5->Fill(8);
+                histo_S_mass_type5_anticuts_dcaprim_angle_120_and_radius_10->Fill(S_mass_type5);
+                AS_DM_particle->clearTrackList();
+                copy_dm_params(DM,AS_DM_particle);
+                Tree_AS_DM_particle ->Fill();
+            }
+ 
+ 
+            //FindDCAHelixPoint(pos_primary_vertex,track,path_initA,path_initB,path_closest_to_point,dcaprim);
+ 
+ 
+ 
+            
+ 
+ 
+ 
+ 
+ 
 
 
 
@@ -4799,6 +5081,27 @@ void Ali_Dark_Matter_Read::Save()
     vec_mass_squared_dEdx_selected[0]->Write();
     vec_mass_squared_dEdx_selected[1]->Write();
     vec_mass_squared_dEdx_selected[2]->Write();
+
+    histos_m_squared_type5[0]->Write();
+    histos_m_squared_type5[1]->Write();
+    histos_m_squared_type5[2]->Write();
+    histos_m_squared_type5[3]->Write();
+
+    histo_invmass_Lambda_type5->Write();
+
+    histo_S_mass_type5->Write();
+    histo_S_mass_type5_cut_on_antip->Write();
+    histo_S_mass_type5_anticuts->Write();
+    histo_S_mass_type5_dcaprim->Write();
+
+    histo_S_mass_type5_anticuts_angle_90->Write();
+    histo_S_mass_type5_anticuts_angle_120->Write();
+    histo_S_mass_type5_anticuts_angle_150->Write();
+    dEdx_type5_anticuts->Write();
+    histo_S_mass_type5_anticuts_dcaprim_angle_120_and_radius_10->Write();
+    histo_S_mass_type5_angle_lambda->Write();
+    histo_counter_type5->Write();
+    histo_S_mass_type5_angle_lambda_and_dcaprim->Write();
 
     //-----------------------------------------------------
 
