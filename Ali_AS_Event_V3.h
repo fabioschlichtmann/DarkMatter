@@ -631,6 +631,13 @@ private:
     TVector3 DirSV2;
     TVector3 DirSV3;
     Int_t    N_V0s;
+    TLorentzVector tlv_S;
+
+    Ali_AS_Track track0;
+    Ali_AS_Track track1;
+    Ali_AS_Track track2;
+    Ali_AS_Track track3;
+    Ali_AS_Track track4;
 
     int type_of_reaction_channel;
 
@@ -641,14 +648,14 @@ private:
 
 public:
     Ali_AS_DM_particle() :
-	primVertex(),S1Vertex(),S2Vertex(),S3Vertex(),DirSV1(),DirSV2(),DirSV3(),N_V0s(0),fNumTracks(0),fNumV0s(0)
+	primVertex(),S1Vertex(),S2Vertex(),S3Vertex(),DirSV1(),DirSV2(),DirSV3(),N_V0s(0),tlv_S(),type_of_reaction_channel(0),fNumTracks(0),fNumV0s(0)
     {
         fTracks         = new TClonesArray( "Ali_AS_Track", 10 );
     }
 	~Ali_AS_DM_particle()
 	{
-	    delete fTracks;
-            fTracks = NULL;
+	   // delete fTracks;
+           // fTracks = NULL;
         }
 
 
@@ -660,11 +667,20 @@ public:
         void set_DirSV1(TVector3 tv3)                    { DirSV1     = tv3;     }
         void set_DirSV2(TVector3 tv3)                    { DirSV2     = tv3;     }
         void set_DirSV3(TVector3 tv3)                    { DirSV3     = tv3;     }
-        void setN_V0s(Int_t r)                           { N_V0s = r;            }
+        void setN_V0s(Int_t r)                           { N_V0s      = r;       }
+        void set_tlv(TLorentzVector tlv)                 { tlv_S      = tlv;     }
 
         //type 1: antiS + n -> antiLambda + K0 + pi- + pi+
 
         void settype(Int_t r)                           { type_of_reaction_channel = r;            }
+        void settrack(int i,Ali_AS_Track track)
+        {
+            if(i==0){track0=track;}
+            if(i==1){track1=track;}
+            if(i==2){track2=track;}
+            if(i==3){track3=track;}
+            if(i==4){track4=track;}
+        }
 
 	// getters
         TVector3 get_primVertex() const                  { return primVertex;    }
@@ -676,11 +692,20 @@ public:
         TVector3 get_DirSV3()     const                  { return DirSV3;        }
 	Int_t    getN_V0s()       const                  { return N_V0s;         }
         int gettype(){return type_of_reaction_channel;}
+        TLorentzVector get_tlv()                         { return tlv_S;         }
+        Ali_AS_Track gettrack(int i)
+        {
+            if(i==0){return track0;}
+            if(i==1){return track1;}
+            if(i==2){return track2;}
+            if(i==3){return track3;}
+            if(i==4){return track4;}
+        }
 
         //----------------------------
 	Ali_AS_Track* createTrack()
         {
-            std::cout<<"as_dm created Track"<<endl;
+            //std::cout<<"as_dm created Track"<<endl;
 	    if (fNumTracks == fTracks->GetSize())
 		fTracks->Expand( fNumTracks + 10 );
 	    if (fNumTracks >= 100000)
