@@ -1200,17 +1200,23 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
      vector<TVector3> vec_position_SV2;
      vector<TVector3> vec_position_SV3;
+     vector<TVector3> vec_position_SV3_1;
      vector<TVector3> vec_direction_SV2;
      vector<TVector3> vec_direction_SV3;
+     vector<TVector3> vec_direction_SV3_1;
 
      vector<int> vec_SV2_number;
      vector<int> vec_SV3_number;
+     vector<int> vec_SV3_number_1;
 
+     vector<Ali_AS_Track> vec_SV1_tracks;
      vector<Ali_AS_Track> vec_SV2_tracks;
      vector<Ali_AS_Track> vec_SV3_tracks;
+     vector<Ali_AS_Track> vec_SV3_tracks_1;
 
      vector<int> vec_SV2_track_ids;
      vector<int> vec_SV3_track_ids;
+     vector<int> vec_SV3_track_ids_1;
 
      
      Ali_AS_V0* AS_V0 = new Ali_AS_V0;
@@ -1273,13 +1279,20 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      vector<TLorentzVector> vec_K0_tlvs;
      vector<TVector3> vec_K0_V0_pos;
      vector<int> vec_K0_Ali_V0;
+     vector<int> vec_K0_V0_type1;
+     vector<int> vec_K0_V0_type11;
      vector<int> vec_V0_S_type3;
      vector<int> vec_V0_S_type31;
+     vector<int> vec_V0_S_type1;
+     vector<int> vec_V0_Lambda_type1;
+     vector<int> vec_V0_Lambda_type11;
 
+     vector<TVector3> vec_S_pos_ch1;
      vector<TVector3> vec_S_pos_type5;
      vector<TVector3> vec_S_pos_type51;
      vector<TVector3> vec_antilambdas_type5;
      vector<TVector3> vec_Lambdas_type51;
+     vector<TLorentzVector> vec_tlv_type1;
      vector<TLorentzVector> vec_tlv_type5;
      vector<TLorentzVector> vec_tlv_type51;
      vector<TLorentzVector> vec_tlv_antilambda_type5;
@@ -1290,9 +1303,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      vector<Ali_AS_Track> vec_tracks_Lambda_type51;
 
      vector<int> brute_force_type1;
+     vector<int> brute_force_type11;
      vector<int> brute_force_type2;
      vector<int> brute_force_type21;
      vector<int> brute_force_type3;
+     vector<int> brute_force_type31;
      vector<int> brute_force_type4;
      vector<int> brute_force_type5;
      vector<int> brute_force_type51;
@@ -2019,12 +2034,31 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //----------------------------------------------------------------------------
         //channel1: antiS + n -> antiLambda + K0 + pi- + pi+
 
+        //new method via V0
+        if(fabs(sigma_pi_P)<2. && sigma_pi_N<2. && radius > 5)
+        {
+            TLorentzVector tlv_ch1 = get_tlv_by_V0(mass_pion,mass_pion,momP,momN);
+            TVector3 S_vertex_pos = V0_position;
 
-        //antilambda -> antip + pi-
-        if(fabs(sigma_antiproton_TPC) < 2.0 && fabs(sigma_pion_plus_TPC) < 2.0 && radius > 5)
+            vec_S_pos_ch1.push_back(S_vertex_pos);
+            vec_tlv_type1.push_back(tlv_ch1);
+
+            vec_SV1_tracks.push_back(*as_trackP);
+            vec_SV1_tracks.push_back(*as_trackN);
+
+            Ali_AS_V0* myV0 =  AS_Event->createV0();
+            copyV0params(AS_V0,myV0);
+            int numV0 = AS_Event->getNumV0s();
+            vec_V0_S_type1.push_back(numV0-1);
+
+        }
+
+
+        //antilambda -> antip + pi+
+        if(fabs(sigma_antiproton_TPC) < 2.0 && fabs(sigma_pion_plus_TPC) < 2.0)
         {
             energy_antiproton = sqrt(mass_proton*mass_proton+ calc_momentum_squared(momN) );
-            energy_pion       = sqrt(mass_pion*mass_pion+calc_momentum_squared(momN)) ;
+            energy_pion       = sqrt(mass_pion*mass_pion+calc_momentum_squared(momP)) ;
 
             tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion);
             tlv_neg -> SetPxPyPzE(momN[0],momN[1] ,momN[2],energy_antiproton);
@@ -2052,6 +2086,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                 vec_SV3_number.push_back(V0_counter);
                 SV3_counter++;
+
+                Ali_AS_V0* myV0 =  AS_Event->createV0();
+                copyV0params(AS_V0,myV0);
+                int numV0 = AS_Event->getNumV0s();
+                vec_V0_Lambda_type1.push_back(numV0-1);
 
             }
 
@@ -2090,7 +2129,46 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 vec_SV2_track_ids.push_back(trackidN);
 
                 vec_SV2_number.push_back(V0_counter);
+
+                Ali_AS_V0* myV0 =  AS_Event->createV0();
+                copyV0params(AS_V0,myV0);
+                int numV0 = AS_Event->getNumV0s();
+                vec_K0_V0_type1.push_back(numV0-1);
             }
+        }
+
+        //channel 11: Lambda-> p + pi-
+        //Lambda -> p + pi-
+        if(fabs(sigma_p_P) < 2.0 && fabs(sigma_pi_N) < 2.0)
+        {
+            TLorentzVector tlv_Lambda = get_tlv_by_V0(mass_proton,mass_pion,momP,momN);
+
+            //check if nonprimary:
+            TVector3 dir_SV3;
+            dir_SV3.SetXYZ(tlv_Lambda.Px(),tlv_Lambda.Py(),tlv_Lambda.Pz());
+            double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir_SV3,pos_primary_vertex);
+
+            //cut on mass and nonprimary
+            if( dist>0.5 && invariantmass < (1.1157+0.001495*6) && invariantmass > (1.1157-0.001495*6))
+            {
+                vec_position_SV3_1.push_back(V0_position);
+
+                vec_direction_SV3_1.push_back(dir_SV3);
+
+                vec_SV3_tracks_1.push_back(*as_trackP);
+                vec_SV3_tracks_1.push_back(*as_trackN);
+
+                vec_SV3_track_ids_1.push_back(trackidP);
+                vec_SV3_track_ids_1.push_back(trackidN);
+
+                vec_SV3_number_1.push_back(V0_counter);
+                Ali_AS_V0* myV0 =  AS_Event->createV0();
+                copyV0params(AS_V0,myV0);
+                int numV0 = AS_Event->getNumV0s();
+                vec_V0_Lambda_type11.push_back(numV0-1);
+
+            }
+
         }
 
 
@@ -3442,557 +3520,195 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     cout<<"begin of combinatoric" <<endl;
 
-    //------------------------------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------------------------------
-    //------------------------------------------------------------------------------------------------------
-    //find S-vertex:
-    //channel1
-    /*
 
-    for(Int_t vector_loop_SV3 = 0; vector_loop_SV3 < vec_position_SV3.size(); vector_loop_SV3++)
+
+    //------------------------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------------------------------
+    //do combinatoric:
+    //channel1 and channel 11
+
+    //mode 0: channel 1
+    //mode 1: channel 11
+    for(int mode=0;mode<2;mode++)
     {
-        for(Int_t vector_loop_SV2 = 0; vector_loop_SV2 < vec_position_SV2.size(); vector_loop_SV2++)
+        int size_SV3;
+        if(mode==0) size_SV3 = vec_position_SV3.size();
+        if(mode==1) size_SV3 = vec_position_SV3_1.size();
+
+        for(Int_t vector_loop_SV3 = 0; vector_loop_SV3 < size_SV3; vector_loop_SV3++)
         {
-            if(vec_position_SV3.size() > 0 && vec_position_SV2.size() > 0 && vec_direction_SV3.size() > 0 &&  vec_direction_SV2.size() > 0)
+            for(Int_t vector_loop_SV2 = 0; vector_loop_SV2 < vec_position_SV2.size(); vector_loop_SV2++)
             {
-                if(calculateMinimumDistance(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]) > 0.5){ continue;}
-                S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]);
-
-                double px,py,pz,E;
-                //SV2
-                px = vec_direction_SV2[vector_loop_SV2][0];
-                py = vec_direction_SV2[vector_loop_SV2][1];
-                pz = vec_direction_SV2[vector_loop_SV2][2];
-                E = (sqrt(px*px+py*py+pz*pz)+(mass_K0*mass_K0));
-                tlv_SV2 -> SetPxPyPzE(px,py,pz,E);
-
-                //SV3
-                px = vec_direction_SV3[vector_loop_SV3][0];
-                py = vec_direction_SV3[vector_loop_SV3][1];
-                pz = vec_direction_SV3[vector_loop_SV3][2];
-                E = (sqrt(px*px+py*py+pz*pz)+(mass_Lambda*mass_Lambda));
-                tlv_SV3 -> SetPxPyPzE(px,py,pz,E);
-
-               
-                //calculate SV1
-                *tlv_SV1 = *tlv_SV2 + *tlv_SV3 - *tlv_neutron;
-
-                //neglecting pions -> wrong mass
-                //S_mass = tlv_SV1->M();
-
-                vec_primary_vertex_to_SV1.SetXYZ(S_vertex_pos[0]-xprim ,S_vertex_pos[1]-yprim , S_vertex_pos[2]-zprim);
-                unit_vec_primary_vertex_to_SV1 = vec_primary_vertex_to_SV1.Unit();
-
-                radiusS = vec_primary_vertex_to_SV1.Mag();
-
-                if(radiusS<5){continue;}
-
-                //decay length cut
-                TVector3 vec_S_to_Lambda;
-                TVector3 vec_S_to_K0;
-                TVector3 pos_Lambda;
-                TVector3 pos_K0;
-
-                pos_Lambda = vec_position_SV3[vector_loop_SV3];
-                pos_K0 = vec_position_SV2[vector_loop_SV2];
-
-                vec_S_to_Lambda = pos_Lambda - S_vertex_pos;
-                vec_S_to_K0 = pos_K0 - S_vertex_pos;
-
-                double radius_Lambda = vec_S_to_Lambda.Mag();
-                double radius_K0     = vec_S_to_K0.Mag();
-
-                if(radius_Lambda < 1){continue;}
-                if(radius_K0 < 0.5) {continue;}
-
-
-                //check direction daughter particles not backwards:
-                TVector3 unit_vec_S_to_Lambda = vec_S_to_Lambda.Unit();
-                TVector3 unit_vec_S_to_K0 = vec_S_to_K0.Unit();
-                TVector3 unit_tlv_Lambda = vec_direction_SV3[vector_loop_SV3].Unit();
-                TVector3 unit_tlv_K0 = vec_direction_SV2[vector_loop_SV2].Unit();
-
-                if(unit_vec_S_to_Lambda.Dot(unit_tlv_Lambda)< 0.6 ){continue;}
-                if(unit_vec_S_to_K0.Dot(unit_tlv_K0) < 0.6 ){continue;}
-
-                Int_t counter_pions_close_to_S_vertex = 0;
-
-                //store tracks of all pions that come from S-vertex
-                
-                tracknumbers.clear();
-                trackids.clear();
-                trackidsSV2andSV3.clear();
-
-                trackidsSV2andSV3.push_back(vec_SV3_track_ids[2*vector_loop_SV3]);
-                trackidsSV2andSV3.push_back(vec_SV3_track_ids[2*vector_loop_SV3+1]);
-                trackidsSV2andSV3.push_back(vec_SV2_track_ids[2*vector_loop_SV2]);
-                trackidsSV2andSV3.push_back(vec_SV2_track_ids[2*vector_loop_SV2+1]);
-
-
-                //for each S-vertex loop over all tracks of event
-                for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
+                if(vec_position_SV3.size() > 0 && vec_position_SV2.size() > 0 && vec_direction_SV3.size() > 0 &&  vec_direction_SV2.size() > 0)
                 {
-                    AS_Track = AS_Event->getTrack(i_track_A);
-                    int trackid2 = AS_Track->gettrackid();
-
-                    if ( check_if_int_is_in_vector(trackid2,trackids_similiar_tracks)){continue;}
-                    if( check_if_int_is_in_vector(trackid2,trackidsSV2andSV3) ){continue;}
-
-                    double sigma = AS_Track -> getnsigma_pi_TPC();
-                    // Do some PID here for pi+ and pi-
-                    if(fabs(sigma)>2.0){continue;}
-
-                    float dcaprim=0;
-                    FindDCAHelixPoint2(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dcaprim);
-                    if(dcaprim<1.){continue;}
-
-
-                    //calculate dca from vertex to particle track
-                    FindDCAHelixPoint2(S_vertex_pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
-
-                    //cut on dca and distance S vertex from primary vertex
-                    //cut on r because otherwise many pions from primary vertex
-                    if(dca_closest_to_point < 0.5) // && radiusS>5)
+                    //if(calculateMinimumDistance(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]) > 0.5){ continue;}
+                    //S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]);
+                    for(int S_loop=0;S_loop<vec_S_pos_ch1.size();S_loop++)
                     {
-                        //printf("track: %d is pion and close to vertex \n",i_track_A);
-                        counter_pions_close_to_S_vertex++;
-                        //save track number for tracks that are close to S-vertex
-                        tracknumbers.push_back(i_track_A);
-                        trackids.push_back(trackid2);
+                        TVector3 S_vertex = vec_S_pos_ch1[S_loop];
+                        S_vertex_pos = S_vertex;
+                        Ali_AS_V0* S_V0 = AS_Event->getV0(vec_V0_S_type1[S_loop]);
+                        Ali_AS_V0* K0_V0 = AS_Event->getV0(vec_K0_V0_type1[vector_loop_SV2]);
+                        Ali_AS_V0* Lambda_V0;
+                        if(mode==0) Lambda_V0 = AS_Event->getV0(vec_V0_Lambda_type1[vector_loop_SV3]);
+                        if(mode==1) Lambda_V0 = AS_Event->getV0(vec_V0_Lambda_type11[vector_loop_SV3]);
+    
+                        TVector3 vec_S_to_Lambda;
+                        TVector3 vec_S_to_K0;
+                        TVector3 pos_Lambda;
+                        TVector3 pos_K0;
+                        TVector3 dir_L;
+                        TVector3 dir_K0;
+
+                        if(mode==0) pos_Lambda = vec_position_SV3[vector_loop_SV3];
+                        if(mode==1) pos_Lambda = vec_position_SV3_1[vector_loop_SV3];
+                        pos_K0 = vec_position_SV2[vector_loop_SV2];
+    
+                        if(mode==0) dir_L = vec_direction_SV3[vector_loop_SV3];
+                        if(mode==1) dir_L = vec_direction_SV3_1[vector_loop_SV3];
+                        dir_K0 = vec_direction_SV2[vector_loop_SV2];
+    
+                        double dist_K0_S = calculateMinimumDistanceStraightToPoint(pos_K0,dir_K0,S_vertex);
+                        double dist_L_S = calculateMinimumDistanceStraightToPoint(pos_Lambda,dir_L,S_vertex);
+    
+                        if(dist_K0_S>0.5 || dist_L_S >0.5 ){continue;}
+                        //float* pos = S_V0->getxyz();
+                        //cout<<"pos: "<<pos[0]<<endl;
+                        //cout<<"position: "<<S_vertex[0]<<endl;
+                        double px,py,pz,E,p;
+    
+                        //SV2   K0
+                        px = vec_direction_SV2[vector_loop_SV2][0];
+                        py = vec_direction_SV2[vector_loop_SV2][1];
+                        pz = vec_direction_SV2[vector_loop_SV2][2];
+                        p = vec_direction_SV2[vector_loop_SV2].Mag();
+                        E = (sqrt(px*px+py*py+pz*pz)+(mass_K0*mass_K0));
+                        tlv_SV2 -> SetPxPyPzE(px,py,pz,E);
+    
+                        //.cout<<"p: "<<p<<" other: "<<sqrt(px*px+py*py+pz*pz) <<endl;
+    
+                        //SV3  Lambda
+                        if(mode==0)
+                        {
+                            px = vec_direction_SV3[vector_loop_SV3][0];
+                            py = vec_direction_SV3[vector_loop_SV3][1];
+                            pz = vec_direction_SV3[vector_loop_SV3][2];
+                            E = (sqrt(px*px+py*py+pz*pz)+(mass_Lambda*mass_Lambda));
+                            tlv_SV3 -> SetPxPyPzE(px,py,pz,E);
+                        }
+
+                        if(mode==1)
+                        {
+                            px = vec_direction_SV3_1[vector_loop_SV3][0];
+                            py = vec_direction_SV3_1[vector_loop_SV3][1];
+                            pz = vec_direction_SV3_1[vector_loop_SV3][2];
+                            E = (sqrt(px*px+py*py+pz*pz)+(mass_Lambda*mass_Lambda));
+                            tlv_SV3 -> SetPxPyPzE(px,py,pz,E);
+                        }
+
+                        TLorentzVector tlv_pions = vec_tlv_type1[S_loop];
+    
+                        //calculate tlv  SV1
+                        *tlv_SV1 = tlv_pions + *tlv_SV2 + *tlv_SV3 - *tlv_neutron;
+                        //---------------------------------------------------------------------------
+                        //begin cuts-----------------------------------------------------------------
+                        vec_primary_vertex_to_SV1.SetXYZ(S_vertex_pos[0]-xprim ,S_vertex_pos[1]-yprim , S_vertex_pos[2]-zprim);
+                        unit_vec_primary_vertex_to_SV1 = vec_primary_vertex_to_SV1.Unit();
+                        radiusS = vec_primary_vertex_to_SV1.Mag();
+                        if(radiusS<5){continue;}
+    
+                        //decay length cut
+                        vec_S_to_Lambda = pos_Lambda - S_vertex_pos;
+                        vec_S_to_K0 = pos_K0 - S_vertex_pos;
+    
+                        double radius_Lambda = vec_S_to_Lambda.Mag();
+                        double radius_K0     = vec_S_to_K0.Mag();
+    
+                        //if(radius_Lambda < 0.5){continue;}
+                        //if(radius_K0 < 0.5) {continue;}
+                        //check direction daughter particles with verbindungsvektor
+                        TVector3 unit_vec_S_to_Lambda = vec_S_to_Lambda.Unit();
+                        TVector3 unit_vec_S_to_K0 = vec_S_to_K0.Unit();
+                        TVector3 unit_tlv_Lambda = dir_L.Unit();
+                        TVector3 unit_tlv_K0 = vec_direction_SV2[vector_loop_SV2].Unit();
+    
+                        if(unit_vec_S_to_Lambda.Dot(unit_tlv_Lambda)< 0.8 ){continue;}
+                        if(unit_vec_S_to_K0.Dot(unit_tlv_K0) < 0.8 ){continue;}
+    
+                        momentum_SV1.SetXYZ(tlv_SV1->Px(),tlv_SV1->Py(),tlv_SV1->Pz());
+                        unit_momentum_SV1 = momentum_SV1.Unit();
+                        double dot_product = unit_vec_primary_vertex_to_SV1.Dot(unit_momentum_SV1);
+                        //check if dot product is larger than 0
+                        if(dot_product<0.8){continue;}
+    
+                        vector<Ali_AS_Track> all_tracks_ch1;
+                        vector<int> all_track_ids_ch1;
+    
+                        all_tracks_ch1.push_back(vec_SV1_tracks[0]);
+                        all_tracks_ch1.push_back(vec_SV1_tracks[1]);
+                        all_tracks_ch1.push_back(vec_SV2_tracks[0]);
+                        all_tracks_ch1.push_back(vec_SV2_tracks[1]);
+                        if(mode==0)
+                        {
+                            all_tracks_ch1.push_back(vec_SV3_tracks[0]);
+                            all_tracks_ch1.push_back(vec_SV3_tracks[1]);
+                        }
+                        if(mode==1)
+                        {
+                            all_tracks_ch1.push_back(vec_SV3_tracks_1[0]);
+                            all_tracks_ch1.push_back(vec_SV3_tracks_1[1]);
+                        }
+
+
+                        for(int i=0;i<6;i++)
+                        {
+                            Ali_AS_Track track = all_tracks_ch1[i];
+                            int trackid = track.gettrackid();
+                            all_track_ids_ch1.push_back(trackid);
+                        }
+    
+                        //check for double tracks and brute force
+                        if ( check_if_value_is_doppelt_in_vector(all_track_ids_ch1)){continue;}
+                        if(mode==0) if(check_if_two_vectors_have_same_element(all_track_ids_ch1,brute_force_type1)){continue;}
+                        if(mode==1) if(check_if_two_vectors_have_same_element(all_track_ids_ch1,brute_force_type11)){continue;}
+                        //----------------------------------------------------------------------------------
+                        //DM particle
+                        Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
+
+                        if(mode==0) DMparticle->settype(1);
+                        if(mode==1) DMparticle->settype(11);
+    
+                        DMparticle->set_primVertex(pos_primary_vertex);
+                        DMparticle->set_S1Vertex(S_vertex_pos);
+                        printf("type1; position x: %f, y: %f, z: %f \n",S_vertex_pos[0],S_vertex_pos[1],S_vertex_pos[2]);
+    
+                        DMparticle->set_S2Vertex(pos_K0);
+                        DMparticle->set_S3Vertex(pos_Lambda);
+                        DMparticle->set_DirSV1(momentum_SV1);
+                        DMparticle->set_DirSV2(vec_direction_SV2[vector_loop_SV2]);
+                        DMparticle->set_DirSV3(dir_L);
+                        DMparticle->setN_V0s(2);
+                        DMparticle->set_tlv(*tlv_SV1);
+    
+                        for(int i=0;i<6;i++)
+                        {
+                            Ali_AS_Track track = all_tracks_ch1[i];
+                            Ali_AS_Track* dmtrack = DMparticle->createTrack();
+                            copy_track_params(&track,dmtrack);
+    
+                            int trackid = all_track_ids_ch1[i];
+                            if(mode==0) brute_force_type1.push_back(trackid);
+                            if(mode==1) brute_force_type11.push_back(trackid);
+                        }
+    
                     }
+    
                 }
-                if(trackids.size()==1)
-                {
-                    // counters[4]++;
-                }
-
-                if(trackids.size()==2)
-                {
-
-                    //check all tracks if one of them is already used:
-                    int a = check_if_int_is_in_vector(trackids[0],brute_force_type1);
-                    int b = check_if_int_is_in_vector(trackids[1],brute_force_type1);
-                    int c = check_if_int_is_in_vector(vec_SV2_track_ids[2*vector_loop_SV2],brute_force_type1);
-                    int d = check_if_int_is_in_vector(vec_SV2_track_ids[2*vector_loop_SV2+1],brute_force_type1);
-                    int e = check_if_int_is_in_vector(vec_SV3_track_ids[2*vector_loop_SV3],brute_force_type1);
-                    int f = check_if_int_is_in_vector(vec_SV3_track_ids[2*vector_loop_SV3+1],brute_force_type1);
-
-                    int check = a+b+c+d+e+f;
-
-                    if(check>=1){continue;}
-
-                    Double_t r1[3];
-                    Double_t r2[3];
-
-                    ASTrack1 = AS_Event->getTrack(tracknumbers[0]);
-                    ASTrack2 = AS_Event->getTrack(tracknumbers[1]);
-
-                    double dca1 = ASTrack1->getdca();
-                    double dca2 = ASTrack2->getdca();
-
-                    //check if one is negative and one is positive
-                    if (dca1 * dca2 >0) {continue;}
-
-                    //do all for pion 1--------------------------------------------------------------
-                    //---------------------------------------------------------------------------------
-                    path_closest_to_point = 0;
-                    dca_closest_to_point  = 0;
-                    path_initA = 0.0;
-                    path_initB = 30.0;
-
-                    //calculate again path and dca
-                    FindDCAHelixPoint2(S_vertex_pos,ASTrack1,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
-
-                    //find direction of pion 1
-                    ASTrack1->Evaluate(path_closest_to_point,r1);
-                    ASTrack1->Evaluate(path_closest_to_point+0.01,r2);
-
-                    TVector3 mom_dir_pion1;
-                    TVector3 unit_mom_dir_pion1;
-                    TVector3 vec_momentum;
-
-                    mom_dir_pion1.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
-
-                    //unit vector in direction of pion 1
-                    unit_mom_dir_pion1 = mom_dir_pion1.Unit();
-
-                    //cout<<r1[0]<<endl;
-                    //cout<<r2[0]<<endl;
-
-                    TLorentzVector tlv = ASTrack1->get_TLV_part();
-                    double momentum = tlv.P();
-
-                    vec_momentum.SetXYZ(unit_mom_dir_pion1[0]*momentum,unit_mom_dir_pion1[1]*momentum,unit_mom_dir_pion1[2]*momentum);
-
-                    //cout<<"momentum vec: "<<vec_momentum[0]<<endl;
-
-                    TLorentzVector tlv_pion1;
-                    double energy_pion1 = sqrt(mass_pion * mass_pion + momentum*momentum) ;
-
-                    tlv_pion1.SetPxPyPzE(vec_momentum[0],vec_momentum[1],vec_momentum[2],energy_pion1);
-
-                    *tlv_SV1+=tlv_pion1;
-
-                    //do the same for pion 2
-                    path_closest_to_point = 0;
-                    dca_closest_to_point  = 0;
-                    path_initA = 0.0;
-                    path_initB = 30.0;
-
-                    //calculate again path and dca
-                    FindDCAHelixPoint2(S_vertex_pos,ASTrack2,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
-
-                    //find direction of pion 2
-                    ASTrack2->Evaluate(path_closest_to_point,r1);
-                    ASTrack2->Evaluate(path_closest_to_point+0.01,r2);
-
-                    TVector3 mom_dir_pion2;
-                    TVector3 unit_mom_dir_pion2;
-                    TVector3 vec_momentum_pion2;
-
-                    mom_dir_pion2.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
-
-                    //unit vector in direction of pion 1
-                    unit_mom_dir_pion2 = mom_dir_pion2.Unit();
-
-                    TLorentzVector tlv2 = ASTrack2->get_TLV_part();
-                    double momentum2 = tlv2.P();
-
-                    vec_momentum_pion2.SetXYZ(unit_mom_dir_pion2[0]*momentum2,unit_mom_dir_pion2[1]*momentum2,unit_mom_dir_pion2[2]*momentum2);
-
-                    TLorentzVector tlv_pion2;
-                    double energy_pion2 = sqrt(mass_pion * mass_pion + momentum2*momentum2) ;
-                    tlv_pion2.SetPxPyPzE(vec_momentum_pion2[0],vec_momentum_pion2[1],vec_momentum_pion2[2],energy_pion2);
-
-                    *tlv_SV1+=tlv_pion2;
-
-                    //build unit vector of momentum from tlv_SV1
-                    momentum_SV1.SetXYZ(tlv_SV1->Px(),tlv_SV1->Py(),tlv_SV1->Pz());
-                    unit_momentum_SV1 = momentum_SV1.Unit();
-
-                    double dot_product = unit_vec_primary_vertex_to_SV1.Dot(unit_momentum_SV1);
-                    // printf("dot product: %f \n", dot_product);
-
-                    //check if dot product is larger than 0
-                    if(dot_product<0.8){continue;}
-
-
-
-                    //--------------------------------------------------------------------------------------------------------------
-
-                    //calculate again S-mass----------------------------------------------
-                    double S_mass_correct = tlv_SV1->M();
-                    //cout<<"falsche S-mass: "<<S_mass<<endl;
-                    //cout<<"korrekte S-mass: "<<S_mass_correct<<endl;
-
-
-
-                    alltrackids.clear();
-                    alltrackids.push_back(trackids[0]);   //pion1
-                    alltrackids.push_back(trackids[1]);   //pion2
-                    alltrackids.push_back(vec_SV2_track_ids[2*vector_loop_SV2]);   //tracks of SV2
-                    alltrackids.push_back(vec_SV2_track_ids[2*vector_loop_SV2+1]);   //tracks of SV2
-                    alltrackids.push_back(vec_SV3_track_ids[2*vector_loop_SV3]);   //tracks of SV3
-                    alltrackids.push_back(vec_SV3_track_ids[2*vector_loop_SV3+1]);   //tracks of SV3
-
-                    if ( check_if_value_is_doppelt_in_vector(alltrackids) ) {continue;}
-
-
-                    cout<<"all trackids: "<<endl;
-                    printf("%d %d %d %d %d %d \n",alltrackids[0],alltrackids[1],alltrackids[2],alltrackids[3],alltrackids[4],alltrackids[5]);
-                    //vertices that fulfill all cuts
-
-                    //after all cuts store all 6 tracks in brute force
-                    brute_force_type1.push_back(trackids[0]);   //pion1
-                    brute_force_type1.push_back(trackids[1]);   //pion2
-                    brute_force_type1.push_back(vec_SV2_track_ids[2*vector_loop_SV2]);   //tracks of SV2
-                    brute_force_type1.push_back(vec_SV2_track_ids[2*vector_loop_SV2+1]);   //tracks of SV2
-                    brute_force_type1.push_back(vec_SV3_track_ids[2*vector_loop_SV3]);   //tracks of SV3
-                    brute_force_type1.push_back(vec_SV3_track_ids[2*vector_loop_SV3+1]);   //tracks of SV3
-
-                    //get position of V0-----------------------
-
-                    V0numbers.clear();
-                    V0numbers.push_back(vec_SV2_number[vector_loop_SV2]);
-                    V0numbers.push_back(vec_SV3_number[vector_loop_SV3]);
-
-                    Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
-
-                    DMparticle->settype(1);
-                    vec_histo_counter[3]->Fill(1);
-
-                    DMparticle->set_primVertex(pos_primary_vertex);
-                    DMparticle->set_S1Vertex(S_vertex_pos);
-
-                    printf("type1; position x: %f, y: %f, z: %f \n",S_vertex_pos[0],S_vertex_pos[1],S_vertex_pos[2]);
-
-                    DMparticle->set_S2Vertex(vec_position_SV2[vector_loop_SV2]);
-                    DMparticle->set_S3Vertex(vec_position_SV3[vector_loop_SV3]);
-                    DMparticle->set_DirSV1(momentum_SV1);
-                    DMparticle->set_DirSV2(vec_direction_SV2[vector_loop_SV2]);
-                    DMparticle->set_DirSV3(vec_direction_SV3[vector_loop_SV3]);
-                    DMparticle->setN_V0s(2);
-                    DMparticle->set_tlv(*tlv_SV1);
-
-                    Ali_AS_Track* dmtrack0 = DMparticle->createTrack();
-                    copy_track_params(ASTrack1,dmtrack0);       //first pion
-
-                    Ali_AS_Track* dmtrack1 = DMparticle->createTrack();
-                    copy_track_params(ASTrack2,dmtrack1);   //second pion
- 
-                    Ali_AS_Track* dmtrack2 = DMparticle->createTrack();
-                    Ali_AS_Track* ptr_track = &vec_SV2_tracks[2*vector_loop_SV2];
-                    copy_track_params(ptr_track,dmtrack2);
- 
-                    Ali_AS_Track* dmtrack3 = DMparticle->createTrack();
-                    ptr_track = &vec_SV2_tracks[2*vector_loop_SV2+1];
-                    copy_track_params(ptr_track,dmtrack3);
- 
-                    Ali_AS_Track* dmtrack4 = DMparticle->createTrack();
-                    ptr_track = &vec_SV3_tracks[2*vector_loop_SV3];
-                    copy_track_params(ptr_track,dmtrack4);
- 
-                    Ali_AS_Track* dmtrack5 = DMparticle->createTrack();
-                    ptr_track = &vec_SV3_tracks[2*vector_loop_SV3+1];
-                    copy_track_params(ptr_track,dmtrack5);
-
-                    /*
-                    //cout<<"trackids: "<<endl;
-                    cout<<ASTrack1->gettrackid()<<endl;
-                    cout<<ASTrack2->gettrackid()<<endl;
-                    cout<<vec_SV2_tracks[2*vector_loop_SV2].gettrackid()<<endl;
-                    cout<<vec_SV2_tracks[2*vector_loop_SV2+1].gettrackid()<<endl;
-                    cout<<vec_SV3_tracks[2*vector_loop_SV3].gettrackid()<<endl;
-                    cout<<vec_SV3_tracks[2*vector_loop_SV3+1].gettrackid()<<endl;
-                    */
-                    /*
-                    for(int i=0;i<6;i++)
-                    {
-                        Ali_AS_Track* track = DMparticle->getTrack(i);
-                        int trackid = track->gettrackid();
-                       // cout<<"trackid: "<<trackid<<endl;
- 
-                    }
-
-
-                    //cout<<"all trackids: "<<endl;
-                    printf("%d %d %d %d %d %d \n",trackids[0],trackids[1],vec_SV2_track_ids[2*vector_loop_SV2],vec_SV2_track_ids[2*vector_loop_SV2+1],
-                           vec_SV3_track_ids[2*vector_loop_SV3],vec_SV3_track_ids[2*vector_loop_SV3+1]);
-                    */
-
-                       /*
-                   for(int i=0;i<2;i++)
-                   {
-                       Double_t x=0;
-                       Double_t y=0;
-                       Double_t z=0;
-                       AliESDv0 *V0=fESD->GetV0(V0numbers[i]);
-                       V0->AliESDv0::GetXYZ(x,y,z);
-
-                       //get impulse of particle N and P by AliESDv0 class
-                       Double_t pxN,pyN,pzN;
-                       V0->GetNPxPyPz(pxN,pyN,pzN);
-                       Double_t pxP,pyP,pzP;
-                       V0->GetPPxPyPz(pxP,pyP,pzP);
-                       //-------------------------------------
-                       //get track (by using index)-----------------------------
-                       Int_t indexN = V0->GetNindex();
-                       Int_t indexP = V0->GetPindex();
-
-                       AliESDtrack* trackN = fESD->AliESDEvent::GetTrack(indexN);
-                       AliESDtrack* trackP = fESD->AliESDEvent::GetTrack(indexP);
-
-                       Double_t momentumP = sqrt(pxP*pxP + pyP*pyP + pzP*pzP);
-                       Double_t momentumN = sqrt(pxN*pxN + pyN*pyN + pzN*pzN);
-
-                       trackN->GetInnerPxPyPz(pN);
-                       trackP->GetInnerPxPyPz(pP);
-                       double radius = sqrt ( (x-xprim)*(x-xprim) + (y-yprim)*(y-yprim) + (z-zprim)*(z-zprim)  );
-                       if(radius<5){continue;}
-                       if(check_if_int_is_in_vector(V0numbers[i],createdV0s)){continue;}
-
-                       cout<<"created V0" <<endl;
-                       cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" <<endl;
-                       cout<<"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" <<endl;
-
-
-                       AS_V0  = AS_Event ->createV0();
-                       counter_V0s++;
-                       //cout<<"NumV0s: "<<AS_Event->getN_V0s()<<endl;
-                       
-                       createdV0s.push_back(V0numbers[i]);
-                       //use set functions
-                       AS_V0 -> setxyz(x,y,z);
-                       //printf("V0 number: %d \n",V0_counter);
-                       printf("x: %f,y: %f, z: %f \n",x,y,z);
-                       //cout<<"x: "<<x<<endl;
-                       
-                       momP[0]=pxP;
-                       momP[1]=pyP;
-                       momP[2]=pzP;
-                       //get momentum for negative particle
-
-                       //momN = AS_V0 -> getNpxpypz();
-                       momN[0]=pxN;
-                       momN[1]=pyN;
-                       momN[2]=pzN;
-
-                       printf("pxP: %f,pyP: %f, pzP: %f \n",momP[0],momP[1],momP[2]);
-                       printf("pxN: %f,pyN: %f, pzN: %f \n",momN[0],momN[1],momN[2]);
-
-                       AS_V0 -> setNpxpypz(pxN,pyN,pzN);
-                       AS_V0 -> setPpxpypz(pxP,pyP,pzP);
-                       
-                       energy_antiproton = sqrt(mass_proton*mass_proton+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
-                       energy_pion       = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
-
-                       cout<<"unter Wurzel: "<<mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2])<<endl;
-                       cout<<"masspion: "<<mass_pion<<endl;
-                       cout<<"energy_antiproton: "<<energy_antiproton<<endl;
-                       cout<<"energy_pion: "<<energy_pion<<endl;
-
-                       tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion);
-                       tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_antiproton);
-
-                       *tlv_Lambda = *tlv_pos + *tlv_neg;
-                       invariantmass = tlv_Lambda->M();
-
-                       cout<<"invariantmass: "<<invariantmass<<endl;
-
-                       AS_V0 -> setdcaV0( V0->GetDcaV0Daughters() );
-                       //create tracks for positive and negative particle
-                       as_trackP = AS_V0->createTrack();
-                       as_trackN = AS_V0->createTrack();
-
-                       TLorentzVector TL_vec;
-                       Double_t Track_pT     = trackP ->Pt();
-                       Double_t Track_eta    = trackP ->Eta();
-                       Double_t Track_phi    = trackP ->Phi();
-                       TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,0.1349766);       //what to choose for M ?
-
-                       as_trackP  ->set_TLV_part(TL_vec);
-
-                       Float_t track_xy_impact,track_z_impact;
-                       trackP ->GetImpactParameters(track_xy_impact,track_z_impact);
-                       Double_t track_total_impact = TMath::Sqrt(track_xy_impact*track_xy_impact + track_z_impact*track_z_impact);
-                       Int_t    charge       = trackP ->Charge();
-                       as_trackP  ->setdca(((Double_t)charge)*track_total_impact);
-
-                       as_trackP -> setTRDSignal(trackP->GetTRDsignal());
-                       //as_trackP -> setTRDsumADC(-1);        //not found ok?
-                       as_trackP  ->setStatus(trackP->GetStatus());
-                       as_trackP  ->setNITScls(trackP->GetITSNcls());
-                       as_trackP -> setTPCchi2(trackP->GetTPCchi2());
-                       as_trackP -> setTrack_length(trackP->GetIntegratedLength());
-                       as_trackP -> setNTPCcls(trackP ->GetTPCNcls());
-                       as_trackP -> setTOFsignal(trackP ->GetTOFsignal());
-                       as_trackP -> setTPCdEdx(trackP ->GetTPCsignal());
-                       FillHelix(trackP,magF);
-                       as_trackP ->setHelix(aliHelix.fHelix[0],aliHelix.fHelix[1],aliHelix.fHelix[2],aliHelix.fHelix[3],aliHelix.fHelix[4],aliHelix.fHelix[5],aliHelix.fHelix[6],aliHelix.fHelix[7],aliHelix.fHelix[8]);
-
-                       //track_PID
-                       // e = 0, muon = 1, pion = 2, kaon = 3, proton = 4
-                       Double_t Track_PID_P[10] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
-
-                       // nSigma TPC
-                       Track_PID_P[0] = fPIDResponse->NumberOfSigmasTPC(trackP,AliPID::kElectron);
-                       Track_PID_P[1] = fPIDResponse->NumberOfSigmasTPC(trackP,AliPID::kMuon);
-                       Track_PID_P[2] = fPIDResponse->NumberOfSigmasTPC(trackP,AliPID::kPion);
-                       Track_PID_P[3] = fPIDResponse->NumberOfSigmasTPC(trackP,AliPID::kKaon);
-                       Track_PID_P[4] = fPIDResponse->NumberOfSigmasTPC(trackP,AliPID::kProton);
-
-                       // nSigma TOF, -999 in case there is no TOF hit
-                       Track_PID_P[5] = fPIDResponse->NumberOfSigmasTOF(trackP,AliPID::kElectron);
-                       Track_PID_P[6] = fPIDResponse->NumberOfSigmasTOF(trackP,AliPID::kMuon);
-                       Track_PID_P[7] = fPIDResponse->NumberOfSigmasTOF(trackP,AliPID::kPion);
-                       Track_PID_P[8] = fPIDResponse->NumberOfSigmasTOF(trackP,AliPID::kKaon);
-                       Track_PID_P[9] = fPIDResponse->NumberOfSigmasTOF(trackP,AliPID::kProton);
-
-
-                       as_trackP  ->setnsigma_e_TPC(Track_PID_P[0]);
-                       as_trackP  ->setnsigma_e_TOF(Track_PID_P[5]);
-                       as_trackP  ->setnsigma_pi_TPC(Track_PID_P[2]);
-                       as_trackP  ->setnsigma_pi_TOF(Track_PID_P[7]);
-                       as_trackP  ->setnsigma_K_TPC(Track_PID_P[3]);
-                       as_trackP  ->setnsigma_K_TOF(Track_PID_P[8]);
-                       as_trackP  ->setnsigma_p_TPC(Track_PID_P[4]);
-                       as_trackP  ->setnsigma_p_TOF(Track_PID_P[9]);
-
-                       as_trackP ->settrackid(indexP);
-                       as_trackN ->settrackid(indexN);
-                       //end of filling for P particle track-------------------------------------------------------------------
-
-                       //do the same for N particle track-----------------------------------------------------------------------
-                       //as_trackN  ->clearTRD_digit_list();
-                       //as_trackN  ->clearOfflineTrackletList();
-
-                       Track_pT     = trackN ->Pt();
-                       Track_eta    = trackN ->Eta();
-                       Track_phi    = trackN ->Phi();
-                       TL_vec.SetPtEtaPhiM(Track_pT,Track_eta,Track_phi,0.1349766);       //what to choose for M ?
-
-                       as_trackN  ->set_TLV_part(TL_vec);
-
-                       trackN ->GetImpactParameters(track_xy_impact,track_z_impact);
-                       track_total_impact = TMath::Sqrt(track_xy_impact*track_xy_impact + track_z_impact*track_z_impact);
-                       charge       = trackN ->Charge();
-                       as_trackN  ->setdca(((Double_t)charge)*track_total_impact);
-
-                       as_trackN -> setTRDSignal(trackN->GetTRDsignal());
-                       //as_trackN -> setTRDsumADC(-1);        //not found ok?
-                       as_trackN  ->setStatus(trackN->GetStatus());
-                       as_trackN  ->setNITScls(trackN->GetITSNcls());
-                       as_trackN -> setTPCchi2(trackN->GetTPCchi2());
-                       as_trackN -> setTrack_length(trackN->GetIntegratedLength());
-                       as_trackN -> setNTPCcls(trackN ->GetTPCNcls());
-                       as_trackN -> setTOFsignal(trackN ->GetTOFsignal());
-                       as_trackN -> setTPCdEdx(trackN ->GetTPCsignal());
-
-                       FillHelix(trackN,magF);
-                       as_trackN ->setHelix(aliHelix.fHelix[0],aliHelix.fHelix[1],aliHelix.fHelix[2],aliHelix.fHelix[3],aliHelix.fHelix[4],aliHelix.fHelix[5],aliHelix.fHelix[6],aliHelix.fHelix[7],aliHelix.fHelix[8]);
-
-                       //track_PID
-                       // e = 0, muon = 1, pion = 2, kaon = 3, proton = 4
-                       Double_t Track_PID_N[10] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1};
-
-                       // nSigma TPC
-                       Track_PID_N[0] = fPIDResponse->NumberOfSigmasTPC(trackN,AliPID::kElectron);
-                       Track_PID_N[1] = fPIDResponse->NumberOfSigmasTPC(trackN,AliPID::kMuon);
-                       Track_PID_N[2] = fPIDResponse->NumberOfSigmasTPC(trackN,AliPID::kPion);
-                       Track_PID_N[3] = fPIDResponse->NumberOfSigmasTPC(trackN,AliPID::kKaon);
-                       Track_PID_N[4] = fPIDResponse->NumberOfSigmasTPC(trackN,AliPID::kProton);
-
-                       // nSigma TOF, -999 in case there is no TOF hit
-                       Track_PID_N[5] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kElectron);
-                       Track_PID_N[6] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kMuon);
-                       Track_PID_N[7] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kPion);
-                       Track_PID_N[8] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kKaon);
-                       Track_PID_N[9] = fPIDResponse->NumberOfSigmasTOF(trackN,AliPID::kProton);
-
-                       as_trackN  ->setnsigma_e_TPC(Track_PID_N[0]);
-                       as_trackN  ->setnsigma_e_TOF(Track_PID_N[5]);
-                       as_trackN  ->setnsigma_pi_TPC(Track_PID_N[2]);
-                       as_trackN  ->setnsigma_pi_TOF(Track_PID_N[7]);
-                       as_trackN  ->setnsigma_K_TPC(Track_PID_N[3]);
-                       as_trackN  ->setnsigma_K_TOF(Track_PID_N[8]);
-                       as_trackN  ->setnsigma_p_TPC(Track_PID_N[4]);
-                       as_trackN  ->setnsigma_p_TOF(Track_PID_N[9]);
-
-                   }
-                   //auskommentiert
-                //-----------------------------------------------------------------------------------------------
-                //-----------------------------------------------------------------------------------------------
-                   //-----------------------
-                   //------------------
-
-                }
-
-
+    
             }
-
         }
     }
-    */
 
     //********************************************************************************
     //********************************************************************************
@@ -4083,7 +3799,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     
 
                 if ( check_if_value_is_doppelt_in_vector(all_tracks_ids_channel3) ){continue;}
-                if (check_if_two_vectors_have_same_element(all_tracks_ids_channel3,brute_force_type3) ){continue;}
+                if(mode==0) if (check_if_two_vectors_have_same_element(all_tracks_ids_channel3,brute_force_type3) ){continue;}
+                if(mode==1) if (check_if_two_vectors_have_same_element(all_tracks_ids_channel3,brute_force_type31) ){continue;}
 
                 TLorentzVector tlv_type3 = vec_tlv_ch3[S_vertex_loop];
                 tlv_type3 += tlv_K0_V0 ;
@@ -4128,12 +3845,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     copy_track_params(ptr_all_tracks,dmtrack);
 
                     int trackid = all_tracks_channel3[i].gettrackid();
-                    brute_force_type3.push_back(trackid);
+                    if(mode==0) brute_force_type3.push_back(trackid);
+                    if(mode==1) brute_force_type31.push_back(trackid);
                     //cout<<"trackid: "<<trackid<<endl;
 
                 }
-    
-
 
     
             }
