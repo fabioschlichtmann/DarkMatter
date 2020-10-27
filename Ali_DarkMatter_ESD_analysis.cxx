@@ -1268,13 +1268,16 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      vector<Ali_AS_Track> vec_tracks_ch31;
      vector<Ali_AS_Track> vec_p_and_K_minus_V0s;
      vector<Ali_AS_Track> vec_antip_and_pi_plus;
+     vector<Ali_AS_Track> vec_p_and_pi_minus;
      vector<TVector3> vec_S_pos_ch3;
      vector<TVector3> vec_S_pos_ch31;
      vector<TLorentzVector> vec_tlv_ch3;
      vector<TLorentzVector> vec_tlv_ch31;
      vector<TLorentzVector> vec_tlv_p_and_K_minus;
      vector<TLorentzVector> vec_tlv_type4;
+     vector<TLorentzVector> vec_tlv_type41;
      vector<TVector3> vec_ch4_S_vertex_positions;
+     vector<TVector3> vec_ch41_S_vertex_positions;
      vector<Ali_AS_Track> vec_K0_V0s;
      vector<TLorentzVector> vec_K0_tlvs;
      vector<TVector3> vec_K0_V0_pos;
@@ -1284,6 +1287,12 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      vector<int> vec_V0_S_type3;
      vector<int> vec_V0_S_type31;
      vector<int> vec_V0_S_type1;
+     vector<int> vec_V0_S_type4;
+     vector<int> vec_V0_S_type41;
+     vector<int> vec_V0_S_type5;
+     vector<int> vec_V0_S_type51;
+     vector<int> vec_V0_L_type5;
+     vector<int> vec_V0_L_type51;
      vector<int> vec_V0_Lambda_type1;
      vector<int> vec_V0_Lambda_type11;
 
@@ -1309,6 +1318,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      vector<int> brute_force_type3;
      vector<int> brute_force_type31;
      vector<int> brute_force_type4;
+     vector<int> brute_force_type41;
      vector<int> brute_force_type5;
      vector<int> brute_force_type51;
 
@@ -2658,6 +2668,32 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             TLorentzVector tlv_type4 = get_tlv_by_V0( mass_pion, mass_proton, momP, momN );
             vec_tlv_type4.push_back(tlv_type4);
 
+            Ali_AS_V0* myV0 =  AS_Event->createV0();
+            copyV0params(AS_V0,myV0);
+            int numV0 = AS_Event->getNumV0s();
+            vec_V0_S_type4.push_back(numV0-1);
+
+        }
+
+
+        //channel41
+        // p + 2*K0 + pi-
+
+        if( fabs(sigma_p_P)<2.0  &&  fabs(sigma_pi_N)<2.0 )
+        {
+            vec_p_and_pi_minus.push_back(*as_trackP);
+            vec_p_and_pi_minus.push_back(*as_trackN);
+            TVector3 S_vertex_position = V0_position;
+            vec_ch41_S_vertex_positions.push_back(S_vertex_position);
+
+            TLorentzVector tlv_type41 = get_tlv_by_V0( mass_proton, mass_pion, momP, momN );
+            vec_tlv_type41.push_back(tlv_type41);
+
+            Ali_AS_V0* myV0 =  AS_Event->createV0();
+            copyV0params(AS_V0,myV0);
+            int numV0 = AS_Event->getNumV0s();
+            vec_V0_S_type41.push_back(numV0-1);
+
         }
 
         //use K0s from above!
@@ -2746,6 +2782,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     vec_tracks_type5.push_back(*as_trackP);
                     vec_tracks_type5.push_back(*as_trackN);
                     vec_tracks_type5.push_back(vec_track_add_pi_plus[0]);
+
+                    Ali_AS_V0* myV0 =  AS_Event->createV0();
+                    copyV0params(AS_V0,myV0);
+                    int numV0 = AS_Event->getNumV0s();
+                    vec_V0_S_type5.push_back(numV0-1);
                 }
 
             }
@@ -2777,6 +2818,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                  vec_tlv_antilambda_type5.push_back(tlv_antilambda);
                  vec_tracks_antilambda_type5.push_back(*as_trackP);
                  vec_tracks_antilambda_type5.push_back(*as_trackN);
+
+                 Ali_AS_V0* myV0 =  AS_Event->createV0();
+                 copyV0params(AS_V0,myV0);
+                 int numV0 = AS_Event->getNumV0s();
+                 vec_V0_L_type5.push_back(numV0-1);
             }
         }
 
@@ -2853,6 +2899,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     vec_tracks_type51.push_back(*as_trackP);
                     vec_tracks_type51.push_back(*as_trackN);
                     vec_tracks_type51.push_back(vec_track_add_pi_minus[0]);
+
+                    Ali_AS_V0* myV0 =  AS_Event->createV0();
+                    copyV0params(AS_V0,myV0);
+                    int numV0 = AS_Event->getNumV0s();
+                    vec_V0_S_type51.push_back(numV0-1);
                 }
             
             }
@@ -2882,6 +2933,12 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                  vec_tlv_Lambda_type51.push_back(tlv_Lambda);
                  vec_tracks_Lambda_type51.push_back(*as_trackP);
                  vec_tracks_Lambda_type51.push_back(*as_trackN);
+
+                 Ali_AS_V0* myV0 =  AS_Event->createV0();
+                 copyV0params(AS_V0,myV0);
+                 int numV0 = AS_Event->getNumV0s();
+                 vec_V0_L_type51.push_back(numV0-1);
+                 
             }
         }
       
@@ -3859,343 +3916,313 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //********************************************************************************
     //********************************************************************************
     //channel4  do combinatoric
-    /*
+
     //from vector of K0s choose 2
     //build lines from each vector
     //for each line calculate dca to S_vertex pos
 
-    int size3 =  vec_ch4_S_vertex_positions.size();
+    // mode0: ch4
+    // mode1: ch41
 
-    for(int K0_loop1=0; K0_loop1<sizeV2; K0_loop1++)
+    for(int mode=0;mode<2;mode++)
     {
-        for(int K0_loop2=K0_loop1+1; K0_loop2<sizeV2; K0_loop2++)
+        int size1,sizeV2;
+        if(mode==0) size1 =  vec_ch4_S_vertex_positions.size();
+        if(mode==1) size1 =  vec_ch41_S_vertex_positions.size();
+
+        sizeV2 =  vec_K0_V0_pos.size();
+    
+        for(int K0_loop1=0; K0_loop1<sizeV2; K0_loop1++)
         {
-            for(int S_vertex_loop=0;S_vertex_loop<size3;S_vertex_loop++)
+            for(int K0_loop2=K0_loop1+1; K0_loop2<sizeV2; K0_loop2++)
             {
-                TVector3 S_vertex_pos =  vec_ch4_S_vertex_positions[S_vertex_loop];
-                TVector3 pos_K0_V01 = vec_K0_V0_pos[K0_loop1];
-                TVector3 pos_K0_V02 = vec_K0_V0_pos[K0_loop2];
-
-                TVector3 vec_prim_to_S_vertex;
-                TVector3 unit_vec_prim_to_S_vertex;
-                vec_prim_to_S_vertex.SetXYZ(S_vertex_pos[0]-xprim,S_vertex_pos[1]-yprim,S_vertex_pos[2]-zprim);
-                double radiusS = vec_prim_to_S_vertex.Mag();
-                unit_vec_prim_to_S_vertex = vec_prim_to_S_vertex.Unit();
-
-                if(radiusS<5.){continue;}
-
-                TLorentzVector tlv_K0_V01 = vec_K0_tlvs[K0_loop1];
-                TVector3 dir_K0_V01;
-                dir_K0_V01.SetXYZ(tlv_K0_V01.X(),tlv_K0_V01.Y(),tlv_K0_V01.Z());
-                TVector3 unit_dir_K0_V01 = dir_K0_V01.Unit();
-
-                TLorentzVector tlv_K0_V02 = vec_K0_tlvs[K0_loop2];
-                TVector3 dir_K0_V02;
-                dir_K0_V02.SetXYZ(tlv_K0_V02.X(),tlv_K0_V02.Y(),tlv_K0_V02.Z());
-                TVector3 unit_dir_K0_V02 = dir_K0_V02.Unit();
-
-                TVector3 vec_S_to_K01 = pos_K0_V01 - S_vertex_pos;
-                TVector3 vec_S_to_K02 = pos_K0_V02 - S_vertex_pos;
-
-                if(vec_S_to_K01.Mag()<0.5){continue;}
-                if(vec_S_to_K02.Mag()<0.5){continue;}
-
-                TVector3 unit_vec_S_to_K01 = vec_S_to_K01.Unit();
-                TVector3 unit_vec_S_to_K02 = vec_S_to_K02.Unit();
-
-                if ( unit_vec_S_to_K01.Dot(unit_dir_K0_V01) < 0.8){continue;}
-                if ( unit_vec_S_to_K02.Dot(unit_dir_K0_V02) < 0.8){continue;}
-
-                double dist1 = calculateMinimumDistanceStraightToPoint(pos_K0_V01,dir_K0_V01,S_vertex_pos);
-                if(dist1>0.5) {continue;}
-
-                double dist2 = calculateMinimumDistanceStraightToPoint(pos_K0_V02,dir_K0_V02,S_vertex_pos);
-                if(dist2>0.5) {continue;}
-
-                vector<Ali_AS_Track> all_tracks;
-                vector<int> all_track_ids;
-
-                all_tracks.push_back( vec_antip_and_pi_plus[2*S_vertex_loop] );
-                all_tracks.push_back( vec_antip_and_pi_plus[2*S_vertex_loop + 1] );
-                all_tracks.push_back( vec_K0_V0s[2*K0_loop1] );
-                all_tracks.push_back( vec_K0_V0s[2*K0_loop1 + 1] );
-                all_tracks.push_back( vec_K0_V0s[2*K0_loop2] );
-                all_tracks.push_back( vec_K0_V0s[2*K0_loop2 + 1] );
-
-                for(int i=0;i<6;i++)
+                for(int S_vertex_loop=0;S_vertex_loop<size1;S_vertex_loop++)
                 {
-                    int trackid = all_tracks[i].gettrackid();
-                    all_track_ids.push_back(trackid);
+                    TVector3 S_vertex_pos;
+                    if(mode==0) S_vertex_pos=  vec_ch4_S_vertex_positions[S_vertex_loop];
+                    if(mode==1) S_vertex_pos=  vec_ch41_S_vertex_positions[S_vertex_loop];
 
+                    TVector3 pos_K0_V01 = vec_K0_V0_pos[K0_loop1];
+                    TVector3 pos_K0_V02 = vec_K0_V0_pos[K0_loop2];
+    
+                    TVector3 vec_prim_to_S_vertex;
+                    TVector3 unit_vec_prim_to_S_vertex;
+                    vec_prim_to_S_vertex.SetXYZ(S_vertex_pos[0]-xprim,S_vertex_pos[1]-yprim,S_vertex_pos[2]-zprim);
+                    double radiusS = vec_prim_to_S_vertex.Mag();
+                    unit_vec_prim_to_S_vertex = vec_prim_to_S_vertex.Unit();
+    
+                    if(radiusS<5.){continue;}
+    
+                    TLorentzVector tlv_K0_V01 = vec_K0_tlvs[K0_loop1];
+                    TVector3 dir_K0_V01;
+                    dir_K0_V01.SetXYZ(tlv_K0_V01.X(),tlv_K0_V01.Y(),tlv_K0_V01.Z());
+                    TVector3 unit_dir_K0_V01 = dir_K0_V01.Unit();
+    
+                    TLorentzVector tlv_K0_V02 = vec_K0_tlvs[K0_loop2];
+                    TVector3 dir_K0_V02;
+                    dir_K0_V02.SetXYZ(tlv_K0_V02.X(),tlv_K0_V02.Y(),tlv_K0_V02.Z());
+                    TVector3 unit_dir_K0_V02 = dir_K0_V02.Unit();
+    
+                    TVector3 vec_S_to_K01 = pos_K0_V01 - S_vertex_pos;
+                    TVector3 vec_S_to_K02 = pos_K0_V02 - S_vertex_pos;
+    
+                    if(vec_S_to_K01.Mag()<0.5){continue;}
+                    if(vec_S_to_K02.Mag()<0.5){continue;}
+    
+                    TVector3 unit_vec_S_to_K01 = vec_S_to_K01.Unit();
+                    TVector3 unit_vec_S_to_K02 = vec_S_to_K02.Unit();
+    
+                    if ( unit_vec_S_to_K01.Dot(unit_dir_K0_V01) < 0.8){continue;}
+                    if ( unit_vec_S_to_K02.Dot(unit_dir_K0_V02) < 0.8){continue;}
+    
+                    double dist1 = calculateMinimumDistanceStraightToPoint(pos_K0_V01,dir_K0_V01,S_vertex_pos);
+                    if(dist1>0.5) {continue;}
+    
+                    double dist2 = calculateMinimumDistanceStraightToPoint(pos_K0_V02,dir_K0_V02,S_vertex_pos);
+                    if(dist2>0.5) {continue;}
+    
+                    vector<Ali_AS_Track> all_tracks;
+                    vector<int> all_track_ids;
+
+                    if(mode==0)
+                    {
+                        all_tracks.push_back( vec_antip_and_pi_plus[2*S_vertex_loop] );
+                        all_tracks.push_back( vec_antip_and_pi_plus[2*S_vertex_loop + 1] );
+                    }
+                    if(mode==1)
+                    {
+                        all_tracks.push_back( vec_p_and_pi_minus[2*S_vertex_loop] );
+                        all_tracks.push_back( vec_p_and_pi_minus[2*S_vertex_loop + 1] );
+                    }
+
+                    all_tracks.push_back( vec_K0_V0s[2*K0_loop1] );
+                    all_tracks.push_back(
+                                         vec_K0_V0s[2*K0_loop1 + 1] );
+                    all_tracks.push_back( vec_K0_V0s[2*K0_loop2] );
+                    all_tracks.push_back( vec_K0_V0s[2*K0_loop2 + 1] );
+    
+                    for(int i=0;i<6;i++)
+                    {
+                        int trackid = all_tracks[i].gettrackid();
+                        all_track_ids.push_back(trackid);
+    
+                    }
+    
+                    if ( check_if_value_is_doppelt_in_vector(all_track_ids) ){continue;}
+                    if(mode==0) if (check_if_two_vectors_have_same_element(all_track_ids,brute_force_type4) ){continue;}
+                    if(mode==1) if (check_if_two_vectors_have_same_element(all_track_ids,brute_force_type41) ){continue;}
+    
+                    //calculate tlv
+                    TLorentzVector tlv_type4;
+                    if(mode==0) tlv_type4 = vec_tlv_type4[S_vertex_loop];
+                    if(mode==1) tlv_type4 = vec_tlv_type41[S_vertex_loop];
+                    tlv_type4 += tlv_K0_V01;
+                    tlv_type4 += tlv_K0_V02;
+                    tlv_type4 -= *tlv_neutron;
+    
+                    TVector3 dir_type4;
+                    TVector3 unit_dir_type4;
+                    dir_type4.SetXYZ(tlv_type4[0],tlv_type4[1],tlv_type4[2]);
+                    unit_dir_type4 = dir_type4.Unit();
+    
+                    if ( unit_vec_prim_to_S_vertex.Dot(unit_dir_type4) < 0.8 ) {continue;}
+    
+                    Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
+    
+                    if(mode==0) DMparticle->settype(4);
+                    if(mode==1) DMparticle->settype(41);
+    
+                    DMparticle->set_primVertex(pos_primary_vertex);
+                    DMparticle->set_S1Vertex(S_vertex_pos);
+                    DMparticle->set_S2Vertex(pos_K0_V01);
+                    DMparticle->set_S3Vertex(pos_K0_V02);
+    
+                    DMparticle -> set_tlv(tlv_type4);
+
+                    Ali_AS_V0* K01_V0 = AS_Event->getV0(vec_K0_Ali_V0[K0_loop1]);
+                    Ali_AS_V0* K02_V0 = AS_Event->getV0(vec_K0_Ali_V0[K0_loop2]);
+                    Ali_AS_V0* S_V0;
+                    if(mode==0) S_V0 = AS_Event->getV0(vec_V0_S_type4[S_vertex_loop]);
+                    if(mode==1) S_V0 = AS_Event->getV0(vec_V0_S_type41[S_vertex_loop]);
+    
+                    for(int i=0;i<6;i++)
+                    {
+                        Ali_AS_Track* dmtrack = DMparticle->createTrack();
+                        Ali_AS_Track* ptr_all_tracks = &all_tracks[i];
+                        copy_track_params(ptr_all_tracks,dmtrack);
+                        //int trackid = all_tracks_channel3[i].gettrackid();
+                        //cout<<"trackid: "<<trackid<<endl;
+    
+                    }
+
+                    Ali_AS_V0* DM_V0 = DMparticle -> createV0();
+                    copyV0params(S_V0,DM_V0);
+
+                    Ali_AS_V0* DM_V0_1 = DMparticle -> createV0();
+                    copyV0params(K01_V0,DM_V0_1);
+
+                    Ali_AS_V0* DM_V0_2 = DMparticle -> createV0();
+                    copyV0params(K02_V0,DM_V0_2);
+
+    
+                    for(int i=0;i<6;i++)
+                    {
+                        if(mode==0) brute_force_type4.push_back(all_track_ids[i]);
+                        if(mode==1) brute_force_type41.push_back(all_track_ids[i]);
+                    }
+    
+                    //printf("type4; position x: %f, y: %f, z: %f \n",S_vertex_pos[0],S_vertex_pos[1],S_vertex_pos[2]);
+    
                 }
-
-                if ( check_if_value_is_doppelt_in_vector(all_track_ids) ){continue;}
-                if (check_if_two_vectors_have_same_element(all_track_ids,brute_force_type4) ){continue;}    
-
-                //calculate tlv
-                TLorentzVector tlv_type4 = vec_tlv_type4[S_vertex_loop];
-                tlv_type4 += tlv_K0_V01;
-                tlv_type4 += tlv_K0_V02;
-                tlv_type4 -= *tlv_neutron;
-
-                TVector3 dir_type4;
-                TVector3 unit_dir_type4;
-                dir_type4.SetXYZ(tlv_type4[0],tlv_type4[1],tlv_type4[2]);
-                unit_dir_type4 = dir_type4.Unit();
-
-                if ( unit_vec_prim_to_S_vertex.Dot(unit_dir_type4) < 0.8 ) {continue;}
-
-
-
-
-                Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
-
-                DMparticle->settype(4);
-                vec_histo_counter[3]->Fill(4);
-
-                DMparticle->set_primVertex(pos_primary_vertex);
-                DMparticle->set_S1Vertex(S_vertex_pos);
-                DMparticle->set_S2Vertex(pos_K0_V01);
-                DMparticle->set_S3Vertex(pos_K0_V02);
-
-                DMparticle -> set_tlv(tlv_type4);
-
-                for(int i=0;i<6;i++)
-                {
-                    Ali_AS_Track* dmtrack = DMparticle->createTrack();
-                    Ali_AS_Track* ptr_all_tracks = &all_tracks[i];
-                    copy_track_params(ptr_all_tracks,dmtrack);
-                    //int trackid = all_tracks_channel3[i].gettrackid();
-                    //cout<<"trackid: "<<trackid<<endl;
-
-                }
-
-                for(int i=0;i<6;i++)
-                {
-                    brute_force_type4.push_back(all_track_ids[i]);
-                }
-
-
-
-
-
-                //printf("type4; position x: %f, y: %f, z: %f \n",S_vertex_pos[0],S_vertex_pos[1],S_vertex_pos[2]);
-
+    
             }
-
+    
         }
-
     }
-
 
 
     //channel5 do combinatoric
+    cout<<"ch5"<<endl;
 
-    for(int i_S=0;i_S<vec_S_pos_type5.size();i_S++)
+    for(int mode=0;mode<2;mode++)
     {
-        TVector3 S_vertex_pos = vec_S_pos_type5[i_S];
+        int size_S,size_L;
+        if(mode==0) size_S =vec_S_pos_type5.size();
+        if(mode==1) size_S =vec_S_pos_type51.size();
 
-        for(int i_L=0 ; i_L<vec_antilambdas_type5.size() ; i_L++)
+        if(mode==0) size_L =vec_antilambdas_type5.size();
+        if(mode==1) size_L =vec_Lambdas_type51.size();
+
+        for(int i_S=0;i_S<size_S;i_S++)
         {
-            TVector3 pos_L = vec_antilambdas_type5[i_L];
-            TLorentzVector tlv_L = vec_tlv_antilambda_type5[i_L];
-            
+            TVector3 S_vertex_pos;
+            if(mode==0) S_vertex_pos = vec_S_pos_type5[i_S];
+            if(mode==1) S_vertex_pos = vec_S_pos_type51[i_S];
 
-            TVector3 dir_L;
-            dir_L.SetXYZ(tlv_L[0],tlv_L[1],tlv_L[2]);
-
-            double dist = calculateMinimumDistanceStraightToPoint(pos_L,dir_L,S_vertex_pos);
-            if(dist>0.5){continue;}
-
-            //toplogy cuts:
-            TVector3 vec_S_to_L = pos_L-S_vertex_pos;
-            TVector3 unit_vec_S_to_L;
-            unit_vec_S_to_L = vec_S_to_L.Unit();
-            TVector3 unit_dir_L = dir_L.Unit();
-
-            if(unit_vec_S_to_L.Dot(unit_dir_L)<0.8){continue;}
-
-            TLorentzVector tlv_type5 = vec_tlv_type5[i_S];
-
-            //cout<<"invmass K+ and pi- and pi+ : "<<tlv_type5.M()<<endl;
-           // if(tlv_type5.M()<mass_K+mass_pion*2)cout<<"!!!!!!!!!!!!!!11111!!!!!!!!!!!!!!!!!!!"<<endl;
-
-            //cout<<"invmass antilambda: "<<tlv_L.M()<<endl;
-            //if(tlv_L.M()<mass_proton+mass_pion)cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111!!!!!!!!!!!!!!!!!!!"<<endl;
-
-
-            tlv_type5+=tlv_L;
-
-       
-
-            TVector3 dir_type5;
-            TVector3 unit_dir_type5;
-            dir_type5.SetXYZ(tlv_type5[0],tlv_type5[1],tlv_type5[2]);
-            unit_dir_type5 = dir_type5.Unit();
-            TVector3 vec_prim_to_S = S_vertex_pos-pos_primary_vertex;
-            TVector3 unit_vec_prim_to_S;
-            unit_vec_prim_to_S = vec_prim_to_S.Unit();
-
-            if(unit_vec_prim_to_S.Dot(unit_dir_type5)<0.8){continue;}
-
-
-            vector<Ali_AS_Track> vec_all_tracks_ch5;
-            vector<int> vec_all_trackids_ch5;
-
-            //store all tracks
-            vec_all_tracks_ch5.push_back(vec_tracks_type5[3*i_S]);
-            vec_all_tracks_ch5.push_back(vec_tracks_type5[3*i_S+1]);
-            vec_all_tracks_ch5.push_back(vec_tracks_type5[3*i_S+2]);
-            vec_all_tracks_ch5.push_back(vec_tracks_antilambda_type5[2*i_L]);
-            vec_all_tracks_ch5.push_back(vec_tracks_antilambda_type5[2*i_L+1]);
-
-            for(int i=0;i<5;i++)
+            for(int i_L=0 ; i_L<size_L ; i_L++)
             {
-                Ali_AS_Track track = vec_all_tracks_ch5[i];
-                int trackid = track.gettrackid();
-                vec_all_trackids_ch5.push_back(trackid);
+                TVector3 pos_L; 
+                TLorentzVector tlv_L;
+                if(mode==0)
+                {
+                    pos_L= vec_antilambdas_type5[i_L];
+                    tlv_L = vec_tlv_antilambda_type5[i_L];
+                }
+                if(mode==1)
+                {
+                    pos_L= vec_Lambdas_type51[i_L];
+                    tlv_L = vec_tlv_Lambda_type51[i_L];
+                }
+    
+                TVector3 dir_L;
+                dir_L.SetXYZ(tlv_L[0],tlv_L[1],tlv_L[2]);
+    
+                double dist = calculateMinimumDistanceStraightToPoint(pos_L,dir_L,S_vertex_pos);
+                if(dist>0.5){continue;}
+    
+                //toplogy cuts:
+                TVector3 vec_S_to_L = pos_L-S_vertex_pos;
+                TVector3 unit_vec_S_to_L;
+                unit_vec_S_to_L = vec_S_to_L.Unit();
+                TVector3 unit_dir_L = dir_L.Unit();
+    
+                if(unit_vec_S_to_L.Dot(unit_dir_L)<0.8){continue;}
+    
+                TLorentzVector tlv_type5;
+                if(mode==0) tlv_type5 = vec_tlv_type5[i_S];
+                if(mode==1) tlv_type5 = vec_tlv_type51[i_S];
 
+                tlv_type5+=tlv_L;
+    
+                TVector3 dir_type5;
+                TVector3 unit_dir_type5;
+                dir_type5.SetXYZ(tlv_type5[0],tlv_type5[1],tlv_type5[2]);
+                unit_dir_type5 = dir_type5.Unit();
+                TVector3 vec_prim_to_S = S_vertex_pos-pos_primary_vertex;
+                TVector3 unit_vec_prim_to_S;
+                unit_vec_prim_to_S = vec_prim_to_S.Unit();
+    
+                if(unit_vec_prim_to_S.Dot(unit_dir_type5)<0.8){continue;}
+    
+                vector<Ali_AS_Track> vec_all_tracks_ch5;
+                vector<int> vec_all_trackids_ch5;
+    
+                //store all tracks
+                if(mode==0)
+                {
+                    vec_all_tracks_ch5.push_back(vec_tracks_type5[3*i_S]);
+                    vec_all_tracks_ch5.push_back(vec_tracks_type5[3*i_S+1]);
+                    vec_all_tracks_ch5.push_back(vec_tracks_type5[3*i_S+2]);
+                    vec_all_tracks_ch5.push_back(vec_tracks_antilambda_type5[2*i_L]);
+                    vec_all_tracks_ch5.push_back(vec_tracks_antilambda_type5[2*i_L+1]);
+                }
+                if(mode==1)
+                {
+                    vec_all_tracks_ch5.push_back(vec_tracks_type51[3*i_S]);
+                    vec_all_tracks_ch5.push_back(vec_tracks_type51[3*i_S+1]);
+                    vec_all_tracks_ch5.push_back(vec_tracks_type51[3*i_S+2]);
+                    vec_all_tracks_ch5.push_back(vec_tracks_Lambda_type51[2*i_L]);
+                    vec_all_tracks_ch5.push_back(vec_tracks_Lambda_type51[2*i_L+1]);
+                }
+
+                for(int i=0;i<5;i++)
+                {
+                    Ali_AS_Track track = vec_all_tracks_ch5[i];
+                    int trackid = track.gettrackid();
+                    vec_all_trackids_ch5.push_back(trackid);
+    
+                }
+    
+                if(mode==0) if(check_if_two_vectors_have_same_element(vec_all_trackids_ch5,brute_force_type5)){continue;}
+                if(mode==1) if(check_if_two_vectors_have_same_element(vec_all_trackids_ch5,brute_force_type51)){continue;}
+                if ( check_if_value_is_doppelt_in_vector(vec_all_trackids_ch5) ){continue;}
+    
+                DMparticle = AS_Event->createDMparticle();
+    
+                if(mode==0) DMparticle->settype(5);
+                if(mode==1) DMparticle->settype(51);
+    
+                DMparticle->set_primVertex(pos_primary_vertex);
+                DMparticle->set_S1Vertex(S_vertex_pos);
+                DMparticle->set_S2Vertex(pos_L);
+                DMparticle->set_DirSV2(dir_L);
+                DMparticle->set_tlv(tlv_type5);
+
+                Ali_AS_V0* S_V0;
+                Ali_AS_V0* L_V0;
+                if(mode==0) S_V0 = AS_Event->getV0(vec_V0_S_type5[i_S]);
+                if(mode==1) S_V0 = AS_Event->getV0(vec_V0_S_type51[i_S]);
+
+                if(mode==0) L_V0 = AS_Event->getV0(vec_V0_L_type5[i_L]);
+                if(mode==1) L_V0 = AS_Event->getV0(vec_V0_L_type51[i_L]);
+
+                Ali_AS_V0* DM_V0 = DMparticle -> createV0();
+                copyV0params(S_V0,DM_V0);
+
+                Ali_AS_V0* DM_V01 = DMparticle -> createV0();
+                copyV0params(L_V0,DM_V01);
+    
+                cout<<"tlv: "<<tlv_type5[0]<<" "<<tlv_type5[1]<<" "<<tlv_type5[2]<<" "<<tlv_type5[3]<<endl;
+    
+                for(int i=0;i<5;i++)
+                {
+                    Ali_AS_Track* dmtrack = DMparticle->createTrack();
+                    copy_track_params(&vec_all_tracks_ch5[i],dmtrack);
+                }
+    
+                for(int i=0;i<5;i++)
+                {
+                    if(mode==0) brute_force_type5.push_back(vec_all_trackids_ch5[i]);
+                    if(mode==1) brute_force_type51.push_back(vec_all_trackids_ch5[i]);
+                }
+    
+    
             }
-
-            if(check_if_two_vectors_have_same_element(vec_all_trackids_ch5,brute_force_type5)){continue;}
-            if ( check_if_value_is_doppelt_in_vector(vec_all_trackids_ch5) ){continue;}
-
-            DMparticle = AS_Event->createDMparticle();
-
-            DMparticle->settype(5);
-            vec_histo_counter[3]->Fill(5);
-
-            DMparticle->set_primVertex(pos_primary_vertex);
-            DMparticle->set_S1Vertex(S_vertex_pos);
-            DMparticle->set_S2Vertex(pos_L);
-            DMparticle->set_DirSV2(dir_L);
-            DMparticle->set_tlv(tlv_type5);
-
-            cout<<"tlv: "<<tlv_type5[0]<<" "<<tlv_type5[1]<<" "<<tlv_type5[2]<<" "<<tlv_type5[3]<<endl;
-
-            for(int i=0;i<5;i++)
-            {
-                Ali_AS_Track* dmtrack = DMparticle->createTrack();
-                copy_track_params(&vec_all_tracks_ch5[i],dmtrack);
-            }
-
-            for(int i=0;i<5;i++)
-            {
-                brute_force_type5.push_back(vec_all_trackids_ch5[i]);
-            }
-
-
+    
+    
+    
         }
-
-
-
     }
-
-
-    //channel51 do combinatoric
-
-    for(int i_S=0;i_S<vec_S_pos_type51.size();i_S++)
-    {
-        TVector3 S_vertex_pos = vec_S_pos_type51[i_S];
-
-        for(int i_L=0 ; i_L<vec_Lambdas_type51.size() ; i_L++)
-        {
-            TVector3 pos_L = vec_Lambdas_type51[i_L];
-            TLorentzVector tlv_L = vec_tlv_Lambda_type51[i_L];
-
-            TVector3 dir_L;
-            dir_L.SetXYZ(tlv_L[0],tlv_L[1],tlv_L[2]);
-
-            double dist = calculateMinimumDistanceStraightToPoint(pos_L,dir_L,S_vertex_pos);
-            if(dist>0.5){continue;}
-
-            //toplogy cuts:
-            TVector3 vec_S_to_L = pos_L-S_vertex_pos;
-            TVector3 unit_vec_S_to_L;
-            unit_vec_S_to_L = vec_S_to_L.Unit();
-            TVector3 unit_dir_L = dir_L.Unit();
-
-            if(unit_vec_S_to_L.Dot(unit_dir_L)<0.8){continue;}
-
-            TLorentzVector tlv_type5 = vec_tlv_type51[i_S];
-
-            //cout<<"invmass K+ and pi- and pi+ : "<<tlv_type5.M()<<endl;
-           // if(tlv_type5.M()<mass_K+mass_pion*2)cout<<"!!!!!!!!!!!!!!11111!!!!!!!!!!!!!!!!!!!"<<endl;
-
-            //cout<<"invmass antilambda: "<<tlv_L.M()<<endl;
-            //if(tlv_L.M()<mass_proton+mass_pion)cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111!!!!!!!!!!!!!!!!!!!"<<endl;
-
-
-            tlv_type5+=tlv_L;
-
-            
-
-            TVector3 dir_type5;
-            TVector3 unit_dir_type5;
-            dir_type5.SetXYZ(tlv_type5[0],tlv_type5[1],tlv_type5[2]);
-            unit_dir_type5 = dir_type5.Unit();
-            TVector3 vec_prim_to_S = S_vertex_pos-pos_primary_vertex;
-            TVector3 unit_vec_prim_to_S;
-            unit_vec_prim_to_S = vec_prim_to_S.Unit();
-
-            if(unit_vec_prim_to_S.Dot(unit_dir_type5)<0.8){continue;}
-
-            vector<Ali_AS_Track> vec_all_tracks_ch51;
-            vector<int> vec_all_trackids_ch51;
-
-            //store all tracks
-            vec_all_tracks_ch51.push_back(vec_tracks_type51[3*i_S]);
-            vec_all_tracks_ch51.push_back(vec_tracks_type51[3*i_S+1]);
-            vec_all_tracks_ch51.push_back(vec_tracks_type51[3*i_S+2]);
-            vec_all_tracks_ch51.push_back(vec_tracks_Lambda_type51[2*i_L]);
-            vec_all_tracks_ch51.push_back(vec_tracks_Lambda_type51[2*i_L+1]);
-
-            for(int i=0;i<5;i++)
-            {
-                Ali_AS_Track track = vec_all_tracks_ch51[i];
-                int trackid = track.gettrackid();
-                vec_all_trackids_ch51.push_back(trackid);
-
-            }
-
-            if(check_if_two_vectors_have_same_element(vec_all_trackids_ch51,brute_force_type51)){continue;}
-            if ( check_if_value_is_doppelt_in_vector(vec_all_trackids_ch51) ){continue;}
-
-            DMparticle = AS_Event->createDMparticle();
-
-            DMparticle->settype(51);
-            vec_histo_counter[3]->Fill(6);
-
-            DMparticle->set_primVertex(pos_primary_vertex);
-            DMparticle->set_S1Vertex(S_vertex_pos);
-            DMparticle->set_S2Vertex(pos_L);
-            DMparticle->set_DirSV2(dir_L);
-            DMparticle->set_tlv(tlv_type5);
-
-            cout<<"tlv: "<<tlv_type5[0]<<" "<<tlv_type5[1]<<" "<<tlv_type5[2]<<" "<<tlv_type5[3]<<endl;
-
-            for(int i=0;i<5;i++)
-            {
-                Ali_AS_Track* dmtrack = DMparticle->createTrack();
-                copy_track_params(&vec_all_tracks_ch51[i],dmtrack);
-            }
-
-            for(int i=0;i<5;i++)
-            {
-                brute_force_type51.push_back(vec_all_trackids_ch51[i]);
-            }
-
-
-        }
-
-
-
-    }
-    */
-
-
-
-
 
 
 
