@@ -644,13 +644,20 @@ private:
     UShort_t      fNumTracks; // number of tracks in event
     UShort_t      fNumV0s; //
 
+    Ali_AS_V0 V0_S1;
+    Ali_AS_V0 V0_S2;
+    Ali_AS_V0 V0_S3;
+
+
     TClonesArray* fTracks;   //->
+    TClonesArray* fV0s;   //->
 
 public:
     Ali_AS_DM_particle() :
 	primVertex(),S1Vertex(),S2Vertex(),S3Vertex(),DirSV1(),DirSV2(),DirSV3(),N_V0s(0),tlv_S(),type_of_reaction_channel(0),fNumTracks(0),fNumV0s(0)
     {
         fTracks         = new TClonesArray( "Ali_AS_Track", 10 );
+        fV0s         = new TClonesArray( "Ali_AS_V0", 10 );
     }
 	~Ali_AS_DM_particle()
 	{
@@ -682,6 +689,10 @@ public:
             if(i==4){track4=track;}
         }
 
+        void set_V0_S1(Ali_AS_V0 V0){V0_S1=V0;}
+        void set_V0_S2(Ali_AS_V0 V0){V0_S2=V0;}
+        void set_V0_S3(Ali_AS_V0 V0){V0_S3=V0;}
+
 	// getters
         TVector3 get_primVertex() const                  { return primVertex;    }
         TVector3 get_S1Vertex()   const                  { return S1Vertex;      }
@@ -702,6 +713,13 @@ public:
             if(i==4){return track4;}
         }
 
+        Ali_AS_V0 get_V0(int i)
+        {
+            if(i==1){return V0_S1;}
+            if(i==2){return V0_S2;}
+            if(i==3){return V0_S3;}
+        }
+
         //----------------------------
 	Ali_AS_Track* createTrack()
         {
@@ -716,6 +734,28 @@ public:
 
 	    new((*fTracks)[fNumTracks++]) Ali_AS_Track;
 	    return (Ali_AS_Track*)((*fTracks)[fNumTracks - 1]);
+        }
+
+        Ali_AS_V0* createV0()
+        {
+            //cout<<"size: "<< fV0s->GetSize()<<endl;
+	    if (fNumV0s == fV0s->GetSize())
+            {
+                fV0s->Expand( fNumV0s + 10 );
+            }
+	    if (fNumV0s >= 500000)
+	    {
+		Fatal( "Ali_AS_Event::createV0()", "ERROR: Too many V0s (>500000)!" );
+		exit( 2 );
+	    }
+
+	    new((*fV0s)[fNumV0s++]) Ali_AS_V0;
+	    return (Ali_AS_V0*)((*fV0s)[fNumV0s - 1]);
+        }
+
+        Ali_AS_V0* getV0(Int_t i) const
+	{
+	    return i < fNumV0s ? (Ali_AS_V0*)((*fV0s)[i]) : NULL;
         }
 
 	void clearTrackList()
