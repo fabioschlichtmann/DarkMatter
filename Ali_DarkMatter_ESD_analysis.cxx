@@ -1758,6 +1758,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //-------------------------------------------------
 
         radius = sqrt ( (x-xprim)*(x-xprim) + (y-yprim)*(y-yprim) + (z-zprim)*(z-zprim)  );
+        if(radius<5.){continue;}
         //radius cut???
 
 
@@ -2279,7 +2280,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     TVector3 S_vertex_pos;
                     S_vertex_pos = V0_position;
 
-                    Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
+                    DMparticle = AS_Event->createDMparticle();
 
                     DMparticle->settype(2);
                     vec_histo_counter[3]->Fill(2);
@@ -2420,7 +2421,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     TVector3 S_vertex_pos;
                     S_vertex_pos = V0_position;
 
-                    Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
+                    DMparticle = AS_Event->createDMparticle();
 
                     DMparticle->settype(21);
 
@@ -2528,11 +2529,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                 vec_tlv_ch3.push_back(tlv_type3);
                 vec_S_pos_ch3.push_back(S_vertex_position);
-                cout<<"V0: "<<pos[0]<<endl;
+                //cout<<"V0: "<<pos[0]<<endl;
                 Ali_AS_V0* myV0 =  AS_Event->createV0();
                 copyV0params(AS_V0,myV0);
                 int numV0 = AS_Event->getNumV0s();
-                cout<<"num V0: "<<numV0<<endl;
+                //cout<<"num V0: "<<numV0<<endl;
                 vec_V0_S_type3.push_back(numV0-1);
             }
         }
@@ -2638,11 +2639,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                 vec_tlv_ch31.push_back(tlv_ch31);
                 vec_S_pos_ch31.push_back(S_vertex_position);
-                cout<<"V0: "<<pos[0]<<endl;
+                //cout<<"V0: "<<pos[0]<<endl;
                 Ali_AS_V0* myV0 =  AS_Event->createV0();
                 copyV0params(AS_V0,myV0);
                 int numV0 = AS_Event->getNumV0s();
-                cout<<"num V0: "<<numV0<<endl;
+                //cout<<"num V0: "<<numV0<<endl;
                 vec_V0_S_type31.push_back(numV0-1);
             }
 
@@ -2718,6 +2719,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             double m_squaredN = calculate_m_squared_by_TOF(as_trackN);
             bool check=1;
 
+            /*
             if(sigma_e_P<2.5 || sigma_pi_P<2.5 || sigma_p_P < 2.5 )
             {
                 if(m_squared < 0.2 || m_squared > 0.35){check=0;}
@@ -2727,6 +2729,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             {
                 if(m_squaredN>0.3){check=0;}
             }
+            */
 
             if(check)
             {
@@ -2802,9 +2805,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             TLorentzVector tlv_antilambda = get_tlv_by_V0(mass_pion, mass_proton, momP, momN );
             invariantmass = tlv_antilambda.M();
 
-            //cout<<"invmass Antilambda: "<<tlv_antilambda.M()<<endl;
-            //if(tlv_antilambda.M()<mass_pion+mass_proton)cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
-
             //check if nonprimary
             TVector3 dir;
             dir.SetXYZ(tlv_antilambda[0],tlv_antilambda[1],tlv_antilambda[2]);
@@ -2838,6 +2838,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             double m_squaredN = calculate_m_squared_by_TOF(as_trackN);
             bool check=1;
 
+            /*
             if(sigma_e_P<2.5 || sigma_K_P<2.5 || sigma_p_P < 2.5 )
             {
                 if(m_squaredP >  0.3){check=0;}
@@ -2847,15 +2848,13 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             {
                 if(m_squaredN<0.2 || m_squaredN>0.35 ){check=0;}
             }
+            */
 
             if(check)
             {
 
                 TLorentzVector tlv_type51 = get_tlv_by_V0(mass_pion, mass_K, momP, momN );
     
-               // cout<<"invmass K+ and pi-: "<<tlv_type5.M()<<endl;
-               // if(tlv_type5.M()<mass_K+mass_pion)cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
-                //cout<<"a2"<<endl;
                 //find additional pi-
                 vector <Ali_AS_Track> vec_track_add_pi_minus;
                 for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
@@ -2891,9 +2890,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     //cout<<"masspion: "<<tlv_pi_plus.M()<<endl;
                     tlv_type51+=tlv_pi_minus;
     
-                    //cout<<"invmass K+ and pi- and pi+ : "<<tlv_type5.M()<<endl;
-                    //if(tlv_type5.M()<mass_K+mass_pion*2)cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111!!!!!!!!!!!!!!!!!!!"<<endl;
-                     //cout<<"a4"<<endl;
                     vec_S_pos_type51.push_back(V0_position);
                     vec_tlv_type51.push_back(tlv_type51);
                     vec_tracks_type51.push_back(*as_trackP);
@@ -2921,10 +2917,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             TVector3 dir;
             dir.SetXYZ(tlv_Lambda[0],tlv_Lambda[1],tlv_Lambda[2]);
             double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir,pos_primary_vertex);
-
-
-            //cout<<"invmass Antilambda: "<<tlv_antilambda.M()<<endl;
-            //if(tlv_antilambda.M()<mass_pion+mass_proton)cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
 
             //cut on mass
             if(dist > 0.5 && invariantmass < (1.1157+0.001495*4) && invariantmass > (1.1157-0.001495*4))
@@ -3587,25 +3579,40 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     //mode 0: channel 1
     //mode 1: channel 11
+    cout<<"channel1"<<endl;
+    
     for(int mode=0;mode<2;mode++)
     {
         int size_SV3;
         if(mode==0) size_SV3 = vec_position_SV3.size();
         if(mode==1) size_SV3 = vec_position_SV3_1.size();
+        cout<<"number of combi: "<<size_SV3* vec_position_SV2.size() * vec_S_pos_ch1.size()<<endl;
 
-        for(Int_t vector_loop_SV3 = 0; vector_loop_SV3 < size_SV3; vector_loop_SV3++)
+        for(int S_loop=0;S_loop<vec_S_pos_ch1.size();S_loop++)
         {
-            for(Int_t vector_loop_SV2 = 0; vector_loop_SV2 < vec_position_SV2.size(); vector_loop_SV2++)
+            TVector3 S_vertex = vec_S_pos_ch1[S_loop];
+            S_vertex_pos = S_vertex;
+            Ali_AS_V0* S_V0 = AS_Event->getV0(vec_V0_S_type1[S_loop]);
+
+            for(Int_t vector_loop_SV3 = 0; vector_loop_SV3 < size_SV3; vector_loop_SV3++)
             {
-                if(vec_position_SV3.size() > 0 && vec_position_SV2.size() > 0 && vec_direction_SV3.size() > 0 &&  vec_direction_SV2.size() > 0)
+                TVector3 pos_Lambda;
+                TVector3 dir_L;
+                if(mode==0) pos_Lambda = vec_position_SV3[vector_loop_SV3];
+                if(mode==1) pos_Lambda = vec_position_SV3_1[vector_loop_SV3];
+                if(mode==0) dir_L = vec_direction_SV3[vector_loop_SV3];
+                if(mode==1) dir_L = vec_direction_SV3_1[vector_loop_SV3];
+                double dist_L_S = calculateMinimumDistanceStraightToPoint(pos_Lambda,dir_L,S_vertex);
+                if(dist_L_S>0.5){continue;}
+
+    
+                for(Int_t vector_loop_SV2 = 0; vector_loop_SV2 < vec_position_SV2.size(); vector_loop_SV2++)
                 {
-                    //if(calculateMinimumDistance(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]) > 0.5){ continue;}
-                    //S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]);
-                    for(int S_loop=0;S_loop<vec_S_pos_ch1.size();S_loop++)
+                    if(vec_position_SV3.size() > 0 && vec_position_SV2.size() > 0 && vec_direction_SV3.size() > 0 &&  vec_direction_SV2.size() > 0)
                     {
-                        TVector3 S_vertex = vec_S_pos_ch1[S_loop];
-                        S_vertex_pos = S_vertex;
-                        Ali_AS_V0* S_V0 = AS_Event->getV0(vec_V0_S_type1[S_loop]);
+                        //if(calculateMinimumDistance(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]) > 0.5){ continue;}
+                        //S_vertex_pos = calcVertexAnalytical(vec_position_SV3[vector_loop_SV3],vec_direction_SV3[vector_loop_SV3],vec_position_SV2[vector_loop_SV2],vec_direction_SV2[vector_loop_SV2]);
+
                         Ali_AS_V0* K0_V0 = AS_Event->getV0(vec_K0_V0_type1[vector_loop_SV2]);
                         Ali_AS_V0* Lambda_V0;
                         if(mode==0) Lambda_V0 = AS_Event->getV0(vec_V0_Lambda_type1[vector_loop_SV3]);
@@ -3613,23 +3620,14 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     
                         TVector3 vec_S_to_Lambda;
                         TVector3 vec_S_to_K0;
-                        TVector3 pos_Lambda;
                         TVector3 pos_K0;
-                        TVector3 dir_L;
                         TVector3 dir_K0;
-
-                        if(mode==0) pos_Lambda = vec_position_SV3[vector_loop_SV3];
-                        if(mode==1) pos_Lambda = vec_position_SV3_1[vector_loop_SV3];
                         pos_K0 = vec_position_SV2[vector_loop_SV2];
-    
-                        if(mode==0) dir_L = vec_direction_SV3[vector_loop_SV3];
-                        if(mode==1) dir_L = vec_direction_SV3_1[vector_loop_SV3];
                         dir_K0 = vec_direction_SV2[vector_loop_SV2];
     
                         double dist_K0_S = calculateMinimumDistanceStraightToPoint(pos_K0,dir_K0,S_vertex);
-                        double dist_L_S = calculateMinimumDistanceStraightToPoint(pos_Lambda,dir_L,S_vertex);
     
-                        if(dist_K0_S>0.5 || dist_L_S >0.5 ){continue;}
+                        if(dist_K0_S>0.5){continue;}
                         //float* pos = S_V0->getxyz();
                         //cout<<"pos: "<<pos[0]<<endl;
                         //cout<<"position: "<<S_vertex[0]<<endl;
@@ -3731,7 +3729,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                         if(mode==1) if(check_if_two_vectors_have_same_element(all_track_ids_ch1,brute_force_type11)){continue;}
                         //----------------------------------------------------------------------------------
                         //DM particle
-                        Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
+                        DMparticle = AS_Event->createDMparticle();
 
                         if(mode==0) DMparticle->settype(1);
                         if(mode==1) DMparticle->settype(11);
@@ -3747,6 +3745,15 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                         DMparticle->set_DirSV3(dir_L);
                         DMparticle->setN_V0s(2);
                         DMparticle->set_tlv(*tlv_SV1);
+
+                        Ali_AS_V0* DM_V0 = DMparticle -> createV0();
+                        copyV0params(S_V0,DM_V0);
+
+                        Ali_AS_V0* DM_V02 = DMparticle -> createV0();
+                        copyV0params(K0_V0,DM_V02);
+
+                        Ali_AS_V0* DM_V03 = DMparticle -> createV0();
+                        copyV0params(Lambda_V0,DM_V03);
     
                         for(int i=0;i<6;i++)
                         {
@@ -3758,15 +3765,17 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                             if(mode==0) brute_force_type1.push_back(trackid);
                             if(mode==1) brute_force_type11.push_back(trackid);
                         }
+        
     
+        
                     }
-    
+        
                 }
-    
             }
         }
     }
 
+    cout<<"channel3"<<endl;
     //********************************************************************************
     //********************************************************************************
     //channel3 and channel31  do combinatoric
@@ -3780,6 +3789,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         if(mode==0) sizeV1 =  vec_S_pos_ch3.size();
         if(mode==1) sizeV1 =  vec_S_pos_ch31.size();
         sizeV2 =  vec_K0_V0_pos.size();
+
+        cout<<"num of combi: "<<sizeV1 * sizeV2 <<endl;
         
     
         for(int S_vertex_loop=0; S_vertex_loop<sizeV1; S_vertex_loop++)
@@ -3870,7 +3881,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                 if( unit_dir_SV1.Dot(unit_vec_prim_to_S_vertex) < 0.8 ){continue;}
 
-                Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
+                DMparticle = AS_Event->createDMparticle();
 
                 if(mode==0) DMparticle->settype(3);
                 if(mode==1) DMparticle->settype(31);
@@ -3916,7 +3927,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //********************************************************************************
     //********************************************************************************
     //channel4  do combinatoric
-
+    cout<<"channel4"<<endl;
     //from vector of K0s choose 2
     //build lines from each vector
     //for each line calculate dca to S_vertex pos
@@ -3931,59 +3942,62 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         if(mode==1) size1 =  vec_ch41_S_vertex_positions.size();
 
         sizeV2 =  vec_K0_V0_pos.size();
-    
-        for(int K0_loop1=0; K0_loop1<sizeV2; K0_loop1++)
-        {
-            for(int K0_loop2=K0_loop1+1; K0_loop2<sizeV2; K0_loop2++)
-            {
-                for(int S_vertex_loop=0;S_vertex_loop<size1;S_vertex_loop++)
-                {
-                    TVector3 S_vertex_pos;
-                    if(mode==0) S_vertex_pos=  vec_ch4_S_vertex_positions[S_vertex_loop];
-                    if(mode==1) S_vertex_pos=  vec_ch41_S_vertex_positions[S_vertex_loop];
 
-                    TVector3 pos_K0_V01 = vec_K0_V0_pos[K0_loop1];
+        cout<<"num of combi: "<<size1 * sizeV2 * sizeV2 <<endl;
+
+        for(int S_vertex_loop=0;S_vertex_loop<size1;S_vertex_loop++)
+        {
+            TVector3 S_vertex_pos;
+            if(mode==0) S_vertex_pos=  vec_ch4_S_vertex_positions[S_vertex_loop];
+            if(mode==1) S_vertex_pos=  vec_ch41_S_vertex_positions[S_vertex_loop];
+
+            TVector3 vec_prim_to_S_vertex;
+            TVector3 unit_vec_prim_to_S_vertex;
+            vec_prim_to_S_vertex.SetXYZ(S_vertex_pos[0]-xprim,S_vertex_pos[1]-yprim,S_vertex_pos[2]-zprim);
+            double radiusS = vec_prim_to_S_vertex.Mag();
+            unit_vec_prim_to_S_vertex = vec_prim_to_S_vertex.Unit();
+
+            if(radiusS<5.){continue;}
+
+            for(int K0_loop1=0; K0_loop1<sizeV2; K0_loop1++)
+            {
+                TVector3 pos_K0_V01 = vec_K0_V0_pos[K0_loop1];
+                TLorentzVector tlv_K0_V01 = vec_K0_tlvs[K0_loop1];
+                TVector3 dir_K0_V01;
+                dir_K0_V01.SetXYZ(tlv_K0_V01.X(),tlv_K0_V01.Y(),tlv_K0_V01.Z());
+                TVector3 unit_dir_K0_V01 = dir_K0_V01.Unit();
+                TVector3 vec_S_to_K01 = pos_K0_V01 - S_vertex_pos;
+                if(vec_S_to_K01.Mag()<0.5){continue;}
+                TVector3 unit_vec_S_to_K01 = vec_S_to_K01.Unit();
+                if ( unit_vec_S_to_K01.Dot(unit_dir_K0_V01) < 0.8){continue;}
+
+                double dist1 = calculateMinimumDistanceStraightToPoint(pos_K0_V01,dir_K0_V01,S_vertex_pos);
+                if(dist1>0.5) {continue;}
+
+                for(int K0_loop2=K0_loop1+1; K0_loop2<sizeV2; K0_loop2++)
+                {
+                    
                     TVector3 pos_K0_V02 = vec_K0_V0_pos[K0_loop2];
-    
-                    TVector3 vec_prim_to_S_vertex;
-                    TVector3 unit_vec_prim_to_S_vertex;
-                    vec_prim_to_S_vertex.SetXYZ(S_vertex_pos[0]-xprim,S_vertex_pos[1]-yprim,S_vertex_pos[2]-zprim);
-                    double radiusS = vec_prim_to_S_vertex.Mag();
-                    unit_vec_prim_to_S_vertex = vec_prim_to_S_vertex.Unit();
-    
-                    if(radiusS<5.){continue;}
-    
-                    TLorentzVector tlv_K0_V01 = vec_K0_tlvs[K0_loop1];
-                    TVector3 dir_K0_V01;
-                    dir_K0_V01.SetXYZ(tlv_K0_V01.X(),tlv_K0_V01.Y(),tlv_K0_V01.Z());
-                    TVector3 unit_dir_K0_V01 = dir_K0_V01.Unit();
-    
                     TLorentzVector tlv_K0_V02 = vec_K0_tlvs[K0_loop2];
                     TVector3 dir_K0_V02;
                     dir_K0_V02.SetXYZ(tlv_K0_V02.X(),tlv_K0_V02.Y(),tlv_K0_V02.Z());
                     TVector3 unit_dir_K0_V02 = dir_K0_V02.Unit();
     
-                    TVector3 vec_S_to_K01 = pos_K0_V01 - S_vertex_pos;
+                    
                     TVector3 vec_S_to_K02 = pos_K0_V02 - S_vertex_pos;
-    
-                    if(vec_S_to_K01.Mag()<0.5){continue;}
+                    
                     if(vec_S_to_K02.Mag()<0.5){continue;}
     
-                    TVector3 unit_vec_S_to_K01 = vec_S_to_K01.Unit();
                     TVector3 unit_vec_S_to_K02 = vec_S_to_K02.Unit();
-    
-                    if ( unit_vec_S_to_K01.Dot(unit_dir_K0_V01) < 0.8){continue;}
+                    
                     if ( unit_vec_S_to_K02.Dot(unit_dir_K0_V02) < 0.8){continue;}
-    
-                    double dist1 = calculateMinimumDistanceStraightToPoint(pos_K0_V01,dir_K0_V01,S_vertex_pos);
-                    if(dist1>0.5) {continue;}
     
                     double dist2 = calculateMinimumDistanceStraightToPoint(pos_K0_V02,dir_K0_V02,S_vertex_pos);
                     if(dist2>0.5) {continue;}
     
                     vector<Ali_AS_Track> all_tracks;
                     vector<int> all_track_ids;
-
+    
                     if(mode==0)
                     {
                         all_tracks.push_back( vec_antip_and_pi_plus[2*S_vertex_loop] );
@@ -3994,7 +4008,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                         all_tracks.push_back( vec_p_and_pi_minus[2*S_vertex_loop] );
                         all_tracks.push_back( vec_p_and_pi_minus[2*S_vertex_loop + 1] );
                     }
-
+    
                     all_tracks.push_back( vec_K0_V0s[2*K0_loop1] );
                     all_tracks.push_back(
                                          vec_K0_V0s[2*K0_loop1 + 1] );
@@ -4027,7 +4041,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     
                     if ( unit_vec_prim_to_S_vertex.Dot(unit_dir_type4) < 0.8 ) {continue;}
     
-                    Ali_AS_DM_particle* DMparticle = AS_Event->createDMparticle();
+                    DMparticle = AS_Event->createDMparticle();
     
                     if(mode==0) DMparticle->settype(4);
                     if(mode==1) DMparticle->settype(41);
@@ -4038,7 +4052,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     DMparticle->set_S3Vertex(pos_K0_V02);
     
                     DMparticle -> set_tlv(tlv_type4);
-
+    
                     Ali_AS_V0* K01_V0 = AS_Event->getV0(vec_K0_Ali_V0[K0_loop1]);
                     Ali_AS_V0* K02_V0 = AS_Event->getV0(vec_K0_Ali_V0[K0_loop2]);
                     Ali_AS_V0* S_V0;
@@ -4054,16 +4068,16 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                         //cout<<"trackid: "<<trackid<<endl;
     
                     }
-
+    
                     Ali_AS_V0* DM_V0 = DMparticle -> createV0();
                     copyV0params(S_V0,DM_V0);
-
+    
                     Ali_AS_V0* DM_V0_1 = DMparticle -> createV0();
                     copyV0params(K01_V0,DM_V0_1);
-
+    
                     Ali_AS_V0* DM_V0_2 = DMparticle -> createV0();
                     copyV0params(K02_V0,DM_V0_2);
-
+    
     
                     for(int i=0;i<6;i++)
                     {
@@ -4076,13 +4090,12 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 }
     
             }
-    
+
         }
     }
 
-
+    cout<<"channel5"<<endl;
     //channel5 do combinatoric
-    cout<<"ch5"<<endl;
 
     for(int mode=0;mode<2;mode++)
     {
@@ -4092,6 +4105,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
         if(mode==0) size_L =vec_antilambdas_type5.size();
         if(mode==1) size_L =vec_Lambdas_type51.size();
+
+        cout<<"num combi: "<< size_S * size_L <<endl;
 
         for(int i_S=0;i_S<size_S;i_S++)
         {
@@ -4245,6 +4260,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         */
 
     AS_Event->clearTrackList();
+    AS_Event->clearV0List();
 
     //cout<<"f"<<endl;
 
