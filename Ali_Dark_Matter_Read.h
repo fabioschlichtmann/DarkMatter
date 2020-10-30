@@ -77,6 +77,16 @@ private:
     int counter_anti_lambdas = 0;
     int counter_NUCLEV = 0;
 
+    const Float_t mass_proton = 0.93827208816 ;  //in GeV?
+    const Float_t mass_pion = 0.139657061 ;  //in GeV?
+    const Float_t mass_electron = 0.510998950 * 1e-3 ;  //in GeV?
+    const double  mass_K = 0.493677 ;  //in GeV?
+
+    double mass_K0 = 0.493677;
+    double mass_Lambda = 1.1155683;
+    double mass_neutron = 0.939565;
+    double S_mass = -1;
+
     TH2D* mass_squared_vs_charge_dot_momentum = new TH2D("mass_squared_vs_charge_dot_momentum","mass_squared_vs_charge_dot_momentum",
                                                          200,-8,8,200,-0.5,0.5);
 
@@ -120,6 +130,7 @@ private:
 
     //type2
     TH1D* mass_squared_all_kaons_type2 = new TH1D("mass_squared_all_kaons_type2", "mass_squared_all_kaons_type2",100,-0.4,1.4);
+    TH1D* mass_squared_all_kaons_overlap_cuts_type2 = new TH1D("mass_squared_all_kaons_overlap_cuts_type2", "mass_squared_all_kaons_overlap_cuts_type2",100,-0.4,1.4);
     TH1D* histo_m_squared_kaon_no_other_cuts_type2 = new TH1D("histo_m_squared_kaon_no_other_cuts_type2", "histo_m_squared_kaon_no_other_cuts_type2",100,-0.1,0.4);
     TH1D* m_squared_anti_proton_type2= new TH1D("m_squared_anti_proton_type2", "m_squared_anti_proton_type2",100,-0.1,1.5);
     TH1D* histo_m_squared_kaon_with_all_other_cuts_type2 = new TH1D("histo_m_squared_kaon_with_all_other_cuts_type2", "histo_m_squared_kaon_with_all_other_cuts_type2",100,-0.1,0.4);
@@ -134,7 +145,7 @@ private:
     TH1D* histo_counter = new TH1D("histo counter 1.5: S-vertices with two pions; 2.5: S-vertices that fulfill all cuts",
                                    "histo counter 1.5: S-vertices with two pions; 2.5: S-vertices that fulfill all cuts",10,0,10);
 
-    TH1D* histo_counter_S = new TH1D("histo_counter_S","histo_counter_S",40,0.5,40.5);
+    TH1D* histo_counter_S = new TH1D("histo_counter_S","histo_counter_S",200,0.5,200.5);
     TH1D* histo_counter_type5 = new TH1D("histo_counter_type5","histo_counter_type5",40,0.5,40.5);
 
     TH1D* histo_numberDMs = new TH1D("histo_number_DMs","histo_number_DMs",10,0,10);
@@ -295,7 +306,7 @@ private:
 
     //TNtuple* tpl = new TNtuple ("ntuple","ntuple","x:y:z:dcaA:dcaB:dcaC:dcaD:pA:pB:pC:pD:dcaAprim:dcaBprim:dcaCprim:dcaDprim");
 
-    TH1D* histo_type_of_S = new TH1D("S_type","S_type",10,0.5,10.5);
+    TH1D* histo_type_of_S = new TH1D("S_type","S_type",60,0.5,60.5);
     TH1D* histo_angle = new TH1D("histo_angle","histo_angle",100,0,7);
     TH1D* histo_angle_z_0_10 = new TH1D("histo_angle_z_0_10","histo_angle_z_0_10",100,0,7);
     TH1D* histo_angle_z_50_60 = new TH1D("histo_angle_z_50_60","histo_angle_z_50_60",100,0,7);
@@ -314,6 +325,20 @@ private:
     TProfile* tprof = new TProfile("tprof","tprof",20,0.5,1.5);
 
     TH1D* histo_invmass_Lambda_type5 = new TH1D("histo_invmass_lambda_type5","histo_invmass_lambda_type5",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_by_V0_type5 = new TH1D("histo_invmass_Lambda_by_V0_type5","histo_invmass_Lambda_by_V0_type5",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_dcaprim_type5 = new TH1D("histo_invmass_Lambda_dcaprim_type5","histo_invmass_Lambda_dcaprim_type5",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_antip_cut_type5 = new TH1D("histo_invmass_Lambda_antip_cut_type5","histo_invmass_Lambda_antip_cut_type5",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_antip_cut_byV0_type51 = new TH1D("histo_invmass_Lambda_antip_cut_byV0_type51","histo_invmass_Lambda_antip_cut_byV0_type51",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_radius_cut_type5 = new TH1D("histo_invmass_Lambda_radius_cut_type5","histo_invmass_Lambda_radius_cut_type5",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_anti_cut_type5 = new TH1D("histo_invmass_Lambda_anti_cut_type5","histo_invmass_Lambda_anti_cut_type5",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_final_cut_type5 = new TH1D("histo_invmass_Lambda_final_cut_type5","histo_invmass_Lambda_final_cut_type5",50*2,1.1,1.13);
+
+    TH1D* histo_invmass_Lambda_type51 = new TH1D("histo_invmass_lambda_type51","histo_invmass_lambda_type51",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_dcaprim_type51 = new TH1D("histo_invmass_Lambda_dcaprim_type51","histo_invmass_Lambda_dcaprim_type51",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_antip_cut_type51 = new TH1D("histo_invmass_Lambda_antip_cut_type51","histo_invmass_Lambda_antip_cut_type51",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_radius_cut_type51 = new TH1D("histo_invmass_Lambda_radius_cut_type51","histo_invmass_Lambda_radius_cut_type51",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_anti_cut_type51 = new TH1D("histo_invmass_Lambda_anti_cut_type51","histo_invmass_Lambda_anti_cut_type51",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_final_cut_type51 = new TH1D("histo_invmass_Lambda_final_cut_type51","histo_invmass_Lambda_final_cut_type51",50*2,1.1,1.13);
 
     TH1D* histo_S_mass_type5 = new TH1D("histo_S_mass_type5","histo_S_mass_type5",200,0,10);
     TH1D* histo_S_mass_type5_cut_on_antip = new TH1D("histo_S_mass_type5_cut_on_antip","histo_S_mass_type5_cut_on_antip",200,0,10);
@@ -330,9 +355,31 @@ private:
     TH1D* histo_S_mass_type5_angle_lambda_and_dcaprim =
         new TH1D("histo_S_mass_type5_angle_lambda_and_dcaprim","histo_S_mass_type5_angle_lambda_and_dcaprim",200,0,10);
 
+    TH1D* histo_S_mass_type51_angle_lambda_and_dcaprim =
+        new TH1D("histo_S_mass_type51_angle_lambda_and_dcaprim","histo_S_mass_type51_angle_lambda_and_dcaprim",200,0,10);
+
 
     TH1D* histo_S_mass_type5_anticuts_dcaprim_angle_120_and_radius_10
         = new TH1D("histo_S_mass_type5_anticuts_dcaprim_angle_120_and_radius_10","histo_S_mass_type5_anticuts_dcaprim_angle_120_and_radius_10",200,0,10);
+
+    TH1D* histo_eta_type_5 = new TH1D("histo_eta_type_5","histo_eta_type_5",200,-5,5);
+    TH1D* histo_phi_type_5 = new TH1D("histo_phi_type_5","histo_phi_type_5",200,-7,2*3.5);
+
+    TH1D* histo_S_mass_mixed_event_no_dcaprim =
+        new TH1D("histo_S_mass_mixed_event_no_dcaprim","histo_S_mass_mixed_event_no_dcaprim",200,0,10);
+    TH1D* histo_S_mass_mixed_event_with_dcaprim =
+        new TH1D("histo_S_mass_mixed_event_with_dcaprim","histo_S_mass_mixed_event_with_dcaprim",200,0,10);
+
+
+    TH1D* histo_invmass_Lambda_type1 = new TH1D("histo_invmass_Lambda_type1","histo_invmass_Lambda_type1",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_type1_by_track = new TH1D("histo_invmass_Lambda_type1_by_track","histo_invmass_Lambda_type1_by_track",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_type11_by_track = new TH1D("histo_invmass_Lambda_type11_by_track","histo_invmass_Lambda_type11_by_track",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_type1_dcaprim = new TH1D("histo_invmass_Lambda_type1_dcaprim","histo_invmass_Lambda_type1_dcaprim",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_overlap_cut_type1 = new TH1D("histo_invmass_Lambda_overlap_cut_type1","histo_invmass_Lambda_overlap_cut_type1",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_overlap_cut_dcaprim_type1 = new TH1D("histo_invmass_Lambda_overlap_cut_dcaprim_type1","histo_invmass_Lambda_overlap_cut_dcaprim_type1",50*2,1.1,1.13);
+    TH1D* m_squared_proton_type1= new TH1D("m_squared_proton_type1", "m_squared_proton_type1",100,-0.1,1.5);
+
+    TH1D* histo_diff_inv_mass_type1 = new TH1D("histo_diff_inv_mass_type1","histo_diff_inv_mass_type1",50*2,-0.04,0.04);
 
 
 
@@ -348,12 +395,17 @@ public:
     void copy_track_params(Ali_AS_Track* track_in, Ali_AS_Track* track_out);
     void copy_dm_params(Ali_AS_DM_particle* dm_in, Ali_AS_DM_particle* dm_out);
     void Save();
+    int DM_Analysis_type5(Ali_AS_DM_particle* DM,int mode);
+    void Analyse_Mixed_Events();
+    vector<Ali_AS_DM_particle> mix_event(vector<vector<vector<Ali_AS_DM_particle>>> &vec,int eta_cat,int phi_cat);
 
     float arr_distance_prim_sec[15]={};
     float arr_distance_daughter_particles[1]={0.1};
     float arr_dca_AB[15]={};
     float arr_dca_daughter_prim[15]={};
     float arr_radius_variation[45]={};
+    vector<vector<vector<Ali_AS_DM_particle>>> mixed_event_vec;
+    vector<Ali_AS_DM_particle> all_mixed_events;
 
     ClassDef(Ali_Dark_Matter_Read, 1)
 
