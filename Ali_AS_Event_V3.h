@@ -644,9 +644,9 @@ private:
     UShort_t      fNumTracks; // number of tracks in event
     UShort_t      fNumV0s; //
 
-    Ali_AS_V0 V0_S1;
-    Ali_AS_V0 V0_S2;
-    Ali_AS_V0 V0_S3;
+    //Ali_AS_V0 V0_S1;
+    //Ali_AS_V0 V0_S2;
+    //Ali_AS_V0 V0_S3;
 
 
     TClonesArray* fTracks;   //->
@@ -689,9 +689,9 @@ public:
             if(i==4){track4=track;}
         }
 
-        void set_V0_S1(Ali_AS_V0 V0){V0_S1=V0;}
-        void set_V0_S2(Ali_AS_V0 V0){V0_S2=V0;}
-        void set_V0_S3(Ali_AS_V0 V0){V0_S3=V0;}
+        //void set_V0_S1(Ali_AS_V0 V0){V0_S1=V0;}
+        //void set_V0_S2(Ali_AS_V0 V0){V0_S2=V0;}
+        //void set_V0_S3(Ali_AS_V0 V0){V0_S3=V0;}
 
 	// getters
         TVector3 get_primVertex() const                  { return primVertex;    }
@@ -713,11 +713,18 @@ public:
             if(i==4){return track4;}
         }
 
+        /*
         Ali_AS_V0 get_V0(int i)
         {
             if(i==1){return V0_S1;}
             if(i==2){return V0_S2;}
             if(i==3){return V0_S3;}
+        }
+        */
+
+        Ali_AS_V0* getV0(Int_t i) const
+	{
+	    return i < fNumV0s ? (Ali_AS_V0*)((*fV0s)[i]) : NULL;
         }
 
         //----------------------------
@@ -753,10 +760,7 @@ public:
 	    return (Ali_AS_V0*)((*fV0s)[fNumV0s - 1]);
         }
 
-        Ali_AS_V0* getV0(Int_t i) const
-	{
-	    return i < fNumV0s ? (Ali_AS_V0*)((*fV0s)[i]) : NULL;
-        }
+
 
 	void clearTrackList()
 	{
