@@ -829,6 +829,39 @@ double get_dca_between_track(Ali_AS_Track* tracka, Ali_AS_Track* trackb )
 
 }
 
+bool overlap_PID(Ali_AS_Track* track, TString particle)
+{
+    double sigma_pi = fabs( track -> getnsigma_pi_TPC() );
+    double sigma_K = fabs ( track -> getnsigma_K_TPC() );
+    double sigma_p = fabs ( track -> getnsigma_p_TPC() );
+    double sigma_e = fabs ( track -> getnsigma_e_TPC() );
+
+    double m_squared = calculate_m_squared_by_TOF(track);
+
+    if(particle=="K")
+    {
+        if(sigma_pi<2.5 || sigma_p<2.5 || sigma_e<2.5)
+        {
+            if(m_squared>0.2 && m_squared < 0.35) return true;
+            else return false;
+        }
+        return true;
+    }
+
+    if(particle=="p")
+    {
+        if(sigma_pi<2.5 || sigma_K<2.5 || sigma_e<2.5)
+        {
+            if(m_squared>0.6 && m_squared < 1.2) return true;
+            else return false;
+        }
+        return true;
+
+    }
+
+
+}
+
 //_______________________________________________________________________
 
 Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
@@ -952,7 +985,7 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
     fListOfHistos->Add(histo_m_squared[0]);
 
     vec_histo_counter.resize(4);
-    vec_histo_counter[0] = new TH1D("histo_counter","histo_counter",80,0,80);
+    vec_histo_counter[0] = new TH1D("histo_counter","histo_counter",80,0.5,80.5);
     vec_histo_counter[1] = new TH1D("histo_pT_pions","histo_pT_pions",100,0,3);
     vec_histo_counter[2] = new TH1D("histo_pT_protons","histo_pT_protons",100,0,3);
     vec_histo_counter[3] = new TH1D("S_types","S_types",10,0.5,10.5);
@@ -961,6 +994,27 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
     fListOfHistos->Add(vec_histo_counter[2]);
     fListOfHistos->Add(vec_histo_counter[3]);
 
+    vec_histo_inv_mass.resize(13);
+    vec_histo_inv_mass[0] = new TH1D("invmass_K0_prim","invmass_K0_prim",100,0.4,0.6);
+    vec_histo_inv_mass[1] = new TH1D("invmass_K0_nonprim","invmass_K0_nonprim",100,0.4,0.6);
+    vec_histo_inv_mass[2] = new TH1D("invmass_K0_nonprim_and_r_10","invmass_K0_nonprim_and_r_10",100,0.4,0.6);
+    vec_histo_inv_mass[3] = new TH1D("invmass_K0_nonprim_and_r_30","invmass_K0_nonprim_and_r_30",100,0.4,0.6);
+    vec_histo_inv_mass[4] = new TH1D("invmass_K0_nonprim_and_r_50","invmass_K0_nonprim_and_r_50",100,0.4,0.6);
+
+    vec_histo_inv_mass[5] = new TH1D("invmass_Lambda_prim","invmass_Lambda_prim",100,1.1,1.13);
+    vec_histo_inv_mass[6] = new TH1D("invmass_Lambda_nonprim","invmass_Lambda_nonprim",100,1.1,1.13);
+    vec_histo_inv_mass[7] = new TH1D("invmass_Lambda_nonprim_1","invmass_Lambda_nonprim_1",100,1.1,1.13);
+    vec_histo_inv_mass[8] = new TH1D("invmass_Lambda_nonprim_and_r_10","invmass_Lambda_nonprim_and_r_10",100,1.1,1.13);
+
+    vec_histo_inv_mass[9] = new TH1D("invmass_AntiL_prim","invmassinvmass_AntiL_primLambda_prim",100,1.1,1.13);
+    vec_histo_inv_mass[10] = new TH1D("invmass_AntiL_nonprim","invmass_AntiL_nonprim",100,1.1,1.13);
+    vec_histo_inv_mass[11] = new TH1D("invmass_AntiL_nonprim_1","invmass_AntiL_nonprim_1",100,1.1,1.13);
+    vec_histo_inv_mass[12] = new TH1D("invmass_AntiL_nonprim_and_r_10","invmass_AntiL_nonprim_and_r_10",100,1.1,1.13);
+
+    for(int i=0;i<13;i++)
+    {
+        fListOfHistos->Add(vec_histo_inv_mass[i]);
+    }
 
     TString arrn[3]={"x","y","z"};
 
@@ -1468,38 +1522,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         AS_Track -> settbitsshared(tbits_shared);
 
 
-
-#if 1
-        //--------------------------------------
-        //printf("Loop over friend tracks \n");
-        const AliESDfriendTrack *trkFr = track->GetFriendTrack();
-        if(!trkFr)
-        {
-            continue;
-        }
-
-        Int_t ESDtrackID       = trkFr ->GetESDtrackID();
-        Float_t one_over_p     = trkFr ->Get1P();
-        //Int_t N_MaxTPCclusters = trkF ->GetMaxTPCcluster();
-        //printf("Friend track available, ESDtrackID: %d, one_over_p: %4.3f \n",ESDtrackID,one_over_p);
-        const AliTRDtrackV1 *trdTrack = 0;
-        const TObject *calibObject = 0;
-
-        for(Int_t idx = 0; (calibObject = trkFr->GetCalibObject(idx)); ++idx)
-        {
-            //printf("idx: %d \n",idx);
-            if(calibObject->IsA() != AliTRDtrackV1::Class())
-            {
-                continue;
-            }
-            trdTrack = (AliTRDtrackV1*) calibObject;
-        }
-
-        //printf("Calib object available \n");
-
-       
-        //--------------------------------------
-#endif
 
 
 
@@ -2036,13 +2058,49 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         path_initA = 0.0;
         path_initB = 30.0;
 
+        //search for K0s
+        //K0 - > pi+ and pi-
+        //check if pion+ and pion-
+        if(fabs(sigma_pion_plus_TPC) < 2.0 && fabs(sigma_pion_minus_TPC) < 2.0)
+        {
+            energy_pion_plus  = sqrt(mass_pion*mass_pion+(momP[0]*momP[0]+momP[1]*momP[1]+momP[2]*momP[2]));
+            energy_pion_minus = sqrt(mass_pion*mass_pion+(momN[0]*momN[0]+momN[1]*momN[1]+momN[2]*momN[2]));
+
+            tlv_pos -> SetPxPyPzE(momP[0],momP[1],momP[2],energy_pion_plus);
+            tlv_neg -> SetPxPyPzE(momN[0],momN[1],momN[2],energy_pion_minus);
+
+            *tlv_Kaon = *tlv_pos + *tlv_neg;
+            invariantmass = tlv_Kaon->M();
+
+            //check nonprimary
+            TVector3 dir;
+            dir.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
+            double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir,pos_primary_vertex);
+
+            if(invariantmass< (0.4981+0.0042*6) && invariantmass > (0.4981-0.0042*6))
+            {
+                vec_histo_inv_mass[0]->Fill(invariantmass);
+            }
+
+            if(dist > 0.5 && invariantmass< (0.4981+0.0042*6) && invariantmass > (0.4981-0.0042*6))
+            {
+                vec_histo_inv_mass[1]->Fill(invariantmass);
+                if(radius > 10)  vec_histo_inv_mass[2]->Fill(invariantmass);
+                if(radius > 30)  vec_histo_inv_mass[3]->Fill(invariantmass);
+                if(radius > 50)  vec_histo_inv_mass[4]->Fill(invariantmass);
+            }
+
+         
+        }
+
+
         //****************************************************************************************+
         //****************************************************************************************+
         //-----------------------------------------------------------------------------------
         //S-particle search
         //----------------------------------------------------------------------------
 
-
+        /*
         //----------------------------------------------------------------------------
         //channel1: antiS + n -> antiLambda + K0 + pi- + pi+
 
@@ -2082,6 +2140,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             TVector3 dir_SV3;
             dir_SV3.SetXYZ(tlv_Lambda->Px(),tlv_Lambda->Py(),tlv_Lambda->Pz());
             double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir_SV3,pos_primary_vertex);
+
+            
+            
 
             //cut on mass and nonprimary
             if( dist>0.5 && invariantmass < (1.1157+0.001495*6) && invariantmass > (1.1157-0.001495*6))
@@ -2127,6 +2188,21 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             dir.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
             double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir,pos_primary_vertex);
 
+            if(invariantmass< (0.4981+0.0042*6) && invariantmass > (0.4981-0.0042*6))
+            {
+                vec_histo_inv_mass[0]->Fill(invariantmass);
+            }
+
+            if(dist > 0.5 && invariantmass< (0.4981+0.0042*6) && invariantmass > (0.4981-0.0042*6))
+            {
+                vec_histo_inv_mass[1]->Fill(invariantmass);
+            }
+
+            if(radius > 5 && dist > 0.5 && invariantmass< (0.4981+0.0042*6) && invariantmass > (0.4981-0.0042*6))
+            {
+                vec_histo_inv_mass[2]->Fill(invariantmass);
+            }
+
             //cut on mass
             if(dist > 0.5 && invariantmass< (0.4981+0.0042*6) && invariantmass > (0.4981-0.0042*6))
             {
@@ -2161,6 +2237,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             dir_SV3.SetXYZ(tlv_Lambda.Px(),tlv_Lambda.Py(),tlv_Lambda.Pz());
             double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir_SV3,pos_primary_vertex);
 
+            
+
+
             //cut on mass and nonprimary
             if( dist>0.5 && invariantmass < (1.1157+0.001495*6) && invariantmass > (1.1157-0.001495*6))
             {
@@ -2183,7 +2262,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             }
 
         }
-
+        */
 
         //**********************************************************************************+
         //**********************************************************************************+
@@ -2229,7 +2308,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 Float_t path_closest_to_point = 0;
                 Float_t dca_closest_to_point  = 0;
                 //calculate dca from vertex to particle track
-                FindDCAHelixPoint2(pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+                FindDCAHelixPoint2(V0_position,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
                 if(dca_closest_to_point > 0.5) {continue;}
                 //if(radius<5) {continue;}
@@ -2238,7 +2317,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 Float_t dca_to_primary_vertex = -1;
                 path_closest_to_point=0;
                 FindDCAHelixPoint2(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dca_to_primary_vertex);
-                if(dca_to_primary_vertex<3.){continue;}
+                if(dca_to_primary_vertex<2.){continue;}
 
                 save_track_ids.push_back(Trackid);
                 save_track_nums.push_back(i_track_A);
@@ -2253,11 +2332,14 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 //histos_2D[3]->Fill(pos[0],pos[1]);
                 AS_Track = AS_Event->getTrack(save_track_nums[0]);
                 Int_t Trackid  = AS_Track->gettrackid();
-                TLorentzVector tlv = AS_Track->get_TLV_part();
-                TLorentzVector tlv_S = tlv_anti_p_and_K_plus + tlv;
+                //TLorentzVector tlv = AS_Track->get_TLV_part();      //wrong!!
+
+                TLorentzVector tlv_add_K_plus = get_tlv(AS_Track, mass_K, V0_position );
+
+                TLorentzVector tlv_S = tlv_anti_p_and_K_plus + tlv_add_K_plus;
 
                 TVector3 dir;
-                dir.SetXYZ(tlv_anti_p_and_K_plus[0]+tlv[0] , tlv_anti_p_and_K_plus[1]+tlv[1], tlv_anti_p_and_K_plus[2]+tlv[2]);
+                dir.SetXYZ(tlv_S.Px(),tlv_S.Py(),tlv_S.Pz());
                 TVector3 unit_dir;
                 unit_dir = dir.Unit();
                 double dot_product = unit_dir.Dot(unit_prim_to_V0);
@@ -2270,8 +2352,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 {
                     //counter_vertices_antip_K_plus_K_plus_r_larger_5_and_dot_product++;
 
-                    double m_squared1 = calculate_m_squared_by_TOF(AS_Track);
-                    double m_squared2 = calculate_m_squared_by_TOF(as_trackP);
+                    //double m_squared1 = calculate_m_squared_by_TOF(AS_Track);
+                    //double m_squared2 = calculate_m_squared_by_TOF(as_trackP);
 
                     //if(m_squared1!=-1.) {mass_squared_kaons_and_background->Fill(m_squared1);}
                     //if(m_squared2!=-1.) {mass_squared_kaons_and_background->Fill(m_squared2);}
@@ -2314,8 +2396,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     brute_force_type2.push_back(trackidP);
                     brute_force_type2.push_back(trackidN);
                     brute_force_type2.push_back(Trackid);
-                    TBits tbitsshared = AS_Track->getbitsshared();
-                    int numbitsshared = tbitsshared.CountBits();
+
+                    //TBits tbitsshared = AS_Track->getbitsshared();
+                    //int numbitsshared = tbitsshared.CountBits();
                     //cout<<"numbitsshared: "<<numbitsshared<<endl;
                     //histo_counter->SetBinContent(7,numbitsshared);
                 }
@@ -2374,7 +2457,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 Float_t path_closest_to_point = 0;
                 Float_t dca_closest_to_point  = 0;
                 //calculate dca from vertex to particle track
-                FindDCAHelixPoint2(pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+                FindDCAHelixPoint2(V0_position,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
                 if(dca_closest_to_point > 0.5) {continue;}
                 //if(radius<5) {continue;}
@@ -2383,7 +2466,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 Float_t dca_to_primary_vertex = -1;
                 path_closest_to_point=0;
                 FindDCAHelixPoint2(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dca_to_primary_vertex);
-                if(dca_to_primary_vertex<3.){continue;}
+                if(dca_to_primary_vertex<2.){continue;}
 
                 save_track_ids.push_back(Trackid);
                 save_track_nums.push_back(i_track_A);
@@ -2394,11 +2477,14 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             {
                 AS_Track = AS_Event->getTrack(save_track_nums[0]);
                 Int_t Trackid  = AS_Track->gettrackid();
-                TLorentzVector tlv = AS_Track->get_TLV_part();
-                TLorentzVector tlv_S = tlv_p_and_K_minus + tlv;
+
+                TLorentzVector tlv_add_K_minus = get_tlv(AS_Track, mass_K, V0_position );
+
+                TLorentzVector tlv_S = tlv_p_and_K_minus + tlv_add_K_minus;
 
                 TVector3 dir;
-                dir.SetXYZ(tlv_p_and_K_minus[0]+tlv[0] , tlv_p_and_K_minus[1]+tlv[1], tlv_p_and_K_minus[2]+tlv[2]);
+                dir.SetXYZ(tlv_S.Px(),tlv_S.Py(),tlv_S.Pz());
+
                 TVector3 unit_dir;
                 unit_dir = dir.Unit();
                 double dot_product = unit_dir.Dot(unit_prim_to_V0);
@@ -2411,8 +2497,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 {
                     //counter_vertices_antip_K_plus_K_plus_r_larger_5_and_dot_product++;
 
-                    double m_squared1 = calculate_m_squared_by_TOF(AS_Track);
-                    double m_squared2 = calculate_m_squared_by_TOF(as_trackP);
+                    //double m_squared1 = calculate_m_squared_by_TOF(AS_Track);
+                    //double m_squared2 = calculate_m_squared_by_TOF(as_trackP);
 
                     //if(m_squared1!=-1.) {mass_squared_kaons_and_background->Fill(m_squared1);}
                     //if(m_squared2!=-1.) {mass_squared_kaons_and_background->Fill(m_squared2);}
@@ -2478,8 +2564,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //antip and K+
         if( fabs(sigma_p_N)<2.0  && fabs(sigma_K_P)<2.0 && radius > 5)
         {
-            vec_tracks_ch3.push_back(*as_trackP);
-            vec_tracks_ch3.push_back(*as_trackN);
+            
 
             double energy_kaon_plus = sqrt(mass_K*mass_K+calc_momentum_squared(momP) );
             double energy_proton_minus = sqrt(mass_proton*mass_proton+ calc_momentum_squared(momN) );
@@ -2489,7 +2574,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
             TLorentzVector tlv_type3 = *tlv_pos + *tlv_neg;
             TVector3 S_vertex_position;
-            S_vertex_position.SetXYZ(pos[0],pos[1],pos[2]);
+            S_vertex_position=V0_position;
             vector<Ali_AS_Track> vec_pion_track;
 
             for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
@@ -2522,7 +2607,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
             if(vec_pion_track.size()==1)
             {
-                TLorentzVector tlv_pion = vec_pion_track[0].get_TLV_part();
+                TLorentzVector tlv_pion = get_tlv(&vec_pion_track[0], mass_pion, V0_position );
+               // TLorentzVector tlv_pion = vec_pion_track[0].get_TLV_part();          WRONG!
+
+                vec_tracks_ch3.push_back(*as_trackP);
+                vec_tracks_ch3.push_back(*as_trackN);
                 vec_tracks_ch3.push_back(vec_pion_track[0]);
 
                 tlv_type3 += tlv_pion;
@@ -2540,7 +2629,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
         //K0s
-        if(fabs(sigma_pion_plus_TPC) < 2.0 && fabs(sigma_pion_minus_TPC) < 2.0)
+        if(fabs(sigma_pion_plus_TPC) < 2.0 && fabs(sigma_pion_minus_TPC) < 2.0 && radius > 5)
         {
             energy_pion_plus  = sqrt(mass_pion*mass_pion+ calc_momentum_squared(momP));
             energy_pion_minus = sqrt(mass_pion*mass_pion+ calc_momentum_squared(momN));
@@ -2582,8 +2671,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //p and K-
         if( fabs(sigma_p_P)<2.0  && fabs(sigma_K_N)<2.0 && radius > 5)
         {
-            vec_tracks_ch31.push_back(*as_trackP);
-            vec_tracks_ch31.push_back(*as_trackN);
+            
             double energy_kaon_minus = sqrt(mass_K*mass_K+calc_momentum_squared(momN) );
             double energy_proton = sqrt(mass_proton*mass_proton+ calc_momentum_squared(momP) );
 
@@ -2627,8 +2715,12 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
             if(vec_pion_track.size()==1)
             {
+                vec_tracks_ch31.push_back(*as_trackP);
+                vec_tracks_ch31.push_back(*as_trackN);
                 vec_tracks_ch31.push_back(vec_pion_track[0]);
-                TLorentzVector tlv_pion = vec_pion_track[0].get_TLV_part();
+
+                TLorentzVector tlv_pion = get_tlv(&vec_pion_track[0], mass_pion, V0_position );
+                //TLorentzVector tlv_pion = vec_pion_track[0].get_TLV_part();   WRONG
 
                 tlv_ch31 += tlv_pion;
 
@@ -2646,7 +2738,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         }
 
 
-
+        /*
         //**********************************************************************************+
         //**********************************************************************************+
         //channel4
@@ -2691,7 +2783,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             vec_V0_S_type41.push_back(numV0-1);
 
         }
-
+         */
         //use K0s from above!
 
         //************************************************************************************
@@ -2735,7 +2827,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     Float_t path_closest_to_point = 0;
                     Float_t dca_closest_to_point  = 0;
                     //calculate dca from vertex to particle track
-                    FindDCAHelixPoint2(pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+                    FindDCAHelixPoint2(V0_position,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
                     if(dca_closest_to_point > 0.5) {continue;}
     
                     vec_track_add_pi_plus.push_back(*AS_Track);
@@ -2747,12 +2839,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                     Ali_AS_Track track_pi_plus = vec_track_add_pi_plus[0];
                     //TLorentzVector tlv = track_pi_plus.get_TLV_part();
     
-                    TLorentzVector tlv_pi_plus = 
+                    TLorentzVector tlv_pi_plus =  get_tlv(&track_pi_plus, mass_pion, V0_position );
                     //cout<<"masspion: "<<tlv_pi_plus.M()<<endl;
                     tlv_type5+=tlv_pi_plus;
-    
-                    //cout<<"invmass K+ and pi- and pi+ : "<<tlv_type5.M()<<endl;
-                    //if(tlv_type5.M()<mass_K+mass_pion*2)cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111!!!!!!!!!!!!!!!!!!!"<<endl;
     
                     vec_S_pos_type5.push_back(V0_position);
                     vec_tlv_type5.push_back(tlv_type5);
@@ -2774,7 +2863,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         }
 
         //find Antilambda vertex:
-        if(fabs(sigma_p_N) < 2.0 && fabs(sigma_pi_P) < 2.0)
+        if(fabs(sigma_p_N) < 2.0 && fabs(sigma_pi_P) < 2.0 && radius > 5)
         {
             TLorentzVector tlv_antilambda = get_tlv_by_V0(mass_pion, mass_proton, momP, momN );
             invariantmass = tlv_antilambda.M();
@@ -2784,10 +2873,34 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             dir.SetXYZ(tlv_antilambda[0],tlv_antilambda[1],tlv_antilambda[2]);
             double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir,pos_primary_vertex);
 
+            //not for candidate--------------------------------------------------
+            if(invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
+            {
+                vec_histo_counter[0]->Fill(70);
+                if( overlap_PID(as_trackN,"p")) vec_histo_counter[0]->Fill(72);
+            }
+
+            if(dist > 0.5 && invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
+            {
+                vec_histo_counter[0]->Fill(71);
+                if( overlap_PID(as_trackN,"p")) vec_histo_counter[0]->Fill(73);
+            }
+
+            if(overlap_PID(as_trackN,"p") && invariantmass < (1.1157+0.001495*6) && invariantmass > (1.1157-0.001495*6))
+            {
+                vec_histo_inv_mass[9]->Fill(invariantmass);
+                if(dist>0.5)
+                {
+                    vec_histo_inv_mass[10]->Fill(invariantmass);
+                    if(dist>1) vec_histo_inv_mass[11]->Fill(invariantmass);
+                    if(radius>10) vec_histo_inv_mass[12]->Fill(invariantmass);
+                }
+            }
+            //-----------------------------------------------------------------------------------------
+
             //cut on mass
             if(dist > 0.5 && invariantmass < (1.1157+0.001495*4) && invariantmass > (1.1157-0.001495*4))
             {
-                 
                  vec_antilambdas_type5.push_back(V0_position);
                  vec_tlv_antilambda_type5.push_back(tlv_antilambda);
                  vec_tracks_antilambda_type5.push_back(*as_trackP);
@@ -2802,7 +2915,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
         //****************************************************************************************************************************************************
-        //antichannel zu 5, channel 51
+        //antichannel zu 5, channel51
 
         //find vertex of K- and pi+
         if(fabs(sigma_K_N)<2. && fabs(sigma_pi_P)<2. && radius > 5)
@@ -2883,7 +2996,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
         //find Lambda vertex:
-        if(fabs(sigma_p_P) < 2.0 && fabs(sigma_pi_N) < 2.0)
+        if(fabs(sigma_p_P) < 2.0 && fabs(sigma_pi_N) < 2.0 && radius > 5)
         {
             TLorentzVector tlv_Lambda = get_tlv_by_V0(mass_proton, mass_pion, momP, momN );
             invariantmass = tlv_Lambda.M();
@@ -2891,6 +3004,32 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             TVector3 dir;
             dir.SetXYZ(tlv_Lambda[0],tlv_Lambda[1],tlv_Lambda[2]);
             double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir,pos_primary_vertex);
+
+            //not for S-candidate----------------------------------------------------------
+            if(invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
+            {
+                vec_histo_counter[0]->Fill(75);
+                if( overlap_PID(as_trackP,"p")) vec_histo_counter[0]->Fill(77);
+            }
+
+            if(overlap_PID(as_trackP,"p") && invariantmass < (1.1157+0.001495*6) && invariantmass > (1.1157-0.001495*6))
+            {
+                vec_histo_inv_mass[5]->Fill(invariantmass);
+                if(dist>0.5)
+                {
+                    vec_histo_inv_mass[6]->Fill(invariantmass);
+                    if(dist>1) vec_histo_inv_mass[7]->Fill(invariantmass);
+                    if(radius>10) vec_histo_inv_mass[8]->Fill(invariantmass);
+                }
+            }
+
+            if(dist > 0.5 && invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
+            {
+                vec_histo_counter[0]->Fill(76);
+                if( overlap_PID(as_trackP,"p")) vec_histo_counter[0]->Fill(78);
+
+            }
+            //---------------------------------------------------------------------------
 
             //cut on mass
             if(dist > 0.5 && invariantmass < (1.1157+0.001495*4) && invariantmass > (1.1157-0.001495*4))
@@ -3788,19 +3927,23 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 S_V0 = AS_Event->getV0(S_V0_num);
                 K0_V0 = AS_Event->getV0(K0_V0_num);
 
-                float x = S_V0 ->getx();
-                //cout<<"x: "<<x<<endl;
                 TVector3 S_vertex_pos;
                 if(mode ==0)  S_vertex_pos = vec_S_pos_ch3[S_vertex_loop];
                 if(mode ==1)  S_vertex_pos = vec_S_pos_ch31[S_vertex_loop];
+
+                float x_V0 = S_V0 ->getx();
+                float x_pos = S_vertex_pos[0];
+
+                printf("x_V0: %f, x_pos: %f",x_V0,x_pos);
     
                 TLorentzVector tlv_K0_V0 = vec_K0_tlvs[K0_loop];
                 TVector3 dir_K0_V0;
-                dir_K0_V0.SetXYZ(tlv_K0_V0.X(),tlv_K0_V0.Y(),tlv_K0_V0.Z());
+                dir_K0_V0.SetXYZ(tlv_K0_V0.Px(),tlv_K0_V0.Py(),tlv_K0_V0.Pz());
                 TVector3 pos_K0_V0 = vec_K0_V0_pos[K0_loop];
                 TVector3 vec_prim_to_S_vertex;
                 TVector3 unit_vec_prim_to_S_vertex;
-                vec_prim_to_S_vertex.SetXYZ(S_vertex_pos[0]-xprim,S_vertex_pos[1]-yprim,S_vertex_pos[2]-zprim);
+                //vec_prim_to_S_vertex.SetXYZ(S_vertex_pos[0]-xprim,S_vertex_pos[1]-yprim,S_vertex_pos[2]-zprim);
+                vec_prim_to_S_vertex = S_vertex_pos-pos_primary_vertex;
                 double radiusS = vec_prim_to_S_vertex.Mag();
                 unit_vec_prim_to_S_vertex = vec_prim_to_S_vertex.Unit();
     
@@ -3850,7 +3993,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                 TVector3 dir_SV1;
                 TVector3 unit_dir_SV1;
-                dir_SV1.SetXYZ(tlv_type3[0],tlv_type3[1],tlv_type3[2]);
+                dir_SV1.SetXYZ(tlv_type3.Px(),tlv_type3.Py(),tlv_type3.Pz());
                 unit_dir_SV1 = dir_SV1.Unit();
 
                 if( unit_dir_SV1.Dot(unit_vec_prim_to_S_vertex) < 0.8 ){continue;}
@@ -3873,7 +4016,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
                 Ali_AS_V0* DM_V02 = DMparticle -> createV0();
                 copyV0params(K0_V0,DM_V02);
-                DMparticle->set_DirSV1(momentum_SV1);
+
+                DMparticle->set_DirSV1(dir_SV1);
+                DMparticle->set_DirSV2(dir_K0_V0);
                 //DMparticle->set_DirSV2(vec_direction_SV2[vector_loop_SV2]);
                 //DMparticle->set_DirSV3(vec_direction_SV3[vector_loop_SV3]);
                 //DMparticle->setN_V0s(2);
@@ -4101,8 +4246,9 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 }
     
                 TVector3 dir_L;
-                dir_L.SetXYZ(tlv_L[0],tlv_L[1],tlv_L[2]);
-    
+                dir_L.SetXYZ(tlv_L.Px(),tlv_L.Py(),tlv_L.Pz());
+
+                //distance backtracking to S
                 double dist = calculateMinimumDistanceStraightToPoint(pos_L,dir_L,S_vertex_pos);
                 if(dist>0.5){continue;}
     
@@ -4171,6 +4317,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 DMparticle->set_primVertex(pos_primary_vertex);
                 DMparticle->set_S1Vertex(S_vertex_pos);
                 DMparticle->set_S2Vertex(pos_L);
+                DMparticle->set_DirSV1(dir_type5);
                 DMparticle->set_DirSV2(dir_L);
                 DMparticle->set_tlv(tlv_type5);
 

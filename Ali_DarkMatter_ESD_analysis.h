@@ -12,6 +12,7 @@ class AliTRDdigitsManager;
 #include "Ali_AS_Event_V3.h"
 #include "Ali_AS_EventLinkDef.h"
 
+
 ClassImp(Ali_AS_TRD_digit)
 ClassImp(Ali_AS_Track)
 ClassImp(Ali_AS_NUCLEV)
@@ -19,6 +20,7 @@ ClassImp(Ali_AS_Tracklet)
 ClassImp(Ali_AS_offline_Tracklet)
 ClassImp(Ali_AS_V0)
 ClassImp(Ali_AS_Event)
+ClassImp(Ali_AS_DM_particle)
 
 
 class Ali_DarkMatter_ESD_analysis : public AliAnalysisTaskSE
@@ -26,8 +28,8 @@ class Ali_DarkMatter_ESD_analysis : public AliAnalysisTaskSE
 public:
     Ali_DarkMatter_ESD_analysis()
 	: AliAnalysisTaskSE(),
-	AS_Event(0),AS_V0(0),AS_Track(0),AS_NUCLEV(),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
-        h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),delta_dca_vs_delta(0x0),histo_delta(0x0),counter_events(0)
+	AS_Event(0),AS_V0(0),AS_Track(0),AS_NUCLEV(),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
+        h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),delta_dca_vs_delta(0x0),histo_delta(0x0),histo_m_squared(0x0),vec_histo_counter(0x0),vec_t_prof(0x0),vec_histo_inv_mass(0x0),counter_events(0)
     {
 	cout << "" << endl;
 	cout << "***************************************************************************************" << endl;
@@ -48,7 +50,7 @@ public:
         void FillHelix(AliESDtrack* track_in, Double_t magF_in);
 	void FindDCAHelixPoint(TVector3 space_vec, AliHelix helixA, Float_t path_initA, Float_t path_initB, Float_t &pathA, Float_t &dcaAB);
 	void FindDCAHelixPoint2(TVector3 space_vec, Ali_AS_Track* helixA, Float_t path_initA, Float_t path_initB, Float_t &pathA, Float_t &dcaAB);
-
+        TLorentzVector get_tlv(Ali_AS_Track* track, double mass, TVector3 vertex);
 
         AliHelix aliHelix;
          int counter_events=0;
@@ -71,6 +73,7 @@ public:
         //Ali_AS_NUCLEV* AS_NUCLEV;
         Ali_AS_Track* AS_Track;
         Ali_AS_NUCLEV* AS_NUCLEV;
+        Ali_AS_DM_particle* DMparticle;
        
 	TTree       *Tree_AS_Event;
 
@@ -86,6 +89,15 @@ public:
         vector<TH2D*>  delta_dca_vs_delta;
 
         vector<TH1D*> histo_delta;
+
+        vector<TH1D*> histo_m_squared;
+
+        vector<TH1D*> vec_histo_counter;
+
+        vector<TProfile*> vec_t_prof;
+
+        vector<TH1D*> vec_histo_inv_mass;
+
         //vector<TH2D*> histo_delta;
 
 
