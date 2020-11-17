@@ -1094,7 +1094,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //-----------------------------------------------------------------
 
     counter_events++;
-    cout<<"counter events: "<<counter_events<<endl;
+    if(counter_events%100==0) cout<<"counter events: "<<counter_events<<endl;
 
     //if(counter_events>25){return;}
 
@@ -3416,7 +3416,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
     }
-    cout<<"end of V0 loop"<<endl;
+    //cout<<"end of V0 loop"<<endl;
     //cout<<""<<endl;
     //end of V0 loop
 
@@ -3680,7 +3680,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     int counter_V0s = 0;
 
-    cout<<"begin of combinatoric" <<endl;
+    //cout<<"begin of combinatoric" <<endl;
 
 
 
@@ -3701,7 +3701,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         int size_SV3;
         if(mode==0) size_SV3 = vec_position_SV3.size();
         if(mode==1) size_SV3 = vec_position_SV3_1.size();
-        cout<<"number of combi: "<<size_SV3* vec_position_SV2.size() * vec_S_pos_ch1.size()<<endl;
+        //cout<<"number of combi: "<<size_SV3* vec_position_SV2.size() * vec_S_pos_ch1.size()<<endl;
 
         for(int S_loop=0;S_loop<vec_S_pos_ch1.size();S_loop++)
         {
@@ -3934,7 +3934,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 float x_V0 = S_V0 ->getx();
                 float x_pos = S_vertex_pos[0];
 
-                printf("x_V0: %f, x_pos: %f",x_V0,x_pos);
+                //printf("x_V0: %f, x_pos: %f",x_V0,x_pos);
     
                 TLorentzVector tlv_K0_V0 = vec_K0_tlvs[K0_loop];
                 TVector3 dir_K0_V0;
@@ -4335,7 +4335,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
                 Ali_AS_V0* DM_V01 = DMparticle -> createV0();
                 copyV0params(L_V0,DM_V01);
     
-                cout<<"tlv: "<<tlv_type5[0]<<" "<<tlv_type5[1]<<" "<<tlv_type5[2]<<" "<<tlv_type5[3]<<endl;
+                //cout<<"tlv: "<<tlv_type5[0]<<" "<<tlv_type5[1]<<" "<<tlv_type5[2]<<" "<<tlv_type5[3]<<endl;
     
                 for(int i=0;i<5;i++)
                 {
