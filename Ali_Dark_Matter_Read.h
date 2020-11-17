@@ -104,7 +104,7 @@ private:
 
     TH1D* histo_invariantmass_K0 = new TH1D("histo inv mass K0","histo inv mass K0",50*3,0.4,0.6);
 
-    TH1D* histo_invariantmass_K0_type3 = new TH1D("histo_invariantmass_K0_type3","histo_invariantmass_K0_type3",50*3,0.4,0.6);
+    //TH1D* histo_invariantmass_K0_type3 = new TH1D("histo_invariantmass_K0_type3","histo_invariantmass_K0_type3",50*3,0.4,0.6);
     TH1D* histo_invariantmass_K0_type3_with_cuts_on_antip_and_K =
         new TH1D("histo_invariantmass_K0_type3_with_cuts_on_antip_and_K","histo_invariantmass_K0_type3_with_cuts_on_antip_and_K",50*3,0.4,0.6);
 
@@ -184,6 +184,17 @@ private:
     vector<TH1D*> histo_delta;
 
     vector<TH1D*> histos_m_squared_type5;
+    vector<TH1D*> histos_m_squared_type51;
+
+    vector<TH1D*> m_squared_type5_K_r;
+    vector<TH1D*> m_squared_type5_pi_minus_r;
+    vector<TH1D*> m_squared_type5_pi_plus_r;
+    vector<TH1D*> m_squared_type5_p_r;
+
+    vector<TH1D*> m_squared_type51_K_r;
+    vector<TH1D*> m_squared_type51_pi_minus_r;
+    vector<TH1D*> m_squared_type51_pi_plus_r;
+    vector<TH1D*> m_squared_type51_p_r;
     //--------------------------------------------------------------
 
     //counters----------------------------------------------------
@@ -324,9 +335,15 @@ private:
 
     TProfile* tprof = new TProfile("tprof","tprof",20,0.5,1.5);
 
+    vector<TH1D*> vec_invmass_Lambda_type5;
+    vector<TH1D*> vec_invmass_Lambda_type51;
+    vector<TH1D*> vec_invmass_S_type5;
+    vector<TH1D*> vec_invmass_S_type51;
+
     TH1D* histo_invmass_Lambda_type5 = new TH1D("histo_invmass_lambda_type5","histo_invmass_lambda_type5",50*2,1.1,1.13);
     TH1D* histo_invmass_Lambda_by_V0_type5 = new TH1D("histo_invmass_Lambda_by_V0_type5","histo_invmass_Lambda_by_V0_type5",50*2,1.1,1.13);
-    TH1D* histo_invmass_Lambda_dcaprim_type5 = new TH1D("histo_invmass_Lambda_dcaprim_type5","histo_invmass_Lambda_dcaprim_type5",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_dcaprim_line_type5 = new TH1D("histo_invmass_Lambda_dcaprim_line_type5","histo_invmass_Lambda_dcaprim_line_type5",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_dcaprim1_type5 = new TH1D("histo_invmass_Lambda_dcaprim1_type5","histo_invmass_Lambda_dcaprim1_type5",50*2,1.1,1.13);
     TH1D* histo_invmass_Lambda_antip_cut_type5 = new TH1D("histo_invmass_Lambda_antip_cut_type5","histo_invmass_Lambda_antip_cut_type5",50*2,1.1,1.13);
     TH1D* histo_invmass_Lambda_antip_cut_byV0_type51 = new TH1D("histo_invmass_Lambda_antip_cut_byV0_type51","histo_invmass_Lambda_antip_cut_byV0_type51",50*2,1.1,1.13);
     TH1D* histo_invmass_Lambda_radius_cut_type5 = new TH1D("histo_invmass_Lambda_radius_cut_type5","histo_invmass_Lambda_radius_cut_type5",50*2,1.1,1.13);
@@ -373,13 +390,51 @@ private:
 
     TH1D* histo_invmass_Lambda_type1 = new TH1D("histo_invmass_Lambda_type1","histo_invmass_Lambda_type1",50*2,1.1,1.13);
     TH1D* histo_invmass_Lambda_type1_by_track = new TH1D("histo_invmass_Lambda_type1_by_track","histo_invmass_Lambda_type1_by_track",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_type11 = new TH1D("histo_invmass_Lambda_type11","histo_invmass_Lambda_type11",50*2,1.1,1.13);
     TH1D* histo_invmass_Lambda_type11_by_track = new TH1D("histo_invmass_Lambda_type11_by_track","histo_invmass_Lambda_type11_by_track",50*2,1.1,1.13);
     TH1D* histo_invmass_Lambda_type1_dcaprim = new TH1D("histo_invmass_Lambda_type1_dcaprim","histo_invmass_Lambda_type1_dcaprim",50*2,1.1,1.13);
+    TH1D* histo_invmass_Lambda_type1_dcaprim_1 = new TH1D("histo_invmass_Lambda_type1_dcaprim_1","histo_invmass_Lambda_type1_dcaprim_1",50*2,1.1,1.13);
     TH1D* histo_invmass_Lambda_overlap_cut_type1 = new TH1D("histo_invmass_Lambda_overlap_cut_type1","histo_invmass_Lambda_overlap_cut_type1",50*2,1.1,1.13);
     TH1D* histo_invmass_Lambda_overlap_cut_dcaprim_type1 = new TH1D("histo_invmass_Lambda_overlap_cut_dcaprim_type1","histo_invmass_Lambda_overlap_cut_dcaprim_type1",50*2,1.1,1.13);
     TH1D* m_squared_proton_type1= new TH1D("m_squared_proton_type1", "m_squared_proton_type1",100,-0.1,1.5);
+    TH1D* m_squared_proton_type11= new TH1D("m_squared_proton_type11", "m_squared_proton_type11",100,-0.1,1.5);
 
     TH1D* histo_diff_inv_mass_type1 = new TH1D("histo_diff_inv_mass_type1","histo_diff_inv_mass_type1",50*2,-0.04,0.04);
+
+    TH1D* histo_invariantmass_K0_type1 = new TH1D("histo_invariantmass_K0_type1","histo_invariantmass_K0_type1",50*3,0.4,0.6);
+    TH1D* histo_invariantmass_K0_type1_dcaprim = new TH1D("histo_invariantmass_K0_type1_dcaprim","histo_invariantmass_K0_type1_dcaprim",50*3,0.4,0.6);
+    TH1D* histo_invariantmass_K0_type1_overlap = new TH1D("histo_invariantmass_K0_type1_overlap","histo_invariantmass_K0_type1_overlap",50*3,0.4,0.6);
+    TH1D* histo_invariantmass_K0_type1_cut_on_L = new TH1D("histo_invariantmass_K0_type1_cut_on_L","histo_invariantmass_K0_type1_cut_on_L",50*3,0.4,0.6);
+    TH1D* histo_invariantmass_K0_type11 = new TH1D("histo_invariantmass_K0_type11","histo_invariantmass_K0_type11",50*3,0.4,0.6);
+
+    TH1D* histo_invariantmass_K0_type3 = new TH1D("histo_invariantmass_K0_type3","histo_invariantmass_K0_type3",50*3,0.4,0.6);
+    TH1D* histo_invariantmass_K0_type31 = new TH1D("histo_invariantmass_K0_type31","histo_invariantmass_K0_type31",50*3,0.4,0.6);
+
+    vector<TH1D*> vec_invmass_K0_type3;
+    vector<TH1D*> vec_invmass_K0_type31;
+
+    vector<TH1D*> vec_m_squared_type_3_K;
+    vector<TH1D*> vec_m_squared_type_3_p;
+    vector<TH1D*> vec_m_squared_type_3_add_pi;
+    vector<TH1D*> vec_m_squared_type_3_K01;
+    vector<TH1D*> vec_m_squared_type_3_K02;
+
+    vector<TH1D*> vec_m_squared_type_31_K;
+    vector<TH1D*> vec_m_squared_type_31_p;
+    vector<TH1D*> vec_m_squared_type_31_add_pi;
+    vector<TH1D*> vec_m_squared_type_31_K01;
+    vector<TH1D*> vec_m_squared_type_31_K02;
+
+    vector<TH1D*> vec_m_sq_p_type_3_for_dcas;
+    vector<TH1D*> vec_m_sq_p_type_31_for_dcas;
+
+    vector<TH1D*> vec_m_squared_type_2_p;
+    vector<TH1D*> vec_m_squared_type_2_K_plus1;
+    vector<TH1D*> vec_m_squared_type_2_K_plus2;
+
+    vector<TH1D*> vec_m_squared_type_21_p;
+    vector<TH1D*> vec_m_squared_type_21_K_plus1;
+    vector<TH1D*> vec_m_squared_type_21_K_plus2;
 
 
 
