@@ -773,6 +773,11 @@ public:
 	    return fNumTracks;
         }
 
+        UShort_t getNumV0s() const
+	{
+	    return fNumV0s;
+        }
+
 	Ali_AS_Track* getTrack(Int_t i) const
 	{
 	    return i < fNumTracks ? (Ali_AS_Track*)((*fTracks)[i]) : NULL;
