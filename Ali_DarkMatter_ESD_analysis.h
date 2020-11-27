@@ -29,7 +29,11 @@ public:
     Ali_DarkMatter_ESD_analysis()
 	: AliAnalysisTaskSE(),
 	AS_Event(0),AS_V0(0),AS_Track(0),AS_NUCLEV(),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
-        h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),delta_dca_vs_delta(0x0),histo_delta(0x0),histo_m_squared(0x0),vec_histo_counter(0x0),vec_t_prof(0x0),vec_histo_inv_mass(0x0),counter_events(0)
+        h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),
+        delta_dca_vs_delta(0x0),histo_delta(0x0),histo_m_squared(0x0),vec_histo_counter(0x0),vec_t_prof(0x0),vec_histo_inv_mass(0x0),
+        dEdx_vs_charge_dot_momentum(0x0),vec_invmass_L_r(0x0),vec_invmass_K0_r(0x0),
+        counter_events(0)
+        
     {
 	cout << "" << endl;
 	cout << "***************************************************************************************" << endl;
@@ -97,6 +101,11 @@ public:
         vector<TProfile*> vec_t_prof;
 
         vector<TH1D*> vec_histo_inv_mass;
+
+        vector<TH2D*> dEdx_vs_charge_dot_momentum;
+
+        vector<TH1D*> vec_invmass_L_r;
+        vector<TH1D*> vec_invmass_K0_r;
 
         //vector<TH2D*> histo_delta;
 
