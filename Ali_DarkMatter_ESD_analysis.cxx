@@ -107,9 +107,10 @@ ClassImp(Ali_DarkMatter_ESD_analysis)
 
     //________________________________________________________________________
     Ali_DarkMatter_ESD_analysis::Ali_DarkMatter_ESD_analysis(const char *name)
-    : AliAnalysisTaskSE(name),
-    AS_Event(0),AS_V0(0),AS_Track(0),AS_NUCLEV(0),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
-    fListOfHistos(0x0),fTree(0x0),h_dca(0x0),h_dca_xyz(0x0), h2D_TPC_dEdx_vs_momentum(0x0), fPIDResponse(0), EsdTrackCuts(0)
+    : AliAnalysisTaskSE(),
+    AS_Event(0),AS_V0(0),AS_Track(0),as_trackP_save(0),AS_NUCLEV(),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
+    h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),delta_dca_vs_delta(0x0),histo_delta(0x0),histo_m_squared(0x0),vec_histo_counter(0x0),vec_t_prof(0x0),vec_histo_inv_mass(0x0),counter_events(0),
+    EsdTrackCuts(0)
 {
     // Constructor, do not edit! edit in .h file
 
@@ -925,6 +926,8 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     EsdTrackCuts->AliESDtrackCuts::SetPtRange(0.15,200.0); // 0.15, 200.0
     EsdTrackCuts->AliESDtrackCuts::SetEtaRange(-1.0,1.0); // 0.85
 
+    if(!as_trackP_save) as_trackP_save = new Ali_AS_Track();
+
     ProcInfo_t procInfo;
     gSystem->GetProcInfo(&procInfo);
     AliInfoF("Processing event %i", N_good_events);
@@ -1245,7 +1248,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
      Ali_AS_Track* as_trackP = new Ali_AS_Track;
-     Ali_AS_Track* as_trackP_save = new Ali_AS_Track;
+    // Ali_AS_Track* as_trackP_save = new Ali_AS_Track;
      Ali_AS_Track* as_trackN = new Ali_AS_Track;
      Ali_AS_Track* as_trackN_save = new Ali_AS_Track;
      Ali_AS_Track* tracka  =  new Ali_AS_Track;
@@ -4435,7 +4438,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     tlv_Kaon->~TLorentzVector();
     tlv_gamma->~TLorentzVector();
 
-    as_trackP_save->~Ali_AS_Track();
+    //as_trackP_save->~Ali_AS_Track();
     as_trackP->~Ali_AS_Track();
     as_trackN->~Ali_AS_Track();
     //as_trackN_save->~Ali_AS_Track();
