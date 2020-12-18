@@ -28,7 +28,9 @@ class Ali_DarkMatter_ESD_analysis : public AliAnalysisTaskSE
 public:
     Ali_DarkMatter_ESD_analysis()
 	: AliAnalysisTaskSE(),
-	AS_Event(0),AS_V0(0),AS_Track(0),as_trackP_save(0),AS_NUCLEV(),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
+        AS_Event(0),AS_V0(0),AS_Track(0),as_trackP_save(0),as_trackP(0),
+        as_trackN(0),as_trackN_save(0),tracka(0),trackb(0),event_track(0),
+        pos(0),momP(0),momN(0),AS_NUCLEV(),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
         h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),delta_dca_vs_delta(0x0),histo_delta(0x0),histo_m_squared(0x0),vec_histo_counter(0x0),vec_t_prof(0x0),vec_histo_inv_mass(0x0),counter_events(0),
         EsdTrackCuts(0)
     {
@@ -39,7 +41,7 @@ public:
 	cout << "***************************************************************************************" << endl;
 	//AS_Event       = new Ali_AS_Event();
         //AS_Track       = new Ali_AS_Track();
-        AS_V0 = new Ali_AS_V0();
+        //AS_V0 = new Ali_AS_V0();
         AS_Track       = new Ali_AS_Track();
         //as_trackP_save = new Ali_AS_Track();
 
@@ -78,7 +80,19 @@ public:
         Ali_AS_V0* AS_V0 ;
         //Ali_AS_NUCLEV* AS_NUCLEV;
         Ali_AS_Track* AS_Track;
+
         Ali_AS_Track* as_trackP_save;
+        Ali_AS_Track* as_trackP;
+        Ali_AS_Track* as_trackN;
+        Ali_AS_Track* as_trackN_save;
+        Ali_AS_Track* tracka;
+        Ali_AS_Track* trackb;
+        Ali_AS_Track* event_track;
+
+        Float_t* pos;
+        Float_t* momP;
+        Float_t* momN;
+
         Ali_AS_NUCLEV* AS_NUCLEV;
         Ali_AS_DM_particle* DMparticle;
        

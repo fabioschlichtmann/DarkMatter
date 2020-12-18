@@ -107,8 +107,10 @@ ClassImp(Ali_DarkMatter_ESD_analysis)
 
     //________________________________________________________________________
     Ali_DarkMatter_ESD_analysis::Ali_DarkMatter_ESD_analysis(const char *name)
-    : AliAnalysisTaskSE(),
-    AS_Event(0),AS_V0(0),AS_Track(0),as_trackP_save(0),AS_NUCLEV(),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
+    : AliAnalysisTaskSE(name),
+    AS_Event(0),AS_V0(0),AS_Track(0),as_trackP_save(0),as_trackP(0),
+    as_trackN(0),as_trackN_save(0),tracka(0),trackb(0),event_track(0),
+    pos(0),momP(0),momN(0),AS_NUCLEV(),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
     h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),delta_dca_vs_delta(0x0),histo_delta(0x0),histo_m_squared(0x0),vec_histo_counter(0x0),vec_t_prof(0x0),vec_histo_inv_mass(0x0),counter_events(0),
     EsdTrackCuts(0)
 {
@@ -927,6 +929,17 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     EsdTrackCuts->AliESDtrackCuts::SetEtaRange(-1.0,1.0); // 0.85
 
     if(!as_trackP_save) as_trackP_save = new Ali_AS_Track();
+    if(!as_trackP) as_trackP = new Ali_AS_Track();
+    if(!as_trackN) as_trackN = new Ali_AS_Track();
+    if(!as_trackN_save) as_trackN_save = new Ali_AS_Track();
+    if(!tracka) tracka = new Ali_AS_Track();
+    if(!trackb) trackb = new Ali_AS_Track();
+    if(!event_track) event_track = new Ali_AS_Track();
+    if(!pos) pos = new Float_t[3];
+    if(!momP) momP = new Float_t[3];
+    if(!momN) momN = new Float_t[3];
+
+    if(!AS_V0) AS_V0 = new Ali_AS_V0();
 
     ProcInfo_t procInfo;
     gSystem->GetProcInfo(&procInfo);
@@ -1161,6 +1174,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     AS_Event ->clearNUCLEVList();
     AS_Event ->clearDMparticleList();
     AS_Event ->clearV0List();
+    AS_Event ->clearTrackletList();
     AS_Event ->setTriggerWord(fESD->GetFiredTriggerClasses());
     AS_Event ->setx(PrimVertex->GetX());
     AS_Event ->sety(PrimVertex->GetY());
@@ -1244,21 +1258,22 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      vector<int> vec_SV3_track_ids_1;
 
      
-     AS_V0 = new Ali_AS_V0;
+     //AS_V0 = new Ali_AS_V0;
 
 
-     Ali_AS_Track* as_trackP = new Ali_AS_Track;
-    // Ali_AS_Track* as_trackP_save = new Ali_AS_Track;
-     Ali_AS_Track* as_trackN = new Ali_AS_Track;
-     Ali_AS_Track* as_trackN_save = new Ali_AS_Track;
-     Ali_AS_Track* tracka  =  new Ali_AS_Track;
-     Ali_AS_Track* trackb  =  new Ali_AS_Track;
+     //Ali_AS_Track* as_trackP = new Ali_AS_Track;
+     //Ali_AS_Track* as_trackP_save = new Ali_AS_Track;
+     //Ali_AS_Track* as_trackN = new Ali_AS_Track;
+     //Ali_AS_Track* as_trackN_save = new Ali_AS_Track;
+     //Ali_AS_Track* tracka  =  new Ali_AS_Track;
+     //Ali_AS_Track* trackb  =  new Ali_AS_Track;
 
-     Ali_AS_Track* event_track  =  new Ali_AS_Track;
+     //Ali_AS_Track* event_track  =  new Ali_AS_Track;
 
-     Float_t* pos = new Float_t[3];
-     Float_t* momP  = new Float_t[3];
-     Float_t* momN = new Float_t[3];
+
+     //Float_t* pos = new Float_t[3];
+     //Float_t* momP  = new Float_t[3];
+     //Float_t* momN = new Float_t[3];
 
      TLorentzVector* tlv_pos = new TLorentzVector();
      TLorentzVector* tlv_neg = new TLorentzVector();
@@ -3646,8 +3661,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     path_initA = 0.0;
     path_initB = 30.0;
 
-    Ali_AS_Track* ASTrack1 = new Ali_AS_Track;
-    Ali_AS_Track* ASTrack2 = new Ali_AS_Track;
+    //Ali_AS_Track* ASTrack1 = new Ali_AS_Track;
+    //Ali_AS_Track* ASTrack2 = new Ali_AS_Track;
 
     
     vector<int> createdV0s;
@@ -4390,8 +4405,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         as_trackN->~Ali_AS_Track();
     }
     */
-    ASTrack1->~Ali_AS_Track();
-    ASTrack2->~Ali_AS_Track();
+    //ASTrack1->~Ali_AS_Track();
+    //ASTrack2->~Ali_AS_Track();
 
     //cout<<"Ntracks: "<<Ntracks<<endl;
 
@@ -4409,6 +4424,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     //AS_Event->clearTrackList();
    // AS_Event ->clearV0List();
     AS_Event ->clearNUCLEVList();
+    AS_Event ->clearDMparticleList();
 
     //delete vectors and objects
     /*
@@ -4438,9 +4454,15 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     tlv_Kaon->~TLorentzVector();
     tlv_gamma->~TLorentzVector();
 
+    tlv_SV1->~TLorentzVector();
+    tlv_neutron->~TLorentzVector();
+    tlv_proton->~TLorentzVector();
+    tlv_SV2->~TLorentzVector();
+    tlv_SV3->~TLorentzVector();
+
     //as_trackP_save->~Ali_AS_Track();
-    as_trackP->~Ali_AS_Track();
-    as_trackN->~Ali_AS_Track();
+    //as_trackP->~Ali_AS_Track();
+    //as_trackN->~Ali_AS_Track();
     //as_trackN_save->~Ali_AS_Track();
     //tracka->~Ali_AS_Track();
     //trackb->~Ali_AS_Track();

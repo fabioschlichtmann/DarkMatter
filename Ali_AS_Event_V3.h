@@ -661,8 +661,10 @@ public:
     }
 	~Ali_AS_DM_particle()
 	{
-	   // delete fTracks;
-           // fTracks = NULL;
+            delete fTracks;
+            fTracks = NULL;
+            delete fV0s;
+            fV0s = NULL;
         }
 
 
@@ -768,6 +770,13 @@ public:
 	    fTracks      ->Clear();
         }
 
+        /*
+        void clearV0List()
+	{
+	    fNumV0s   = 0;
+	    fV0s      ->Clear();
+        }
+        */
 	UShort_t getNumTracks() const
 	{
 	    return fNumTracks;
@@ -1026,7 +1035,8 @@ public:
 	{
 	    fNumDMparticles   = 0;
 	    fDMparticles      ->Clear();
-	}
+        }
+
 
 	UShort_t getNumTracks() const
 	{
