@@ -4426,7 +4426,17 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     */
 
     //AS_Event->clearTrackList();
-    // AS_Event ->clearV0List();
+    // AS_Event ->cleargeV0List();
+    int numDMs = AS_Event->getNumDMs();
+
+    for(int i=0;i<numDMs;i++)
+    {
+        Ali_AS_DM_particle* DM = AS_Event->getDMparticle(i);
+        DM->clearTrackList();
+        DM->clearV0List();
+
+    }
+
     if(DMparticle) DMparticle->clearTrackList();
     if(DMparticle) DMparticle->clearV0List();
     if(AS_V0) AS_V0-> clearTrackList();
