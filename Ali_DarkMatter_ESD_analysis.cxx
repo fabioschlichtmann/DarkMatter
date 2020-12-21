@@ -1184,6 +1184,10 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     AS_Event ->setBeamIntAA(MeanBeamIntAA);
     AS_Event ->setT0zVertex(T0zVertex);
     //AS_Event ->setN_V0s(numberV0);
+
+    //DMparticle->clearTrackList();
+    //DMparticle->clearV0List();
+
    
 
     AliMultSelection *MultSelection = (AliMultSelection*) fESD->FindListObject("MultSelection");
@@ -4422,7 +4426,11 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     */
 
     //AS_Event->clearTrackList();
-   // AS_Event ->clearV0List();
+    // AS_Event ->clearV0List();
+    if(DMparticle) DMparticle->clearTrackList();
+    if(DMparticle) DMparticle->clearV0List();
+    if(AS_V0) AS_V0-> clearTrackList();
+
     AS_Event ->clearNUCLEVList();
     AS_Event ->clearDMparticleList();
 

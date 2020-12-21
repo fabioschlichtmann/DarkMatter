@@ -770,13 +770,13 @@ public:
 	    fTracks      ->Clear();
         }
 
-        /*
+
         void clearV0List()
 	{
 	    fNumV0s   = 0;
 	    fV0s      ->Clear();
         }
-        */
+
 	UShort_t getNumTracks() const
 	{
 	    return fNumTracks;
