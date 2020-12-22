@@ -661,10 +661,8 @@ public:
     }
 	~Ali_AS_DM_particle()
 	{
-            delete fTracks;
-            fTracks = NULL;
-            delete fV0s;
-            fV0s = NULL;
+	   // delete fTracks;
+           // fTracks = NULL;
         }
 
 
@@ -724,6 +722,12 @@ public:
         }
         */
 
+        void clearV0List()
+	{
+	    fNumV0s   = 0;
+	    fV0s      ->Clear();
+        }
+
         Ali_AS_V0* getV0(Int_t i) const
 	{
 	    return i < fNumV0s ? (Ali_AS_V0*)((*fV0s)[i]) : NULL;
@@ -768,13 +772,6 @@ public:
 	{
 	    fNumTracks   = 0;
 	    fTracks      ->Clear();
-        }
-
-
-        void clearV0List()
-	{
-	    fNumV0s   = 0;
-	    fV0s      ->Clear();
         }
 
 	UShort_t getNumTracks() const
@@ -1035,8 +1032,7 @@ public:
 	{
 	    fNumDMparticles   = 0;
 	    fDMparticles      ->Clear();
-        }
-
+	}
 
 	UShort_t getNumTracks() const
 	{
