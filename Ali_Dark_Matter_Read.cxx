@@ -968,12 +968,12 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
     TString inlistdir = "/home/ceres/schlichtmann/ESD_Analysis/Lists/";
 
     //3 channels
-    //TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/Pb_Pb_3_channels_1/";
+    TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/Pb_Pb_3_channels_1/";
 
 
 
     //Pb-Pb ch3 and ch5
-    TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/Pb_Pb_ch1_and_ch5_1/";
+    //TString pinputdir = "/misc/alidata121/alice_u/schlichtmann/Pb_Pb_ch1_and_ch5_1/";
 
 
 
@@ -1201,6 +1201,7 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         vec_histo_radius_variation_invariantmass_K0.push_back(histo_invariantmass_K0);
     }
 
+
     for(int i=0;i<45;i++)
     {
         TString name = "Lambda: radius >  ";
@@ -1298,7 +1299,6 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         
     }
 
-    
 
     for(int i=0;i<10;i++)
     {
@@ -1394,6 +1394,7 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
     m_squared_type51_pi_plus_r.resize(34);
     m_squared_type51_p_r.resize(34);
 
+
     for(int i=0;i<34;i++)
     {
         if(i<17)
@@ -1477,6 +1478,7 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
     vec_m_squared_type_31_add_pi.resize(34);
     vec_m_squared_type_31_K01.resize(34);
     vec_m_squared_type_31_K02.resize(34);
+
 
     for(int i=0;i<34;i++)
     {
@@ -1567,6 +1569,7 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
 
     }
 
+
     vec_m_sq_p_type_3_for_dcas.resize(5);
     vec_m_sq_p_type_31_for_dcas.resize(5);
     TString n[5];
@@ -1582,7 +1585,6 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         vec_m_sq_p_type_3_for_dcas[i] =  new TH1D(n[i].Data(),n[i].Data(),400,-0.4,1.4);
         vec_m_sq_p_type_31_for_dcas[i] =  new TH1D(n2[i].Data(),n2[i].Data(),400,-0.4,1.4);
     }
-
 
 
 
@@ -1618,6 +1620,7 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         vec_invmass_S_type51.push_back(histo_invmass_S_type51);
 
     }
+
 
     for(int i=0;i<6;i++)
     {
@@ -1699,7 +1702,6 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
     }
 
 
-
     for(int i=0;i<17;i++)
     {
         TString n1="invmass_K0_dca_cuts_type3_r_";
@@ -1736,7 +1738,6 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         vec_invmass_K0_type31.push_back(histo_invmass_K0_type31);
     }
 
-
     vec_m_squared_type_2_p.resize(17);
     vec_m_squared_type_2_K_plus1.resize(17);
     vec_m_squared_type_2_K_plus2.resize(17);
@@ -1745,7 +1746,8 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
     vec_m_squared_type_21_K_plus1.resize(17);
     vec_m_squared_type_21_K_plus2.resize(17);
 
-    for(int i=0;i<34;i++)
+
+    for(int i=0;i<17;i++)
     {
         int j = 5+i*5;
         TString n1 = "m_squared_ch2_p_r_";
@@ -1778,7 +1780,7 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
 
 
 
-
+   cout<<"end of initialize"<<endl;
    
 
     
@@ -1859,7 +1861,9 @@ void Ali_Dark_Matter_Read::copy_dm_params(Ali_AS_DM_particle* dm_in, Ali_AS_DM_p
     }
 
     int num_V0s=0;
+    if(type==2 || type==21) num_V0s = 1;
     if(type==3 || type==31) num_V0s = 2;
+    if(type==5 || type==51) num_V0s = 2;
 
     for(int i=0;i<num_V0s;i++)
     {
@@ -2872,6 +2876,21 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             if(dcaprim<1.){dcaprimcheck_1=0;}
         }
 
+        //for all types fill 10 for 3D view  //type 2,21,3,31,5,51
+        int typarr[6]={2,21,3,31,5,51};
+        for(int t = 0; t<6 ; t++)
+        {
+            if(type==typarr[t])
+            {
+                if(counter_arr[t]>=10){continue;}
+                AS_DM_particle->clearTrackList();
+                AS_DM_particle->clearV0List();
+                copy_dm_params(DM,AS_DM_particle);
+                Tree_AS_DM_particle ->Fill();
+                counter_arr[t]++;
+            }
+        }
+
         //type 1--------------------------------------------------------------------------------------
         if(type==1 || type==11)
         {
@@ -2940,6 +2959,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             if(dist>1.5 && type==1)
             {
+
 
             }
 
@@ -3010,10 +3030,12 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                     if(dcaprimcheck_type1)
                     {
+                        /*
                         AS_DM_particle->clearTrackList();
                         copy_dm_params(DM,AS_DM_particle);
                         Tree_AS_DM_particle ->Fill();
                         histo_counter_S->Fill(21);
+                        */
                     }
                 }
 
@@ -3146,10 +3168,12 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                     
                     if(dcaprimcheck==1)
                     {
+                        /*
                         AS_DM_particle->clearTrackList();
                         copy_dm_params(DM,AS_DM_particle);
                         Tree_AS_DM_particle ->Fill();
                         histo_counter_S->Fill(22);
+                        */
                     }
                 }
 
@@ -3408,11 +3432,12 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                         if(dcaprimcheck_type3)
                         {
+                            /*
                             AS_DM_particle->clearTrackList();
                             copy_dm_params(DM,AS_DM_particle);
                             Tree_AS_DM_particle ->Fill();
                             histo_counter_S->Fill(23);
-
+                            */
                         }
                    // }
                 }
@@ -3588,10 +3613,12 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
                 if(m_squared_antip>0.6 && m_squared_antip<1.2)
                 {
+                    /*
                     histo_counter_S->Fill(25);
                     AS_DM_particle->clearTrackList();
                     copy_dm_params(DM,AS_DM_particle);
                     Tree_AS_DM_particle ->Fill();
+                    */
                 }
             }
 
@@ -6396,9 +6423,9 @@ int Ali_Dark_Matter_Read::DM_Analysis_type5 (Ali_AS_DM_particle* DM,int mode)
         if(mode == 2) histo_invmass_Lambda_final_cut_type51 -> Fill(invmass_antilambda_1);
     }
 
-    AS_DM_particle->clearTrackList();
-    copy_dm_params(DM,AS_DM_particle);
-    Tree_AS_DM_particle ->Fill();
+    //AS_DM_particle->clearTrackList();
+    //copy_dm_params(DM,AS_DM_particle);
+    //Tree_AS_DM_particle ->Fill();
     //Tree_AS_DM_particle->Write();
 
 
