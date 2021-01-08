@@ -1689,14 +1689,16 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
 
     //-----------------------------------------------------------------------
 
+    int binningK0 = 50*6;
+
     for(int i=0;i<17;i++)
     {
         TString n1="invmass_K0_type3_r_";
         TString n2="invmass_K0_type31_r_";
         n1+=to_string(5+i*5);
         n2+=to_string(5+i*5);
-        TH1D* histo_invmass_K0_type3 = new TH1D(n1.Data(),n1.Data(),50*3,0.4,0.6);
-        TH1D* histo_invmass_K0_type31 = new TH1D(n2.Data(),n2.Data(),50*3,0.4,0.6);
+        TH1D* histo_invmass_K0_type3 = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
+        TH1D* histo_invmass_K0_type31 = new TH1D(n2.Data(),n2.Data(),binningK0,0.4,0.6);
         vec_invmass_K0_type3.push_back(histo_invmass_K0_type3);
         vec_invmass_K0_type31.push_back(histo_invmass_K0_type31);
     }
@@ -1708,8 +1710,8 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         TString n2="invmass_K0_dca_cuts_type31_r_";
         n1+=to_string(5+i*5);
         n2+=to_string(5+i*5);
-        TH1D* histo_invmass_K0_type3 = new TH1D(n1.Data(),n1.Data(),50*3,0.4,0.6);
-        TH1D* histo_invmass_K0_type31 = new TH1D(n2.Data(),n2.Data(),50*3,0.4,0.6);
+        TH1D* histo_invmass_K0_type3 = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
+        TH1D* histo_invmass_K0_type31 = new TH1D(n2.Data(),n2.Data(),binningK0,0.4,0.6);
         vec_invmass_K0_type3.push_back(histo_invmass_K0_type3);
         vec_invmass_K0_type31.push_back(histo_invmass_K0_type31);
     }
@@ -1720,8 +1722,8 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         TString n2="invmass_K0_dca_cuts_K_and_antipcut_type31_r_";
         n1+=to_string(5+i*5);
         n2+=to_string(5+i*5);
-        TH1D* histo_invmass_K0_type3 = new TH1D(n1.Data(),n1.Data(),50*3,0.4,0.6);
-        TH1D* histo_invmass_K0_type31 = new TH1D(n2.Data(),n2.Data(),50*3,0.4,0.6);
+        TH1D* histo_invmass_K0_type3 = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
+        TH1D* histo_invmass_K0_type31 = new TH1D(n2.Data(),n2.Data(),binningK0,0.4,0.6);
         vec_invmass_K0_type3.push_back(histo_invmass_K0_type3);
         vec_invmass_K0_type31.push_back(histo_invmass_K0_type31);
     }
@@ -1732,19 +1734,58 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         TString n2="invmass_K0_type31_r_of_K0";
         n1+=to_string(5+i*5);
         n2+=to_string(5+i*5);
-        TH1D* histo_invmass_K0_type3 = new TH1D(n1.Data(),n1.Data(),50*3,0.4,0.6);
-        TH1D* histo_invmass_K0_type31 = new TH1D(n2.Data(),n2.Data(),50*3,0.4,0.6);
+        TH1D* histo_invmass_K0_type3 = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
+        TH1D* histo_invmass_K0_type31 = new TH1D(n2.Data(),n2.Data(),binningK0,0.4,0.6);
         vec_invmass_K0_type3.push_back(histo_invmass_K0_type3);
         vec_invmass_K0_type31.push_back(histo_invmass_K0_type31);
     }
 
-    vec_m_squared_type_2_p.resize(17);
-    vec_m_squared_type_2_K_plus1.resize(17);
-    vec_m_squared_type_2_K_plus2.resize(17);
+    vec_vec_invmass_K0_type3.resize(17);
+    vec_vec_invmass_K0_type31.resize(17);
 
-    vec_m_squared_type_21_p.resize(17);
-    vec_m_squared_type_21_K_plus1.resize(17);
-    vec_m_squared_type_21_K_plus2.resize(17);
+    for(int i=0;i<17;i++)
+    {
+        vec_vec_invmass_K0_type3[i].resize(6);
+        vec_vec_invmass_K0_type31[i].resize(6);
+    }
+
+    float dcaprim_arr[6]={0.5,1,2,3,4,5};
+
+    for(int i=0;i<17;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
+            TString n1 = "invmass_K0_dca_cuts_m2_cuts_type3_r_";
+            n1+=to_string(5+i*5);
+            n1+="_dcaprimK0_";
+            n1+=to_string(dcaprim_arr[j]);
+            vec_vec_invmass_K0_type3[i][j] = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
+
+        }
+    }
+
+    for(int i=0;i<17;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
+            TString n1 = "invmass_K0_dca_cuts_m2_cuts_type31_r_";
+            n1+=to_string(5+i*5);
+            n1+="_dcaprimK0_";
+            n1+=to_string(dcaprim_arr[j]);
+            vec_vec_invmass_K0_type31[i][j] = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
+
+        }
+    }
+
+
+
+    vec_m_squared_type_2_p.resize(17*3);
+    vec_m_squared_type_2_K_plus1.resize(17*3);
+    vec_m_squared_type_2_K_plus2.resize(17*3);
+
+    vec_m_squared_type_21_p.resize(17*3);
+    vec_m_squared_type_21_K_plus1.resize(17*3);
+    vec_m_squared_type_21_K_plus2.resize(17*3);
 
 
     for(int i=0;i<17;i++)
@@ -1773,6 +1814,51 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         vec_m_squared_type_21_K_plus1[i] = new TH1D(n5.Data(),n5.Data(),400,-0.4,1.4);
         vec_m_squared_type_21_K_plus2[i] = new TH1D(n6.Data(),n6.Data(),400,-0.4,1.4);
 
+
+    }
+
+    for(int i=0;i<17;i++)
+    {
+        int j = 5+i*5;
+        TString n1 = "m_squared_ch2_dcacuts_p_r_";
+        TString n2 = "m_squared_ch2_dcacuts_K_plus1_r_";
+        TString n3 = "m_squared_ch2_dcacuts_K_plus2_r_";
+
+        TString n4 = "m_squared_ch21_dcacuts_p_r_";
+        TString n5 = "m_squared_ch21_dcacuts_K_plus1_r_";
+        TString n6 = "m_squared_ch21_dcacuts_K_plus2_r_";
+
+        n1+=to_string(j);
+        n2+=to_string(j);
+        n3+=to_string(j);
+        n4+=to_string(j);
+        n5+=to_string(j);
+        n6+=to_string(j);
+    
+        vec_m_squared_type_2_p[i+17] = new TH1D(n1.Data(),n1.Data(),400,-0.4,1.4);
+        vec_m_squared_type_2_K_plus1[i+17] = new TH1D(n2.Data(),n2.Data(),400,-0.4,1.4);
+        vec_m_squared_type_2_K_plus2[i+17] = new TH1D(n3.Data(),n3.Data(),400,-0.4,1.4);
+
+        vec_m_squared_type_21_p[i+17] = new TH1D(n4.Data(),n4.Data(),400,-0.4,1.4);
+        vec_m_squared_type_21_K_plus1[i+17] = new TH1D(n5.Data(),n5.Data(),400,-0.4,1.4);
+        vec_m_squared_type_21_K_plus2[i+17] = new TH1D(n6.Data(),n6.Data(),400,-0.4,1.4);
+
+
+    }
+
+    for(int i=0;i<17;i++)
+    {
+        int j = 5+i*5;
+        TString n1 = "m_squared_ch2_dcacuts_and_Kaoncut_p_r_";
+
+        TString n4 = "m_squared_ch21_dcacuts_and_Kaoncut_p_r_";
+
+        n1+=to_string(j);
+        n4+=to_string(j);
+    
+        vec_m_squared_type_2_p[i+17*2] = new TH1D(n1.Data(),n1.Data(),400,-0.4,1.4);
+
+        vec_m_squared_type_21_p[i+17*2] = new TH1D(n4.Data(),n4.Data(),400,-0.4,1.4);
 
     }
 
@@ -3103,6 +3189,12 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             //if(checkifsimiliar(track0,track2)){continue;}
             //if(checkifsimiliar(track1,track2)){continue;}
 
+            Float_t dcaprim_p,dcaprim_K1,dcaprim_K2;
+            FindDCAHelixPoint(pos_primary_vertex,track0,path_initA,path_initB,path_closest_to_point,dcaprim_K1);
+            FindDCAHelixPoint(pos_primary_vertex,track1,path_initA,path_initB,path_closest_to_point,dcaprim_p);
+            FindDCAHelixPoint(pos_primary_vertex,track2,path_initA,path_initB,path_closest_to_point,dcaprim_K2);
+
+
             TLorentzVector tlv_add_K = track2 -> get_TLV_part();
 
             double m_squared_add_Kaon = calculate_m_squared_by_TOF(track2);
@@ -3121,12 +3213,12 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                 float r = 5+i*5;
                 if(radius>r)
                 {
+                    //no dca cuts
                     if(type==2)
                     {
                         vec_m_squared_type_2_p[i]->Fill(m_squared_antip);
                         vec_m_squared_type_2_K_plus1[i]->Fill(m_squared_Kaon);
                         vec_m_squared_type_2_K_plus2[i]->Fill(m_squared_add_Kaon);
-                        
 
                     }
 
@@ -3136,6 +3228,35 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                         vec_m_squared_type_21_K_plus1[i]->Fill(m_squared_Kaon);
                         vec_m_squared_type_21_K_plus2[i]->Fill(m_squared_add_Kaon);
                     }
+
+                    //dcacuts
+                    if(dcaprim_p>2. && dcaprim_K1 > 2. && dcaprim_K2 > 2.)
+                    {
+                        if(type==2)
+                        {
+                            vec_m_squared_type_2_p[i+17]->Fill(m_squared_antip);
+                            vec_m_squared_type_2_K_plus1[i+17]->Fill(m_squared_Kaon);
+                            vec_m_squared_type_2_K_plus2[i+17]->Fill(m_squared_add_Kaon);
+
+                        }
+
+                        if(type==21)
+                        {
+                            vec_m_squared_type_21_p[i+17]->Fill(m_squared_antip);
+                            vec_m_squared_type_21_K_plus1[i+17]->Fill(m_squared_Kaon);
+                            vec_m_squared_type_21_K_plus2[i+17]->Fill(m_squared_add_Kaon);
+                        }
+
+                        //additional overlapcuts
+                        if( overlap_PID(track0, "K") &&  overlap_PID(track2, "K") )
+                        {
+                            if(type==2) vec_m_squared_type_2_p[i+17*2]->Fill(m_squared_antip);
+                            if(type==21) vec_m_squared_type_21_p[i+17*2]->Fill(m_squared_antip);
+                        }
+
+
+                    }
+
                 }
             }
 
@@ -3258,6 +3379,8 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                 }
             }
 
+            //---------------------------------------------------------------------
+
             float dcaprim_pi1, dcaprim_pi2, dca_to_S_pi1, dca_to_S_pi2;
 
             FindDCAHelixPoint(pos_primary_vertex,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dcaprim_pi1);
@@ -3265,8 +3388,11 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             FindDCAHelixPoint(S_vertex_pos,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dca_to_S_pi1);
             FindDCAHelixPoint(S_vertex_pos,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dca_to_S_pi2);
 
+            //double dcaprim_K0 = calculateMinimumDistanceStraightToPoint(pos_K0,dir_K0,pos_primary_vertex);
+
             double dca_K0_prim  =  calculateMinimumDistanceStraightToPoint(pos_K0,dir_K0,pos_primary_vertex);
 
+            float dcaprim_arr[6]={0.5,1,2,3,4,5};
 
             if(dist_K0_to_S>0.5 && dcaprim_pi1>2. && dcaprim_pi2 > 2. && dca_to_S_pi1>1. && dca_to_S_pi2 >1.)
             {
@@ -3274,6 +3400,20 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                  {
                      float min_rad = 5+i*5;
                      double min_dist = 0.075*min_rad+0.125;
+
+                     //vary dcaprim cut
+                     if(radius>min_rad && overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
+                     {
+                         for(int j=0;j<6;j++)
+                         {
+                             if(dca_K0_prim>dcaprim_arr[j])
+                             {
+                                 if(type==3) vec_vec_invmass_K0_type3[i][j]->Fill(invmass_K0);
+                                 if(type==31) vec_vec_invmass_K0_type31[i][j]->Fill(invmass_K0);
+                             }
+                         }
+                         
+                     }
 
                      //radius-dependent backtracking cut
                      if(dca_K0_prim<min_dist){continue;}
@@ -3296,6 +3436,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                          if(type==31) vec_invmass_K0_type31[i+17*3]->Fill(invmass_K0);
 
                      }
+
 
                  }
 
@@ -6902,15 +7043,29 @@ void Ali_Dark_Matter_Read::Save()
     output_histos ->mkdir("type2_msquared");
     output_histos ->cd("type2_msquared");
 
-    for(int i=0;i<17;i++)
+    for(int i=0;i<17*2;i++)
     {
         vec_m_squared_type_2_p[i]->Write();
         vec_m_squared_type_2_K_plus1[i]->Write();
         vec_m_squared_type_2_K_plus2[i]->Write();
 
+    }
+
+    for(int i=0;i<17*2;i++)
+    {
         vec_m_squared_type_21_p[i]->Write();
         vec_m_squared_type_21_K_plus1[i]->Write();
         vec_m_squared_type_21_K_plus2[i]->Write();
+    }
+
+    for(int i=17*2;i<17*3;i++)
+    {
+        vec_m_squared_type_2_p[i]->Write();
+    }
+
+    for(int i=17*2;i<17*3;i++)
+    {
+        vec_m_squared_type_21_p[i]->Write();
     }
 
     //--------------------------------------------------------------
@@ -6945,6 +7100,22 @@ void Ali_Dark_Matter_Read::Save()
     for(int i=0;i<4*17;i++)
     {
         vec_invmass_K0_type31[i]->Write();
+    }
+
+    for(int i=0;i<17;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
+            vec_vec_invmass_K0_type3[i][j]->Write();
+        }
+    }
+
+    for(int i=0;i<17;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
+            vec_vec_invmass_K0_type31[i][j]->Write();
+        }
     }
 
 

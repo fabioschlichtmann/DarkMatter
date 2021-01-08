@@ -212,6 +212,8 @@ private:
     int counter_skipped_track=0;
     int counter_draw =0;
 
+    int counter_arr[6]={0,0,0,0,0,0};
+
     vector<int> counters;
 
     //-----------------------------------------------------------------
@@ -412,6 +414,9 @@ private:
 
     vector<TH1D*> vec_invmass_K0_type3;
     vector<TH1D*> vec_invmass_K0_type31;
+
+    vector<vector<TH1D*>> vec_vec_invmass_K0_type3;
+    vector<vector<TH1D*>> vec_vec_invmass_K0_type31;
 
     vector<TH1D*> vec_m_squared_type_3_K;
     vector<TH1D*> vec_m_squared_type_3_p;
