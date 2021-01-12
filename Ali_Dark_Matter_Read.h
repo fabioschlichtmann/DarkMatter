@@ -91,6 +91,8 @@ private:
                                                          200,-8,8,200,-0.5,0.5);
 
 
+    int counter_DM_saved = 0;
+
     //histos from Macro
     TH1D* histo_invariantmass_lambda = new TH1D("histo inv mass lambda","histo inv mass lambda",50*2,1.1,1.13);
 
@@ -415,8 +417,12 @@ private:
     vector<TH1D*> vec_invmass_K0_type3;
     vector<TH1D*> vec_invmass_K0_type31;
 
+
     vector<vector<TH1D*>> vec_vec_invmass_K0_type3;
     vector<vector<TH1D*>> vec_vec_invmass_K0_type31;
+
+    vector<vector<TH1D*>> vec_vec_invmass_L_type5;
+    vector<vector<TH1D*>> vec_vec_invmass_L_type51;
 
     vector<TH1D*> vec_m_squared_type_3_K;
     vector<TH1D*> vec_m_squared_type_3_p;
@@ -440,6 +446,14 @@ private:
     vector<TH1D*> vec_m_squared_type_21_p;
     vector<TH1D*> vec_m_squared_type_21_K_plus1;
     vector<TH1D*> vec_m_squared_type_21_K_plus2;
+
+    vector<TH1D*> vec_S_mass_ch3;
+    vector<TH1D*> vec_S_mass_ch31;
+
+    TH1D* histo_angle_ch3 = new TH1D("histo_angle_ch3","histo_angle_ch3",360,-180,180);
+
+
+
 
 
 

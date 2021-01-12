@@ -520,6 +520,8 @@ double calculate_m_squared_by_TOF(Ali_AS_Track* track_in_func)
         //printf("dEdx: %f, momentum: %f, dca: %f, charge: %d, tofsignal: %f \n"
           //     ,TPCdEdx, momentum,dca, charge, tofsignal);
         if(tofsignal>99990){return -1;}
+        if(fabs(tofsignal)<1e-10){return -1;}
+        if(tofsignal<0){return -1;}
 
         double velocity = tracklength/tofsignal;
 
@@ -573,6 +575,42 @@ bool overlap_PID(Ali_AS_Track* track, TString particle)
 
     }
 
+
+}
+
+bool m2_cut_if_available(Ali_AS_Track* track, TString particle)
+{
+    double m = calculate_m_squared_by_TOF(track);
+    if(m == -1) return 1;
+
+    if(particle=="pi")
+    {
+        if( m < -0.2 || m > 0.2) return 0;
+    }
+
+    if(particle=="K")
+    {
+        if( m < 0.2 || m > 0.35) return 0;
+    }
+
+    if(particle=="p")
+    {
+        if( m < 0.6 || m > 1.2) return 0;
+    }
+
+    return 1;
+
+}
+
+void printtv3(TVector3 v,TString n)
+{
+    cout<<n<<": "<<v[0]<<" "<<v[1]<<" "<<v[2]<<endl;
+
+}
+
+void printtlv(TLorentzVector v,TString n)
+{
+    cout<<n<<": "<<v[0]<<" "<<v[1]<<" "<<v[2]<<endl;
 
 }
 
@@ -1687,6 +1725,18 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         vec_invmass_Lambda_type51.push_back(histo_invmass_Lambda_type51);
     }
 
+    for(int i=0;i<17;i++)
+    {
+        TString n1="invmass_lambda_dca_cuts_and_Kaoncut_distL_S4_type5_r_";
+        TString n2="invmass_lambda_dca_cuts_and_Kaoncut_distL_S4_type51_r_";
+        n1+=to_string(10+i*5);
+        n2+=to_string(10+i*5);
+        TH1D* histo_invmass_Lambda_type5 = new TH1D(n1.Data(),n1.Data(),50*2,1.1,1.13);
+        TH1D* histo_invmass_Lambda_type51 = new TH1D(n2.Data(),n2.Data(),50*2,1.1,1.13);
+        vec_invmass_Lambda_type5.push_back(histo_invmass_Lambda_type5);
+        vec_invmass_Lambda_type51.push_back(histo_invmass_Lambda_type51);
+    }
+
     //-----------------------------------------------------------------------
 
     int binningK0 = 50*6;
@@ -1740,13 +1790,47 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
         vec_invmass_K0_type31.push_back(histo_invmass_K0_type31);
     }
 
-    vec_vec_invmass_K0_type3.resize(17);
-    vec_vec_invmass_K0_type31.resize(17);
+    for(int i=0;i<17;i++)
+    {
+        TString n1="invmass_K0_dca_cutscombi2_type3_r_";
+        TString n2="invmass_K0_dca_cutscombi2_type31_r_";
+        n1+=to_string(5+i*5);
+        n2+=to_string(5+i*5);
+        TH1D* histo_invmass_K0_type3 = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
+        TH1D* histo_invmass_K0_type31 = new TH1D(n2.Data(),n2.Data(),binningK0,0.4,0.6);
+        vec_invmass_K0_type3.push_back(histo_invmass_K0_type3);
+        vec_invmass_K0_type31.push_back(histo_invmass_K0_type31);
+    }
 
     for(int i=0;i<17;i++)
     {
+        TString n1="invmass_K0_dca_cutscombi2_K_and_antipcut_type3_r_";
+        TString n2="invmass_K0_dca_cutscombi2_K_and_antipcut_type31_r_";
+        n1+=to_string(5+i*5);
+        n2+=to_string(5+i*5);
+        TH1D* histo_invmass_K0_type3 = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
+        TH1D* histo_invmass_K0_type31 = new TH1D(n2.Data(),n2.Data(),binningK0,0.4,0.6);
+        vec_invmass_K0_type3.push_back(histo_invmass_K0_type3);
+        vec_invmass_K0_type31.push_back(histo_invmass_K0_type31);
+    }
+
+    vec_vec_invmass_K0_type3.resize(17*2);
+    vec_vec_invmass_K0_type31.resize(17*2);
+
+    vec_vec_invmass_L_type5.resize(17*2);
+    vec_vec_invmass_L_type51.resize(17*2);
+
+    for(int i=0;i<17*2;i++)
+    {
         vec_vec_invmass_K0_type3[i].resize(6);
         vec_vec_invmass_K0_type31[i].resize(6);
+        
+    }
+
+    for(int i=0;i<2*17;i++)
+    {
+        vec_vec_invmass_L_type5[i].resize(6);
+        vec_vec_invmass_L_type51[i].resize(6);
     }
 
     float dcaprim_arr[6]={0.5,1,2,3,4,5};
@@ -1768,12 +1852,72 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
     {
         for(int j=0;j<6;j++)
         {
+            TString n1 = "invmass_K0_dca_cutscombi2_m2_cuts_type3_r_";
+            n1+=to_string(5+i*5);
+            n1+="_dcaprimK0_";
+            n1+=to_string(dcaprim_arr[j]);
+            vec_vec_invmass_K0_type3[i+17][j] = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
+
+        }
+    }
+
+    for(int i=0;i<17;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
             TString n1 = "invmass_K0_dca_cuts_m2_cuts_type31_r_";
             n1+=to_string(5+i*5);
             n1+="_dcaprimK0_";
             n1+=to_string(dcaprim_arr[j]);
             vec_vec_invmass_K0_type31[i][j] = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
 
+        }
+    }
+
+    for(int i=0;i<17;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
+            TString n1 = "invmass_K0_dca_cutscombi2_m2_cuts_type31_r_";
+            n1+=to_string(5+i*5);
+            n1+="_dcaprimK0_";
+            n1+=to_string(dcaprim_arr[j]);
+            vec_vec_invmass_K0_type31[i+17][j] = new TH1D(n1.Data(),n1.Data(),binningK0,0.4,0.6);
+
+        }
+    }
+
+    for(int i=0;i<17;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
+            TString n1 = "invmass_L_dca_cuts_Kcut_type5_r_";
+            n1+=to_string(5+i*5);
+            n1+="_dcaprimL_";
+            n1+=to_string(dcaprim_arr[j]);
+            TString n2 = "invmass_L_dca_cuts_Kcut_type51_r_";
+            n2+=to_string(5+i*5);
+            n2+="_dcaprimL_";
+            n2+=to_string(dcaprim_arr[j]);
+            vec_vec_invmass_L_type5[i][j] = new TH1D(n1.Data(),n1.Data(),50*2,1.1,1.13);
+            vec_vec_invmass_L_type51[i][j] = new TH1D(n2.Data(),n2.Data(),50*2,1.1,1.13);
+        }
+    }
+
+    for(int i=0;i<17;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
+            TString n1 = "invmass_L_dca_cuts_Kcut_distLtoS4_type5_r_";
+            n1+=to_string(5+i*5);
+            n1+="_dcaprimL_";
+            n1+=to_string(dcaprim_arr[j]);
+            TString n2 = "invmass_L_dca_cuts_Kcut_distLtoS4_type51_r_";
+            n2+=to_string(5+i*5);
+            n2+="_dcaprimL_";
+            n2+=to_string(dcaprim_arr[j]);
+            vec_vec_invmass_L_type5[i+17][j] = new TH1D(n1.Data(),n1.Data(),50*2,1.1,1.13);
+            vec_vec_invmass_L_type51[i+17][j] = new TH1D(n2.Data(),n2.Data(),50*2,1.1,1.13);
         }
     }
 
@@ -1862,6 +2006,40 @@ void Ali_Dark_Matter_Read::Init_tree(TString SEList)
 
     }
 
+    
+
+    TString str1 = "S_mass_ch3_normalband_r_40";
+    TString str2 = "S_mass_ch3_sideband_r_40";
+    TString str3 = "S_mass_ch31_normalband_r_40";
+    TString str4 = "S_mass_ch31_sideband_r_40";
+    TH1D* histo_S_mass_n = new TH1D(str1.Data(),str1.Data(),200,0,10);
+    TH1D* histo_S_mass_s = new TH1D(str2.Data(),str2.Data(),200,0,10);
+
+    TH1D* histo_S_mass_n_2 = new TH1D(str3.Data(),str3.Data(),200,0,10);
+    TH1D* histo_S_mass_s_2 = new TH1D(str4.Data(),str4.Data(),200,0,10);
+    
+    vec_S_mass_ch3.push_back(histo_S_mass_n);
+    vec_S_mass_ch3.push_back(histo_S_mass_s);
+
+    vec_S_mass_ch31.push_back(histo_S_mass_n_2);
+    vec_S_mass_ch31.push_back(histo_S_mass_s_2);
+
+    //dcacombi2
+    str1 = "S_mass_ch3_dcacombi2_normalband_r_40";
+    str2 = "S_mass_ch3_dcacombi2_sideband_r_40";
+    str3 = "S_mass_ch31_dcacombi2_normalband_r_40";
+    str4 = "S_mass_ch31_dcacombi2_sideband_r_40";
+    TH1D* histo_S_mass_n_3 = new TH1D(str1.Data(),str1.Data(),200,0,10);
+    TH1D* histo_S_mass_s_3 = new TH1D(str2.Data(),str2.Data(),200,0,10);
+
+    TH1D* histo_S_mass_n_4 = new TH1D(str3.Data(),str3.Data(),200,0,10);
+    TH1D* histo_S_mass_s_4 = new TH1D(str4.Data(),str4.Data(),200,0,10);
+    
+    vec_S_mass_ch3.push_back(histo_S_mass_n_3);
+    vec_S_mass_ch3.push_back(histo_S_mass_s_3);
+
+    vec_S_mass_ch31.push_back(histo_S_mass_n_4);
+    vec_S_mass_ch31.push_back(histo_S_mass_s_4);
 
 
 
@@ -2962,6 +3140,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             if(dcaprim<1.){dcaprimcheck_1=0;}
         }
 
+        /*
         //for all types fill 10 for 3D view  //type 2,21,3,31,5,51
         int typarr[6]={2,21,3,31,5,51};
         for(int t = 0; t<6 ; t++)
@@ -2976,6 +3155,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                 counter_arr[t]++;
             }
         }
+        */
 
         //type 1--------------------------------------------------------------------------------------
         if(type==1 || type==11)
@@ -3182,6 +3362,11 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                 track2 = DM->getTrack(2); //add K-
             }
 
+            //do m2 cut if available
+            if ( !m2_cut_if_available(track0, "K")) continue;
+            if ( !m2_cut_if_available(track1, "p")) continue;
+            if ( !m2_cut_if_available(track2, "K")) continue;
+
 
             Ali_AS_V0* S_V0 =  DM->getV0(0);
 
@@ -3341,6 +3526,23 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             Ali_AS_Track* track_K0_pi1 = DM->getTrack(3);        //jetzt richtig! //noch falsch!!!! da vorher falsch auf Grid
             Ali_AS_Track* track_K0_pi2 = DM->getTrack(4);
 
+            //tlv
+            TLorentzVector tlv_S = DM->get_tlv();
+            TLorentzVector tlv_proton;
+            tlv_proton.SetPxPyPzE(0.,0.,0.,mass_proton);
+
+            tlv_S = tlv_S-tlv_proton;
+
+            double S_mass = tlv_S.M();
+
+
+            //do for all tracks m2 cut if available
+            if ( !m2_cut_if_available(track_K, "K")) continue;
+            if ( !m2_cut_if_available(track_p, "p")) continue;
+            if ( !m2_cut_if_available(track_add_pi, "pi")) continue;
+            if ( !m2_cut_if_available(track_K0_pi1, "pi")) continue;
+            if ( !m2_cut_if_available(track_K0_pi2, "pi")) continue;
+
             TVector3 pos_K0 = DM->get_S2Vertex();
             TVector3 S_to_K0 = pos_K0-S_vertex_pos;
             TVector3 prim_to_K0 = pos_K0-pos_primary_vertex;
@@ -3348,15 +3550,28 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             double dist_K0_to_S = S_to_K0.Mag();
             double radiusK0 = prim_to_K0.Mag();
 
+            printtv3(vec_primtosec,"primtosec");
+            printtv3(S_to_K0,"S_to_K0");
+
+            double angle = vec_primtosec.Angle(S_to_K0);
+            angle = angle/3.14159*180;
+
+            histo_angle_ch3->Fill(angle);
+
             Ali_AS_V0* S_V0 = DM->getV0(0);
             Ali_AS_V0* K0_V0 = DM->getV0(1);
 
             double invmass_K0_by_tracks =  get_invariant_mass(track_K0_pi1, track_K0_pi2 , mass_pion,mass_pion , S_vertex_pos);
 
             TLorentzVector tlv_K0 = get_tlv_by_V0(mass_pion, mass_pion, K0_V0->getPpxpypz(), K0_V0->getNpxpypz() );
+            printtlv(tlv_K0,"tlvK0");
+            cout<<"angle: "<<angle<<endl;
             double invmass_K0 = tlv_K0.M();
             TVector3 dir_K0;
             dir_K0.SetXYZ(tlv_K0.Px(),tlv_K0.Py(),tlv_K0.Pz());
+
+            //cut on m2 if information is available:
+            double m_squared_add_pi = calculate_m_squared_by_TOF(track_add_pi);
 
             if(type==3) histo_invariantmass_K0_type3->Fill(invmass_K0);
             if(type==31) histo_invariantmass_K0_type31->Fill(invmass_K0);
@@ -3381,10 +3596,14 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             //---------------------------------------------------------------------
 
-            float dcaprim_pi1, dcaprim_pi2, dca_to_S_pi1, dca_to_S_pi2;
+            float dcaprim_pi1, dcaprim_pi2, dca_to_S_pi1, dca_to_S_pi2, dcaprim_add_pi, dcaprim_K, dcaprim_pro;
 
             FindDCAHelixPoint(pos_primary_vertex,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dcaprim_pi1);
             FindDCAHelixPoint(pos_primary_vertex,track_K0_pi2,path_initA,path_initB,path_closest_to_point,dcaprim_pi2);
+            FindDCAHelixPoint(pos_primary_vertex,track_add_pi,path_initA,path_initB,path_closest_to_point,dcaprim_add_pi);
+            FindDCAHelixPoint(pos_primary_vertex,track_K,path_initA,path_initB,path_closest_to_point,dcaprim_K);
+            FindDCAHelixPoint(pos_primary_vertex,track_p,path_initA,path_initB,path_closest_to_point,dcaprim_pro);
+
             FindDCAHelixPoint(S_vertex_pos,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dca_to_S_pi1);
             FindDCAHelixPoint(S_vertex_pos,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dca_to_S_pi2);
 
@@ -3394,7 +3613,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             float dcaprim_arr[6]={0.5,1,2,3,4,5};
 
-            if(dist_K0_to_S>0.5 && dcaprim_pi1>2. && dcaprim_pi2 > 2. && dca_to_S_pi1>1. && dca_to_S_pi2 >1.)
+            if(dist_K0_to_S>1.5 && dcaprim_pi1>2. && dcaprim_pi2 > 2. && dca_to_S_pi1>1. && dca_to_S_pi2 >1.)
             {
                  for(int i=0;i<17;i++)
                  {
@@ -3427,6 +3646,39 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                          {
                              if(type==3) vec_invmass_K0_type3[i+17*2]->Fill(invmass_K0);
                              if(type==31) vec_invmass_K0_type31[i+17*2]->Fill(invmass_K0);
+
+                             //3D for r_min=40
+                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 && counter_DM_saved < 500)
+                             {
+                                 AS_DM_particle->clearTrackList();
+                                 AS_DM_particle->clearV0List();
+                                 copy_dm_params(DM,AS_DM_particle);
+                                 Tree_AS_DM_particle ->Fill();
+                                 counter_DM_saved++;
+                             }
+
+                             //normalband
+                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 )
+                             {
+                                 if(type==3) vec_S_mass_ch3[0]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[0] ->Fill(S_mass);
+
+                             }
+
+                             //sideband1
+                             if(min_rad==40 && invmass_K0 > 0.461 && invmass_K0 < 0.488 )
+                             {
+                                 if(type==3) vec_S_mass_ch3[1]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[1] ->Fill(S_mass);
+                             }
+
+                             //sideband2
+                             if(min_rad==40 && invmass_K0 > 0.515 && invmass_K0 < 0.542)
+                             {
+                                 if(type==3) vec_S_mass_ch3[1]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[1] ->Fill(S_mass);
+                             }
+
                          }
                      }
 
@@ -3444,6 +3696,83 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             }
 
 
+            //dca combi 2-------------------------------------------------------------
+            if(dist_K0_to_S>1. && dcaprim_pi1>3. && dcaprim_pi2 > 3. &&                  //dcaprim auf 1.5, winkel 120 statt 90
+               dcaprim_add_pi>3. && dca_to_S_pi1>0.5 && dca_to_S_pi2 >0.5
+              && dcaprim_K > 0.5 && dcaprim_pro > 0.5 && fabs(angle)<90)
+            {
+                 for(int i=0;i<17;i++)
+                 {
+                     float min_rad = 5+i*5;
+                     double min_dist = 0.075*min_rad+0.125;
+    
+    
+                     //vary dcaprim cut
+                     if(radius>min_rad && overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
+                     {
+                         for(int j=0;j<6;j++)
+                         {
+                             if(dca_K0_prim>dcaprim_arr[j])
+                             {
+                                 if(type==3) vec_vec_invmass_K0_type3[i+17][j]->Fill(invmass_K0);
+                                 if(type==31) vec_vec_invmass_K0_type31[i+17][j]->Fill(invmass_K0);
+                             }
+                         }
+    
+                     }
+    
+                     //radius-dependent backtracking cut
+                     if(dca_K0_prim<min_dist){continue;}
+    
+                     if(radius>min_rad)
+                     {
+                         if(type==3) vec_invmass_K0_type3[i+17*4]->Fill(invmass_K0);
+                         if(type==31) vec_invmass_K0_type31[i+17*4]->Fill(invmass_K0);
+    
+                         if(overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
+                         {
+                             if(type==3) vec_invmass_K0_type3[i+17*5]->Fill(invmass_K0);
+                             if(type==31) vec_invmass_K0_type31[i+17*5]->Fill(invmass_K0);
+    
+                             //3D for r_min=40
+                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 )
+                             {
+                                 AS_DM_particle->clearTrackList();
+                                 AS_DM_particle->clearV0List();
+                                 copy_dm_params(DM,AS_DM_particle);
+                                 Tree_AS_DM_particle ->Fill();
+                             }
+    
+                             //normalband
+                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 )
+                             {
+                                 if(type==3) vec_S_mass_ch3[0+2]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[0+2] ->Fill(S_mass);
+    
+                             }
+    
+                             //sideband1
+                             if(min_rad==40 && invmass_K0 > 0.461 && invmass_K0 < 0.488 )
+                             {
+                                 if(type==3) vec_S_mass_ch3[1+2]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[1+2] ->Fill(S_mass);
+                             }
+    
+                             //sideband2
+                             if(min_rad==40 && invmass_K0 > 0.515 && invmass_K0 < 0.542)
+                             {
+                                 if(type==3) vec_S_mass_ch3[1+2]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[1+2] ->Fill(S_mass);
+                             }
+    
+                         }
+                     }
+                 }
+
+
+            }
+
+
 
             //----------------------------------------------------------------------------
 
@@ -3452,7 +3781,7 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             double m_squared_K = calculate_m_squared_by_TOF(track_K);
             double m_squared_p = calculate_m_squared_by_TOF(track_p);
-            double m_squared_add_pi = calculate_m_squared_by_TOF(track_add_pi);
+            
             double m_squared_K01 = calculate_m_squared_by_TOF(track_K0_pi1);
             double m_squared_K02 = calculate_m_squared_by_TOF(track_K0_pi2);
 
@@ -6075,6 +6404,13 @@ int Ali_Dark_Matter_Read::DM_Analysis_type5 (Ali_AS_DM_particle* DM,int mode)
     }
     //------------------------------------------------------------------
 
+    //do m2 cut if available
+    if ( !m2_cut_if_available(track_kaon, "K")) return 0;
+    if ( !m2_cut_if_available(track_pi_minus, "pi")) return 0;
+    if ( !m2_cut_if_available(track_pi_plus, "pi")) return 0;
+    if ( !m2_cut_if_available(track_lambda_pi, "pi")) return 0;
+    if ( !m2_cut_if_available(track_lambda_antip, "p")) return 0;
+
 
     //get TVector3s
     TVector3 pos_primary_vertex = DM->get_primVertex();
@@ -6084,10 +6420,12 @@ int Ali_Dark_Matter_Read::DM_Analysis_type5 (Ali_AS_DM_particle* DM,int mode)
     TVector3 prim_to_S = S_vertex_pos-pos_primary_vertex;
     TVector3 prim_to_Lambda = Lambda_vertex_pos - pos_primary_vertex;
     TVector3 L_to_S = S_vertex_pos-Lambda_vertex_pos;
+    TVector3 S_to_L = Lambda_vertex_pos-S_vertex_pos;
     double radius_L = prim_to_Lambda.Mag();
     TLorentzVector tlv_type5 = DM->get_tlv();
     double radius = prim_to_S.Mag();
     double dist_L_to_S = L_to_S.Mag();
+    double angle_1 = prim_to_S.Angle(S_to_L);
 
     //cut on r!!!!!!!!!!!!!!!!!
     if(radius<5){return 0;}
@@ -6159,6 +6497,8 @@ int Ali_Dark_Matter_Read::DM_Analysis_type5 (Ali_AS_DM_particle* DM,int mode)
         }
     }
 
+
+
     //look for lambdas and antilambdas at high radius
     Float_t path_initA = 0.0;
     Float_t path_initB = 30.0;
@@ -6166,15 +6506,23 @@ int Ali_Dark_Matter_Read::DM_Analysis_type5 (Ali_AS_DM_particle* DM,int mode)
     Float_t dca_closest_to_point  = 0;
     float dcaprim_antip;
     float dcaprim_pi;
+    float dcaprim_pi1;
+    float dcaprim_pi2;
+    float dcaprim_K;
     float dca_to_S_antip;
     float dca_to_S_pi;
     FindDCAHelixPoint(pos_primary_vertex,track_lambda_antip,path_initA,path_initB,path_closest_to_point,dcaprim_antip);
     FindDCAHelixPoint(pos_primary_vertex,track_lambda_pi,path_initA,path_initB,path_closest_to_point,dcaprim_pi);
+    FindDCAHelixPoint(pos_primary_vertex,track_pi_plus,path_initA,path_initB,path_closest_to_point,dcaprim_pi1);
+    FindDCAHelixPoint(pos_primary_vertex,track_pi_minus,path_initA,path_initB,path_closest_to_point,dcaprim_pi2);
+    FindDCAHelixPoint(pos_primary_vertex,track_kaon,path_initA,path_initB,path_closest_to_point,dcaprim_K);
+
     FindDCAHelixPoint(S_vertex_pos,track_lambda_antip,path_initA,path_initB,path_closest_to_point,dca_to_S_antip);
     FindDCAHelixPoint(S_vertex_pos,track_lambda_pi,path_initA,path_initB,path_closest_to_point,dca_to_S_pi);
 
     double dca_L_prim  =  calculateMinimumDistanceStraightToPoint(Lambda_vertex_pos,dir_L,pos_primary_vertex);
 
+    float dcaprim_arr[6]={0.5,1,2,3,4,5};
 
     if(dist_L_to_S>2. && dcaprim_antip>2. && dcaprim_pi > 2. && dca_to_S_antip>1. && dca_to_S_pi >1. && overlap_PID(track_lambda_antip, "p"))
     {
@@ -6198,6 +6546,35 @@ int Ali_Dark_Matter_Read::DM_Analysis_type5 (Ali_AS_DM_particle* DM,int mode)
 
                  if(radius_L>r && mode==0)  vec_invmass_Lambda_type5[12+17*3+i]->Fill(invmass_antilambda_1);
                  if(radius_L>r && mode==2)  vec_invmass_Lambda_type51[12+17*3+i]->Fill(invmass_antilambda_1);
+
+                 if(radius>r && dist_L_to_S>4. && dcaprim_pi1>1. && dcaprim_pi2>1. && dcaprim_K>1. && fabs(angle_1)<90)
+                 {
+                     if(mode==0) vec_invmass_Lambda_type5[12+17*4+i]->Fill(invmass_antilambda_1);
+                     if(mode==2) vec_invmass_Lambda_type51[12+17*4+i]->Fill(invmass_antilambda_1);
+                 }
+
+            }
+        }
+
+
+
+        for(int i=0;i<17;i++)
+        {
+            for(int j=0;j<6;j++)
+            {
+                double r = 10+i*5;
+                if(radius<r){continue;}
+                if(dca_L_prim<dcaprim_arr[j]){continue;}
+
+                if(overlap_PID(track_kaon, "K"))
+                {
+                    if(mode==0) vec_vec_invmass_L_type5[i][j]->Fill(invmass_antilambda_1);
+                    if(mode==2) vec_vec_invmass_L_type51[i][j]->Fill(invmass_antilambda_1);
+
+                    if(mode==0 && dist_L_to_S>4.) vec_vec_invmass_L_type5[i+17][j]->Fill(invmass_antilambda_1);
+                    if(mode==2 && dist_L_to_S>4.) vec_vec_invmass_L_type51[i+17][j]->Fill(invmass_antilambda_1);
+                }
+
 
             }
         }
@@ -6289,7 +6666,7 @@ int Ali_Dark_Matter_Read::DM_Analysis_type5 (Ali_AS_DM_particle* DM,int mode)
     if(mode == 2 ) histo_counter_type5->Fill(2+10);
 
     
-    TVector3 S_to_L = Lambda_vertex_pos-S_vertex_pos;
+    //TVector3 S_to_L = Lambda_vertex_pos-S_vertex_pos;
 
     //double dist_S_to_L = S_to_L.Mag();
     //if(dist_S_to_L<1.){return 0;;}
@@ -7087,22 +7464,32 @@ void Ali_Dark_Matter_Read::Save()
     histo_invariantmass_K0_type3_with_cuts_on_antip_and_K->Write();
     histo_invariantmass_K0_type3_with_cuts_on_K->Write();
 
+    histo_angle_ch3->Write();
     histo_invariantmass_K0_type3->Write();
+
+    vec_S_mass_ch3[0]->Write();
+    vec_S_mass_ch3[1]->Write();
+    vec_S_mass_ch3[2]->Write();
+    vec_S_mass_ch3[3]->Write();
+    vec_S_mass_ch31[0]->Write();
+    vec_S_mass_ch31[1]->Write();
+    vec_S_mass_ch31[2]->Write();
+    vec_S_mass_ch31[3]->Write();
 
     output_histos ->cd();
     output_histos ->mkdir("invmass_K0_type3");
     output_histos ->cd("invmass_K0_type3");
-    for(int i=0;i<4*17;i++)
+    for(int i=0;i<6*17;i++)
     {
         vec_invmass_K0_type3[i]->Write();
     }
 
-    for(int i=0;i<4*17;i++)
+    for(int i=0;i<6*17;i++)
     {
         vec_invmass_K0_type31[i]->Write();
     }
 
-    for(int i=0;i<17;i++)
+    for(int i=0;i<17*2;i++)
     {
         for(int j=0;j<6;j++)
         {
@@ -7110,7 +7497,7 @@ void Ali_Dark_Matter_Read::Save()
         }
     }
 
-    for(int i=0;i<17;i++)
+    for(int i=0;i<17*2;i++)
     {
         for(int j=0;j<6;j++)
         {
@@ -7214,13 +7601,29 @@ void Ali_Dark_Matter_Read::Save()
     output_histos ->mkdir("invmass_L_and_AntiL_ch5");
     output_histos ->cd("invmass_L_and_AntiL_ch5");
 
-    for(int i=0;i<12+4*17;i++)
+    for(int i=0;i<12+5*17;i++)
     {
         vec_invmass_Lambda_type5[i]->Write();
     }
-    for(int i=0;i<12+4*17;i++)
+    for(int i=0;i<12+5*17;i++)
     {
         vec_invmass_Lambda_type51[i]->Write();
+    }
+
+    for(int i=0;i<2*17;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
+            vec_vec_invmass_L_type5[i][j]->Write();
+        }
+    }
+
+    for(int i=0;i<17*2;i++)
+    {
+        for(int j=0;j<6;j++)
+        {
+            vec_vec_invmass_L_type51[i][j]->Write();
+        }
     }
 
     output_histos ->cd();
