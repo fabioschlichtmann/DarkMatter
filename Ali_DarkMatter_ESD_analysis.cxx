@@ -967,7 +967,7 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
 
 
     histo_delta.resize(3);
-    delta_dca_vs_delta.resize(3);
+    delta_dca_vs_delta.resize(7);
 
     histo_delta[0] = new TH1D("deltax","deltax",120,-20,20);
     fListOfHistos->Add(histo_delta[0]);
@@ -1025,6 +1025,15 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
 
 
     }
+
+    delta_dca_vs_delta[3]= new TH2D("dEdx","dEdx",1000,-5,5,1000,0,5e2);
+    delta_dca_vs_delta[4]= new TH2D("dEdx_cut_on_pi","dEdx_cut_on_pi",1000,-5,5,1000,0,5e2);
+    delta_dca_vs_delta[5]= new TH2D("dEdx_cut_on_K","dEdx_cut_on_K",1000,-5,5,1000,0,5e2);
+    delta_dca_vs_delta[6]= new TH2D("dEdx_cut_on_p","dEdx_cut_on_p",1000,-5,5,1000,0,5e2);
+    fListOfHistos->Add(delta_dca_vs_delta[3]);
+    fListOfHistos->Add(delta_dca_vs_delta[4]);
+    fListOfHistos->Add(delta_dca_vs_delta[5]);
+    fListOfHistos->Add(delta_dca_vs_delta[6]);
 
     vec_t_prof.resize(2);
     vec_t_prof[0]= new TProfile("tprof","tprof",20,0,20);
@@ -1710,6 +1719,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
     //m^2 plots for all tracks, p-Pb and Pb-Pb
+    //dE/dx plots
 
     for(Int_t i = 0; i < NumTracks; i++)
     {
@@ -1717,6 +1727,23 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         double mass_squared =  calculate_m_squared_by_TOF(track);
         histo_m_squared[0]->Fill(mass_squared);
 
+        Float_t TPCdEdx   = track->getTPCdEdx();
+        Float_t tofsignal = track->getTOFsignal();
+        Float_t dca       = track->getdca();
+        Float_t tracklength = track->getTrack_length();
+        int charge;
+        if(dca>0){charge = 1;}
+        else {charge = -1;}
+        TLorentzVector tlv = track->get_TLV_part();
+        double momentum = tlv.P();
+        double sigma_pi = fabs( track -> getnsigma_pi_TPC() );
+        double sigma_K = fabs( track -> getnsigma_K_TPC() );
+        double sigma_p = fabs( track -> getnsigma_p_TPC() );
+
+        delta_dca_vs_delta[3]->Fill(charge*momentum,TPCdEdx);
+        if(sigma_pi<2.) delta_dca_vs_delta[4]->Fill(charge*momentum,TPCdEdx);
+        if(sigma_K<2.) delta_dca_vs_delta[5]->Fill(charge*momentum,TPCdEdx);
+        if(sigma_p<2.) delta_dca_vs_delta[6]->Fill(charge*momentum,TPCdEdx);
 
     }
 
@@ -4500,7 +4527,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      */
 
     N_good_events++;
-    //test change
 
 }
 
