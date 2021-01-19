@@ -204,6 +204,27 @@ AliAnalysisGrid* CreateAlienHandler(TString mode="test",Int_t sub=0,TString fnam
 	}
     }
 
+    if(sub == 704) // 91 runs
+    {
+        // LHC18r Pb-Pb ??? TeV
+	plugin->SetGridDataDir("/alice/data/2018/LHC18r/"); //
+	plugin->SetGridWorkingDir(Form("%s/sub%d/",fname.Data(),sub)); // No idea
+	//plugin->SetDataPattern("/pass2_UD_CCUP/*/AliESDs.root"); // OK
+        plugin->SetDataPattern("/pass3/*/AliESDs.root"); // OK
+	plugin->SetAnalysisMacro(Form("TaskTrackAna%d.C",sub));
+	plugin->SetExecutable(Form("TaskTrackAna%d.sh",sub));
+	plugin->SetJDLName(Form("TaskTrackAna%d.jdl",sub));
+        plugin->SetRunPrefix("000");
+        plugin->SetAliPhysicsVersion("vAN-20210103-1");
+        Int_t runnumbers[] = {297595, 297590, 297588, 297558, 297544, 297542, 297541, 297540, 297537, 297512, 297483,  297479, 297452, 297451, 297450, 297446, 297442, 297441, 297415, 297414, 297413, 297406, 297405, 297380, 297379, 297372, 297367, 297366, 297363, 297336, 297335, 297333, 297332, 297317, 297315, 297312, 297311, 297310, 297278, 297222, 297221, 297218, 297196, 297195, 297193, 297133, 297132, 297129, 297128, 297124, 297123, 297119, 297118, 297117, 297085, 297035, 297031, 296966, 296941, 296938, 296935, 296934, 296932, 296931, 296930, 296903, 296900, 296899, 296894, 296852, 296851, 296850, 296848, 296839, 296838, 296836, 296835, 296799, 296794, 296793, 296790, 296787, 296786, 296785, 296784, 296781, 296752, 296694, 296693, 296691, 296690};
+
+        for(Int_t irun = 0; irun < 1; irun++)
+	{
+	    Printf("%d %d",irun,runnumbers[irun]);
+	    plugin->AddRunNumber(runnumbers[irun]);
+        }
+    }
+
 
 
     TString extraLibs;
