@@ -108,14 +108,10 @@ ClassImp(Ali_DarkMatter_ESD_analysis)
     //________________________________________________________________________
     Ali_DarkMatter_ESD_analysis::Ali_DarkMatter_ESD_analysis(const char *name)
     : AliAnalysisTaskSE(name),
-    AS_Event(0),AS_V0(0),AS_Track(0),as_trackP_save(0),as_trackP(0),
-    as_trackN(0),as_trackN_save(0),tracka(0),trackb(0),event_track(0),
-    pos(0),momP(0),momN(0),AS_NUCLEV(),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
-    h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),delta_dca_vs_delta(0x0),histo_delta(0x0),histo_m_squared(0x0),vec_histo_counter(0x0),vec_t_prof(0x0),vec_histo_inv_mass(0x0),counter_events(0),
-    EsdTrackCuts(0)
+    AS_Event(0),AS_V0(0),AS_Track(0),AS_NUCLEV(0),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
+    fListOfHistos(0x0),fTree(0x0),h_dca(0x0),h_dca_xyz(0x0), h2D_TPC_dEdx_vs_momentum(0x0), fPIDResponse(0), EsdTrackCuts(0)
 {
-    // Constructor, do not edit! edit in .h file
-
+    // Constructor
 
     // Define input and output slots here
     // Input slot #0 works with a TChain
@@ -243,8 +239,6 @@ double calculate_m_squared_by_TOF(Ali_AS_Track* track_in_func)
         //printf("dEdx: %f, momentum: %f, dca: %f, charge: %d, tofsignal: %f \n"
           //     ,TPCdEdx, momentum,dca, charge, tofsignal);
         if(tofsignal>99990){return -1;}
-        if(fabs(tofsignal)<1e-10){return -1;}
-        if(tofsignal<0){return -1;}
 
         double velocity = tracklength/tofsignal;
 
@@ -257,8 +251,6 @@ double calculate_m_squared_by_TOF(Ali_AS_Track* track_in_func)
         double speed_of_light_SI = 299792458.;
 
         velocity = velocity /speed_of_light_SI;  //now in units of c
-
-        if(fabs(velocity*velocity-1)<1e-10) return -1;
 
         // printf("velocity: %f \n", velocity);
 
@@ -289,6 +281,105 @@ TLorentzVector get_tlv_by_V0(double massP, double massN, float* momP, float* mom
     TLorentzVector tlv = tlvP + tlvN;
 
     return tlv;
+
+}
+
+void FindDCAHelixPoint(TVector3 space_vec, Ali_AS_Track* helixA, Float_t path_initA, Float_t path_initB, Float_t &pathA, Float_t &dcaAB)
+{
+    // V1.0
+    Float_t pA[2] = {path_initA,path_initB}; // the two start values for pathB, 0.0 is the origin of the helix at the first measured point
+    Float_t distarray[2];
+    TVector3 testA;
+    for(Int_t r = 0; r < 2; r++)
+    {
+	Double_t helix_point[3];
+	helixA->Evaluate(pA[r],helix_point);
+	testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]); // 3D-vector of helixA at path pA[r]
+	distarray[r] = (testA-space_vec).Mag(); // dca between helixA and helixB
+    }
+    Int_t loopcounter = 0;
+    Float_t scale = 1.0;
+    Float_t flip  = 1.0; // checks if the minimization direction changed
+    Float_t scale_length = 30.0;
+    while(fabs(scale_length) > 0.1 && loopcounter < 100) // stops when the length is too small
+    {
+	//cout << "n = " << loopcounter << ", pA[0] = " << pA[0]
+	//    << ", pA[1] = " << pA[1] << ", d[0] = " << distarray[0]
+	//    << ", d[1] = " << distarray[1] << ", flip = " << flip
+	//    << ", scale_length = " << scale_length << endl;
+	if(distarray[0] > distarray[1])
+	{
+	    if(loopcounter != 0)
+	    {
+		if(flip == 1.0) scale = 0.4; // if minimization direction changes -> go back, but only the way * 0.4
+		else scale = 0.7; // go on in this direction but only by the way * 0.7
+	    }
+	    scale_length = (pA[1]-pA[0])*scale; // the next length interval
+	    pA[0]     = pA[1] + scale_length; // the new path
+
+	    Double_t helix_point[3];
+	    helixA->Evaluate(pA[0],helix_point);
+	    testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]); // 3D-vector of helixA at path pA[0]
+	    distarray[0] = (testA-space_vec).Mag(); // new dca
+	    flip = 1.0;
+	}
+	else
+	{
+	    if(loopcounter != 0)
+	    {
+		if(flip == -1.0) scale = 0.4;
+		else scale = 0.7;
+	    }
+	    scale_length = (pA[0]-pA[1])*scale;
+	    pA[1]     = pA[0] + scale_length;
+
+	    Double_t helix_point[3];
+	    helixA->Evaluate(pA[1],helix_point);
+	    testA.SetXYZ(helix_point[0],helix_point[1],helix_point[2]); // 3D-vector of helixA at path pA[1]
+	    distarray[1] = (testA-space_vec).Mag();
+	    flip = -1.0;
+	}
+	loopcounter++;
+    }
+
+    if(loopcounter >= 100) cout << "WARNING: FindDCAHelixPoint exceeded maximum of 100 loops" << endl;
+
+    if(distarray[0] < distarray[1])
+    {
+	pathA = pA[0];
+	dcaAB = distarray[0];
+    }
+    else
+    {
+	pathA = pA[1];
+	dcaAB = distarray[1];
+    }
+}
+
+
+TLorentzVector get_tlv(Ali_AS_Track* track, double mass, TVector3 vertex)
+{
+    Float_t path_initA = 0.0;
+    Float_t path_initB = 30.0;
+
+    TLorentzVector tlv = track->get_TLV_part();
+    double momentum = tlv.P();
+    double energy  = sqrt(mass*mass+momentum*momentum);
+
+    Float_t path_closest_to_point,dca_closest_to_point;
+    Double_t r1[3];
+    Double_t r2[3];
+    FindDCAHelixPoint(vertex,track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
+    track->Evaluate(path_closest_to_point,r1);
+    track->Evaluate(path_closest_to_point+0.01,r2);
+    TVector3 dir;
+    dir.SetXYZ(r2[0]-r1[0],r2[1]-r1[1],r2[2]-r1[2]);
+    TVector3 unit_dir = dir.Unit();
+    TVector3 momentum_vec = unit_dir * momentum;
+    tlv.SetPxPyPzE(momentum_vec[0],momentum_vec[1],momentum_vec[2],energy);
+
+    return tlv;
+
 
 }
 
@@ -361,6 +452,88 @@ void fHelixAtoPointdca(TVector3 space_vec, Ali_AS_Track* helixA, Float_t &pathA,
     }
     //cout << "pathA = " << pathA << ", dcaAB = " << dcaAB << endl;
 }
+
+
+void fHelixAtoLinedca(TVector3 dirB, TVector3 spaceB, Ali_AS_Track* helixA, Float_t &pathA, Float_t &pathB, Float_t &dcaAB)
+{
+    Float_t pA[2] = {0.0,0.0};
+    Float_t pB[2] = {0.0,-5.0}; // the two start values for pathB, 0.0 is the origin of the helix at the first measured point
+    Float_t distarray[2];
+    Float_t path_closest_to_point = 0;
+    Float_t dca_closest_to_point  = 0;
+    Float_t path_initA = 0.0;
+    Float_t path_initB = 30.0;
+    double arr_testA[3];
+
+    TVector3 testA, testB;
+    for(Int_t r = 0; r < 2; r++)
+    {
+        testB     = spaceB+pB[r]*dirB;  // 3D-vector of helixB point at path pB[r]
+        FindDCAHelixPoint(testB, helixA, path_initA,path_initB, path_closest_to_point, dca_closest_to_point);
+        helixA->Evaluate(path_closest_to_point,arr_testA); // 3D-vector of helixA point at dca to testB
+        testA.SetXYZ(arr_testA[0],arr_testA[1],arr_testA[2]);
+        distarray[r] = (testA-testB).Mag(); // dca between helixA and helixB
+    }
+    Int_t loopcounter = 0;
+    Float_t scale = 1.0;
+    Float_t flip  = 1.0; // checks if the minimization direction changed
+    Float_t scale_length = 100.0;
+    while(fabs(scale_length) > 0.05 && loopcounter < 100) // stops when the length is too small
+    {
+        //cout << "n = " << loopcounter << ", pB[0] = " << pB[0]
+        //    << ", pB[1] = " << pB[1] << ", d[0] = " << distarray[0]
+        //    << ", d[1] = " << distarray[1] << ", flip = " << flip
+        //    << ", scale_length = " << scale_length << endl;
+        if(distarray[0] > distarray[1])
+        {
+            if(loopcounter != 0)
+            {
+                if(flip == 1.0) scale = 0.4; // if minimization direction changes -> go back, but only the way * 0.4
+                else scale = 0.7; // go on in this direction but only by the way * 0.7
+            }
+            scale_length = (pB[1]-pB[0])*scale; // the next length interval
+            pB[0]     = pB[1] + scale_length; // the new path
+            testB     = spaceB+pB[0]*dirB;  // 3D-vector of helixB point at path pB[r]
+            FindDCAHelixPoint(testB, helixA, path_initA,path_initB, path_closest_to_point, dca_closest_to_point);
+            pA[0]     = path_closest_to_point; // pathA at dca to helixB
+            helixA->Evaluate(pA[0],arr_testA); // new vector testA
+            testA.SetXYZ(arr_testA[0],arr_testA[1],arr_testA[2]);
+            distarray[0] = (testA-testB).Mag(); // new dca
+            flip = 1.0;
+        }
+        else
+        {
+            if(loopcounter != 0)
+            {
+                if(flip == -1.0) scale = 0.4;
+                else scale = 0.7;
+            }
+            scale_length = (pB[0]-pB[1])*scale;
+            pB[1]     = pB[0] + scale_length;
+            testB     = spaceB+pB[1]*dirB;  // 3D-vector of helixB point at path pB[r]
+            FindDCAHelixPoint(testB, helixA, path_initA,path_initB, path_closest_to_point, dca_closest_to_point);
+            pA[1]     = path_closest_to_point; // pathA at dca to helixB
+            helixA->Evaluate(pA[1],arr_testA); // pathA at dca to helixB
+            testA.SetXYZ(arr_testA[0],arr_testA[1],arr_testA[2]);
+            distarray[1] = (testA-testB).Mag();
+            flip = -1.0;
+        }
+        loopcounter++;
+    }
+    if(distarray[0] < distarray[1])
+    {
+        pathB = pB[0];
+        pathA = pA[0];
+        dcaAB = distarray[0];
+    }
+    else
+    {
+        pathB = pB[1];
+        pathA = pA[1];
+        dcaAB = distarray[1];
+    }
+}
+
 
 Int_t fCircle_Interception(Double_t x1, Double_t y1, Double_t r1, Double_t x2, Double_t y2, Double_t r2,
                                                Double_t &x1_c, Double_t &y1_c, Double_t &x2_c, Double_t &y2_c)
@@ -880,6 +1053,12 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     fParam = AliTRDCommonParam::Instance();
 
 
+    cout << "Digits file pointers deleted" << endl;
+
+    cout << "All pointers deleted" << endl;
+
+    //AliESDInputHandler *esdH = dynamic_cast<AliESDInputHandler*>
+    //    (AliAnalysisManager::GetAnalysisManager()->GetInputEventHandler());
 
     esdH = dynamic_cast<AliESDInputHandler*> (AliAnalysisManager::GetAnalysisManager()->GetInputEventHandler());
 
@@ -919,7 +1098,23 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     fEventNoInFile = -1;
     N_good_events  = 0;
 
-    if(!EsdTrackCuts) EsdTrackCuts = new AliESDtrackCuts();
+#if 0
+    // Connect the friends
+    //fESD ->SetESDfriend(esdFr);
+
+    esdFriendTreeFName = fname;
+    TString basename = gSystem->BaseName(esdFriendTreeFName);
+    Int_t index = basename.Index("#")+1;
+    basename.Remove(index);
+    basename += "AliESDfriends.root";
+    TString dirname = gSystem->DirName(esdFriendTreeFName);
+    dirname += "/";
+    esdFriendTreeFName = dirname + basename;
+    cout << "Friend name: " << esdFriendTreeFName.Data() << endl;
+#endif
+
+    EsdTrackCuts = new AliESDtrackCuts();
+
     EsdTrackCuts->AliESDtrackCuts::SetRequireTPCRefit(kTRUE);
     EsdTrackCuts->SetMinRatioCrossedRowsOverFindableClustersTPC(0.52);
     EsdTrackCuts->AliESDtrackCuts::SetMinNClustersTPC(50); // 60, Automatically requires TPC refitted tracks?
@@ -928,27 +1123,32 @@ Bool_t Ali_DarkMatter_ESD_analysis::UserNotify()
     EsdTrackCuts->AliESDtrackCuts::SetPtRange(0.15,200.0); // 0.15, 200.0
     EsdTrackCuts->AliESDtrackCuts::SetEtaRange(-1.0,1.0); // 0.85
 
-    if(!as_trackP_save) as_trackP_save = new Ali_AS_Track();
-    if(!as_trackP) as_trackP = new Ali_AS_Track();
-    if(!as_trackN) as_trackN = new Ali_AS_Track();
-    if(!as_trackN_save) as_trackN_save = new Ali_AS_Track();
-    if(!tracka) tracka = new Ali_AS_Track();
-    if(!trackb) trackb = new Ali_AS_Track();
-    if(!event_track) event_track = new Ali_AS_Track();
-    if(!pos) pos = new Float_t[3];
-    if(!momP) momP = new Float_t[3];
-    if(!momN) momN = new Float_t[3];
-
-    if(!AS_V0) AS_V0 = new Ali_AS_V0();
-
-    ProcInfo_t procInfo;
-    gSystem->GetProcInfo(&procInfo);
-    AliInfoF("Processing event %i", N_good_events);
-    AliInfoF("Memory: RSS: %3ld VMEM: %3ld",procInfo.fMemResident/1024,procInfo.fMemVirtual/1024);
+    // create the digits manager
+    cout << "" << endl;
+    cout << "________________________________________________________________________" << endl;
+    cout << "Created AliTRDdigitsManager" << endl;
+    cout << "" << endl;
 
    
     return kTRUE;
 }
+
+template<typename T = double>
+class Logspace {
+private:
+    T curValue, base, step;
+
+public:
+    Logspace(T first, T last, int num, T base = 10.0) : curValue(first), base(base){
+       step = (last - first)/(num-1);
+    }
+
+    T operator()() {
+        T retval = pow(base, curValue);
+        curValue += step;
+        return retval;
+    }
+};
 
 
 
@@ -967,7 +1167,7 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
 
 
     histo_delta.resize(3);
-    delta_dca_vs_delta.resize(7);
+    delta_dca_vs_delta.resize(3);
 
     histo_delta[0] = new TH1D("deltax","deltax",120,-20,20);
     fListOfHistos->Add(histo_delta[0]);
@@ -978,21 +1178,43 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
     histo_delta[2] = new TH1D("deltaz","deltaz",120,-20,20);
     fListOfHistos->Add(histo_delta[2]);
 
-    histo_m_squared.resize(1);
+    histo_m_squared.resize(10);
     histo_m_squared[0]= new TH1D("m_squared_all","m_squared_all",100,-0.4,1.4);
-    fListOfHistos->Add(histo_m_squared[0]);
 
-    vec_histo_counter.resize(4);
+
+    int bin_num = 600;
+
+    histo_m_squared[1]= new TH1D("m_squared_nodedx_bin1","m_squared_nodedx_bin1",bin_num,-0.4,1.4);
+    histo_m_squared[2]= new TH1D("m_squared_dedxpi_bin1","m_squared_dedxpi_bin1",bin_num,-0.4,1.4);
+    histo_m_squared[3]= new TH1D("m_squared_dedxK_bin1","m_squared_dedxK_bin1",bin_num,-0.4,1.4);
+    histo_m_squared[4]= new TH1D("m_squared_dedxp_bin1","m_squared_dedxp_bin1",bin_num,-0.4,1.4);
+
+    histo_m_squared[5]= new TH1D("m_squared_nodedx_bin2","m_squared_nodedx_bin2",bin_num,-0.4,1.4);
+    histo_m_squared[6]= new TH1D("m_squared_dedxpi_bin2","m_squared_dedxpi_bin2",bin_num,-0.4,1.4);
+    histo_m_squared[7]= new TH1D("m_squared_dedxK_bin2","m_squared_dedxK_bin2",bin_num,-0.4,1.4);
+    histo_m_squared[8]= new TH1D("m_squared_dedxp_bin2","m_squared_dedxp_bin2",bin_num,-0.4,1.4);
+
+    for(int i=0;i<9;i++)
+    {
+        fListOfHistos->Add(histo_m_squared[i]);
+    }
+
+
+
+    vec_histo_counter.resize(5);
     vec_histo_counter[0] = new TH1D("histo_counter","histo_counter",80,0.5,80.5);
     vec_histo_counter[1] = new TH1D("histo_pT_pions","histo_pT_pions",100,0,3);
     vec_histo_counter[2] = new TH1D("histo_pT_protons","histo_pT_protons",100,0,3);
     vec_histo_counter[3] = new TH1D("S_types","S_types",10,0.5,10.5);
+    vec_histo_counter[4] = new TH1D("angleV0","angleV0",100,-3.2,3.2*2);
+
     fListOfHistos->Add(vec_histo_counter[0]);
     fListOfHistos->Add(vec_histo_counter[1]);
     fListOfHistos->Add(vec_histo_counter[2]);
     fListOfHistos->Add(vec_histo_counter[3]);
+    fListOfHistos->Add(vec_histo_counter[4]);
 
-    vec_histo_inv_mass.resize(13);
+    vec_histo_inv_mass.resize(19);
     vec_histo_inv_mass[0] = new TH1D("invmass_K0_prim","invmass_K0_prim",100,0.4,0.6);
     vec_histo_inv_mass[1] = new TH1D("invmass_K0_nonprim","invmass_K0_nonprim",100,0.4,0.6);
     vec_histo_inv_mass[2] = new TH1D("invmass_K0_nonprim_and_r_10","invmass_K0_nonprim_and_r_10",100,0.4,0.6);
@@ -1009,7 +1231,13 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
     vec_histo_inv_mass[11] = new TH1D("invmass_AntiL_nonprim_1","invmass_AntiL_nonprim_1",100,1.1,1.13);
     vec_histo_inv_mass[12] = new TH1D("invmass_AntiL_nonprim_and_r_10","invmass_AntiL_nonprim_and_r_10",100,1.1,1.13);
 
-    for(int i=0;i<13;i++)
+    vec_histo_inv_mass[13] = new TH1D("invmass_xi_minus","invmass_xi_minus",200,1.2,1.4);
+    vec_histo_inv_mass[14] = new TH1D("invmass_xi_plus","invmass_xi_plus",200,1.2,1.4);
+
+    vec_histo_inv_mass[15] = new TH1D("invmass_omega_minus","invmass_omega_minus",200,1.5,1.8);
+    vec_histo_inv_mass[16] = new TH1D("invmass_omega_plus","invmass_omega_plus",200,1.5,1.8);
+
+    for(int i=0;i<17;i++)
     {
         fListOfHistos->Add(vec_histo_inv_mass[i]);
     }
@@ -1026,15 +1254,6 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
 
     }
 
-    delta_dca_vs_delta[3]= new TH2D("dEdx","dEdx",1000,-5,5,1000,0,5e2);
-    delta_dca_vs_delta[4]= new TH2D("dEdx_cut_on_pi","dEdx_cut_on_pi",1000,-5,5,1000,0,5e2);
-    delta_dca_vs_delta[5]= new TH2D("dEdx_cut_on_K","dEdx_cut_on_K",1000,-5,5,1000,0,5e2);
-    delta_dca_vs_delta[6]= new TH2D("dEdx_cut_on_p","dEdx_cut_on_p",1000,-5,5,1000,0,5e2);
-    fListOfHistos->Add(delta_dca_vs_delta[3]);
-    fListOfHistos->Add(delta_dca_vs_delta[4]);
-    fListOfHistos->Add(delta_dca_vs_delta[5]);
-    fListOfHistos->Add(delta_dca_vs_delta[6]);
-
     vec_t_prof.resize(2);
     vec_t_prof[0]= new TProfile("tprof","tprof",20,0,20);
     vec_t_prof[1]= new TProfile("tprof_range_0_2","",20,-0.05,1.95);
@@ -1044,26 +1263,124 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
     fListOfHistos->Add(vec_t_prof[0]);
     fListOfHistos->Add(vec_t_prof[1]);
 
+    double start = -1;
+    double stop = TMath::Log10(10);
+    int num = 200;
+    std::vector<double> vals;
+    std::generate_n(std::back_inserter(vals), num, Logspace<>(start,stop,num));
+    //for(double num : vals) std::cout << num << '\n';
+    double x_vals[2*num];
+    for(int i=0;i<(Int_t)vals.size();i++)
+    {
+        x_vals[i] = -vals[num-i-1];
+    }
+    for(int i=0;i<(Int_t)vals.size();i++)
+    {
+        x_vals[i+num] = vals[i];
+    }
+
+    start = 1;
+    stop = TMath::Log10(4000);
+    num = 200;
+    std::vector<double> valsy;
+    std::generate_n(std::back_inserter(valsy), num, Logspace<>(start,stop,num));
+    //for(double num : vals) std::cout << num << '\n';
+    double y_vals[num];
+    for(int i=0;i<(Int_t)valsy.size();i++)
+    {
+        y_vals[i] = valsy[i];
+        ////cout<<y_vals[i]<<endl;
+    }
+
+    double x_vals_lin[2*num];
+    for(int i=0;i<2*199;i++)
+    {
+        x_vals_lin[i] = -10 + 20./(2*199) * i;
+    }
+    
+
+
+
+    dEdx_vs_charge_dot_momentum.resize(3);
+    dEdx_vs_charge_dot_momentum[0] = new TH2D("dEdx_vs_charge_dot_momentum","dEdx_vs_charge_dot_momentum",
+                                              2*199,-10,10,199,y_vals);
+
+    dEdx_vs_charge_dot_momentum[1] = new TH2D("dEdx_vs_charge_dot_momentum_log","dEdx_vs_charge_dot_momentum_log",
+                                              2*199,x_vals,199,y_vals);
+
+    dEdx_vs_charge_dot_momentum[2] = new TH2D("mass_squared_vs_charge_dot_momentum","mass_squared_vs_charge_dot_momentum",
+                                              200,-8,8,200,-0.2,1.4);
+
+    
+
+
+    fListOfHistos->Add(dEdx_vs_charge_dot_momentum[0]);
+    fListOfHistos->Add(dEdx_vs_charge_dot_momentum[1]);
+    fListOfHistos->Add(dEdx_vs_charge_dot_momentum[2]);
+
+    vec_invmass_L_r.resize(70*6);
+    vec_invmass_K0_r.resize(70*3);
+
+    for(int i=0;i<70;i++)
+    {
+        TString n ="invmassL_r_";
+        n+=to_string(i);
+        vec_invmass_L_r[i] = new TH1D(n.Data(),n.Data(),100,1.1,1.13);
+        fListOfHistos->Add(vec_invmass_L_r[i]);
+
+        n ="invmassLprim_r_";
+        n+=to_string(i);
+        vec_invmass_L_r[i+70] = new TH1D(n.Data(),n.Data(),100,1.1,1.13);
+        fListOfHistos->Add(vec_invmass_L_r[i+70]);
+
+        n ="invmassLsec_r_";
+        n+=to_string(i);
+        vec_invmass_L_r[i+70*2] = new TH1D(n.Data(),n.Data(),100,1.1,1.13);
+        fListOfHistos->Add(vec_invmass_L_r[i+2*70]);
+
+        n ="invmassAntiL_r_";
+        n+=to_string(i);
+        vec_invmass_L_r[i+3*70] = new TH1D(n.Data(),n.Data(),100,1.1,1.13);
+        fListOfHistos->Add(vec_invmass_L_r[i+3*70]);
+
+        n ="invmassAntiLprim_r_";
+        n+=to_string(i);
+        vec_invmass_L_r[i+4*70] = new TH1D(n.Data(),n.Data(),100,1.1,1.13);
+        fListOfHistos->Add(vec_invmass_L_r[i+4*70]);
+
+        n ="invmassAntiLsec_r_";
+        n+=to_string(i);
+        vec_invmass_L_r[i+5*70] = new TH1D(n.Data(),n.Data(),100,1.1,1.13);
+        fListOfHistos->Add(vec_invmass_L_r[i+5*70]);
+    }
+
+
+    for(int i=0;i<70;i++)
+    {
+        TString n ="invmassK0_r_";
+        n+=to_string(i);
+        vec_invmass_K0_r[i] = new TH1D(n.Data(),n.Data(),100,0.4,0.6);
+        fListOfHistos->Add(vec_invmass_K0_r[i]);
+
+        n ="invmassK0prim_r_";
+        n+=to_string(i);
+        vec_invmass_K0_r[i+70] = new TH1D(n.Data(),n.Data(),100,0.4,0.6);
+        fListOfHistos->Add(vec_invmass_K0_r[i+70]);
+
+        n ="invmassK0sec_r_";
+        n+=to_string(i);
+        vec_invmass_K0_r[i+2*70] = new TH1D(n.Data(),n.Data(),100,0.4,0.6);
+        fListOfHistos->Add(vec_invmass_K0_r[i+2*70]);
+
+    }
+
+
 
     OpenFile(2);
     cout << "File opened" << endl;
 
     AS_Event       = new Ali_AS_Event();
     AS_Track       = new Ali_AS_Track();
-
-    //pos = new Float_t[3];
-    //momP  = new Float_t[3];
-    //momN = new Float_t[3];
-    /*
-    tlv_pos = new TLorentzVector();
-    tlv_neg = new TLorentzVector();
-    tlv_Lambda = new TLorentzVector();
-    tlv_Kaon = new TLorentzVector();
-    tlv_gamma = new TLorentzVector();
-    */
-    //as_trackP_save = new Ali_AS_Track();
-
-    //as_trackP = new Ali_AS_Track();
    
     Tree_AS_Event  = NULL;
     Tree_AS_Event  = new TTree("Tree_AS_Event" , "AS_Events" );
@@ -1080,6 +1397,27 @@ void Ali_DarkMatter_ESD_analysis::UserCreateOutputObjects()
 
 
 //________________________________________________________________________
+Bool_t Ali_DarkMatter_ESD_analysis::NextEvent(Bool_t preload)
+{
+    fEventNoInFile++;
+    //cout << "fEventNoInFile: " << fEventNoInFile << endl;
+    //fDigitsLoadedFlag = kFALSE;
+
+
+    if(preload)
+    {
+	//cout << "Preload"  << endl;
+        //return ReadDigits();
+        return kTRUE;
+    }
+    else
+    {
+	//cout << "No preload"  << endl;
+	return kTRUE;
+    }
+}
+
+//________________________________________________________________________
 void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 {
     //cout << "" << endl;
@@ -1089,6 +1427,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     //-----------------------------------------------------------------
     // IMPORTANT: call NextEvent() for book-keeping
+    NextEvent();
     //if(fEventNoInFile > 50) return;
     //-----------------------------------------------------------------
 
@@ -1183,7 +1522,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     AS_Event ->clearNUCLEVList();
     AS_Event ->clearDMparticleList();
     AS_Event ->clearV0List();
-    AS_Event ->clearTrackletList();
     AS_Event ->setTriggerWord(fESD->GetFiredTriggerClasses());
     AS_Event ->setx(PrimVertex->GetX());
     AS_Event ->sety(PrimVertex->GetY());
@@ -1193,10 +1531,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     AS_Event ->setBeamIntAA(MeanBeamIntAA);
     AS_Event ->setT0zVertex(T0zVertex);
     //AS_Event ->setN_V0s(numberV0);
-
-    //DMparticle->clearTrackList();
-    //DMparticle->clearV0List();
-
    
 
     AliMultSelection *MultSelection = (AliMultSelection*) fESD->FindListObject("MultSelection");
@@ -1218,9 +1552,10 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     }
 
-     Double_t pN[3];
-     Double_t pP[3];
-
+     Double_t *pN;
+     Double_t *pP;
+     pN = new Double_t[3];
+     pP = new Double_t[3];
 
      double xprim, yprim, zprim;
      xprim = PrimVertex->GetX();
@@ -1232,7 +1567,12 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
      vector<int> all_used_positive_track_ids_for_V0s;
      vector<int> all_used_negative_track_ids_for_V0s;
-     
+
+     TLorentzVector* tlv_pos = new TLorentzVector();
+     TLorentzVector* tlv_neg = new TLorentzVector();
+     TLorentzVector* tlv_Lambda = new TLorentzVector();
+     TLorentzVector* tlv_Kaon = new TLorentzVector();
+     TLorentzVector* tlv_gamma = new TLorentzVector();
      TLorentzVector  tlv_anti_p_and_K_plus;
      TLorentzVector  tlv_p_and_K_minus;
 
@@ -1271,28 +1611,19 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
      vector<int> vec_SV3_track_ids_1;
 
      
-     //AS_V0 = new Ali_AS_V0;
+     Ali_AS_V0* AS_V0 = new Ali_AS_V0;
+     Ali_AS_Track* as_trackP = new Ali_AS_Track;
+     Ali_AS_Track* as_trackP_save = new Ali_AS_Track;
+     Ali_AS_Track* as_trackN = new Ali_AS_Track;
+     Ali_AS_Track* as_trackN_save = new Ali_AS_Track;
+     Ali_AS_Track* tracka  =  new Ali_AS_Track;
+     Ali_AS_Track* trackb  =  new Ali_AS_Track;
 
+     Ali_AS_Track* event_track  =  new Ali_AS_Track;
 
-     //Ali_AS_Track* as_trackP = new Ali_AS_Track;
-     //Ali_AS_Track* as_trackP_save = new Ali_AS_Track;
-     //Ali_AS_Track* as_trackN = new Ali_AS_Track;
-     //Ali_AS_Track* as_trackN_save = new Ali_AS_Track;
-     //Ali_AS_Track* tracka  =  new Ali_AS_Track;
-     //Ali_AS_Track* trackb  =  new Ali_AS_Track;
-
-     //Ali_AS_Track* event_track  =  new Ali_AS_Track;
-
-
-     //Float_t* pos = new Float_t[3];
-     //Float_t* momP  = new Float_t[3];
-     //Float_t* momN = new Float_t[3];
-
-     TLorentzVector* tlv_pos = new TLorentzVector();
-     TLorentzVector* tlv_neg = new TLorentzVector();
-     TLorentzVector* tlv_Lambda = new TLorentzVector();
-     TLorentzVector* tlv_Kaon = new TLorentzVector();
-     TLorentzVector* tlv_gamma = new TLorentzVector();
+     Float_t* pos = new Float_t[3];
+     Float_t* momP = new Float_t[3];
+     Float_t* momN = new Float_t[3];
 
      double dcaP=-10000;
      double dcaN=-10000;
@@ -1529,6 +1860,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         AS_Track -> settbitsshared(tbits_shared);
 
 
+        dEdx_vs_charge_dot_momentum[0]->Fill(charge*Track_p,TPC_signal);
+        dEdx_vs_charge_dot_momentum[1]->Fill(charge*Track_p,TPC_signal);
 
 
 
@@ -1554,7 +1887,60 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             copy_track_params(AS_Track,event_track);
 
         }
+                    /*
+        histo_m_squared[1]= new TH1D("m_squared_nodedx","m_squared_nodedx",100,-0.4,1.4);
+        histo_m_squared[2]= new TH1D("m_squared_dedxpi","m_squared_dedxpi",100,-0.4,1.4);
+        histo_m_squared[3]= new TH1D("m_squared_dedxK","m_squared_dedxK",100,-0.4,1.4);
+        histo_m_squared[4]= new TH1D("m_squared_dedxp","m_squared_dedxp",100,-0.4,1.4);
+        */
 
+        //look at m^2
+        double mass_squared =  calculate_m_squared_by_TOF(AS_Track);
+
+        //if(mass_squared==0.) cout<<"m squared: "<<mass_squared<<endl;
+        double sigma_pi = fabs(AS_Track-> getnsigma_pi_TPC());
+        double sigma_K = fabs(AS_Track-> getnsigma_K_TPC());
+        double sigma_p = fabs(AS_Track-> getnsigma_p_TPC());
+
+        double momentum_tlv = TL_vec.P();
+
+        //bin 1 0.5<p<0.8
+        if(0.5<momentum_tlv && momentum_tlv<0.8 && mass_squared!=0.)
+        {
+            histo_m_squared[1]->Fill(mass_squared);
+
+            if(sigma_pi<2.) histo_m_squared[2]->Fill(mass_squared);
+            if(sigma_K<2.) histo_m_squared[3]->Fill(mass_squared);
+            if(sigma_p<2.) histo_m_squared[4]->Fill(mass_squared);
+        }
+
+        //bin 2
+        if(1.5<momentum_tlv && momentum_tlv<2.0 && mass_squared!=0.)
+        {
+            histo_m_squared[5]->Fill(mass_squared);
+
+            if(sigma_pi<2.) histo_m_squared[6]->Fill(mass_squared);
+            if(sigma_K<2.) histo_m_squared[7]->Fill(mass_squared);
+            if(sigma_p<2.) histo_m_squared[8]->Fill(mass_squared);
+        }
+
+        if(mass_squared!=0)
+        {
+            dEdx_vs_charge_dot_momentum[2]->Fill(charge*momentum_tlv,mass_squared);
+        }
+
+        /*
+         double sigma_pi_P = fabs(as_trackP-> getnsigma_pi_TPC());
+        double sigma_pi_N = fabs(as_trackN-> getnsigma_pi_TPC());
+        double sigma_K_P  = fabs(as_trackP-> getnsigma_K_TPC());
+        double sigma_K_N  = fabs(as_trackN-> getnsigma_K_TPC());
+        double sigma_p_P  = fabs(as_trackP-> getnsigma_p_TPC());
+        double sigma_p_N  = fabs(as_trackN-> getnsigma_p_TPC());
+         */
+
+
+
+        //---------------------------------------------------------------
 
         Double_t TOF_raw = track -> GetTOFsignalRaw();
         Double_t TOF_chi2 = track -> GetTOFchi2();
@@ -1719,7 +2105,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
 
     //m^2 plots for all tracks, p-Pb and Pb-Pb
-    //dE/dx plots
 
     for(Int_t i = 0; i < NumTracks; i++)
     {
@@ -1727,23 +2112,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         double mass_squared =  calculate_m_squared_by_TOF(track);
         histo_m_squared[0]->Fill(mass_squared);
 
-        Float_t TPCdEdx   = track->getTPCdEdx();
-        Float_t tofsignal = track->getTOFsignal();
-        Float_t dca       = track->getdca();
-        Float_t tracklength = track->getTrack_length();
-        int charge;
-        if(dca>0){charge = 1;}
-        else {charge = -1;}
-        TLorentzVector tlv = track->get_TLV_part();
-        double momentum = tlv.P();
-        double sigma_pi = fabs( track -> getnsigma_pi_TPC() );
-        double sigma_K = fabs( track -> getnsigma_K_TPC() );
-        double sigma_p = fabs( track -> getnsigma_p_TPC() );
-
-        delta_dca_vs_delta[3]->Fill(charge*momentum,TPCdEdx);
-        if(sigma_pi<2.) delta_dca_vs_delta[4]->Fill(charge*momentum,TPCdEdx);
-        if(sigma_K<2.) delta_dca_vs_delta[5]->Fill(charge*momentum,TPCdEdx);
-        if(sigma_p<2.) delta_dca_vs_delta[6]->Fill(charge*momentum,TPCdEdx);
 
     }
 
@@ -1805,7 +2173,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //-------------------------------------------------
 
         radius = sqrt ( (x-xprim)*(x-xprim) + (y-yprim)*(y-yprim) + (z-zprim)*(z-zprim)  );
-        if(radius<5.){continue;}
+        //if(radius<5.){continue;}
         //radius cut???
 
 
@@ -1826,6 +2194,12 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         vec_primtoV0.SetXYZ((x-xprim),(y-yprim),(z-zprim));
         TVector3 unit_prim_to_V0;
         unit_prim_to_V0 = vec_primtoV0.Unit();
+
+        TVector3 mom_V0;
+        mom_V0.SetXYZ(pxP+pxN,pyP+pyN,pzP+pzN);
+
+        double angle_V0 = vec_primtoV0.Angle(mom_V0);
+        vec_histo_counter[4]->Fill(angle_V0);
 
         //create tracks for positive and negative particle
         //Ali_AS_Track* as_trackP = AS_V0->createTrack();
@@ -2101,6 +2475,14 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             TVector3 dir;
             dir.SetXYZ(tlv_Kaon->Px(),tlv_Kaon->Py(),tlv_Kaon->Pz());
             double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir,pos_primary_vertex);
+            double min_dist = 0.075*radius+0.125;
+
+            for(int j=0;j<70;j++)
+            {
+                if(radius>j) vec_invmass_K0_r[j]->Fill(invariantmass);
+                if(radius>j && dist<0.5) vec_invmass_K0_r[j+70]->Fill(invariantmass);
+                if(radius>j && dist>min_dist) vec_invmass_K0_r[j+2*70]->Fill(invariantmass);
+            }
 
             if(invariantmass< (0.4981+0.0042*6) && invariantmass > (0.4981-0.0042*6))
             {
@@ -2117,6 +2499,245 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
          
         }
+
+
+        //search for omega- and xi-
+
+         //Lambda0 -> proton + pi-
+        //check if positive particle is proton and if negative particle is pion-
+        if(fabs(sigma_p_P) < 2.5 && fabs(sigma_pi_N) < 2.5)
+        {
+            //printf("particles are proton and pion- \n");
+            TLorentzVector tlv_L = get_tlv_by_V0(mass_proton, mass_pion,momP,momN );
+
+            TVector3 dir_L = tlv_L.Vect();
+            TVector3 pos_L;
+            pos_L.SetXYZ(pos[0],pos[1],pos[2]);
+
+            invariantmass = tlv_L.M();
+
+            double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir_L,pos_primary_vertex);
+
+            //cout<<invariantmass<<endl;
+
+            //study radial dependence of number of Lambdas
+            double min_dist = 0.075*radius+0.125;
+            for(int j=0;j<70;j++)
+            {
+                if( overlap_PID(as_trackP,"p"))
+                {
+                    if(radius>j) vec_invmass_L_r[j]->Fill(invariantmass);
+                    if(radius>j && dist<0.5) vec_invmass_L_r[j+70]->Fill(invariantmass);
+                    if(radius>j && dist>min_dist ) vec_invmass_L_r[j+2*70]->Fill(invariantmass);
+                }
+
+            }
+
+            //cut on mass
+            if(invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
+            {
+                //s earch for Xi-baryons xi- -> pi- + lambda ; lambda -> proton + pi-
+                //search for Xi-baryons xi+ -> pi+ + antilambda ; antilambda -> antiproton + pi+
+                //search for Omega-baryons omega- -> K- + lambda ; lambda -> proton + pi-
+                //search for Omega-baryons omega+ -> K+ + antilambda ; lambda -> antiproton + pi+
+                for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
+                {
+                    AS_Track = AS_Event->getTrack(i_track_A);
+                    Int_t trackid  = AS_Track->gettrackid();
+                    float dca = AS_Track->getdca();
+                    if(dca==-1){continue;}
+                    int charge;
+                    if(dca>0) {charge=1;}
+                    else {charge = -1;}
+
+                    if(trackid==trackidP || trackid==trackidN){continue;}
+
+                    double sigma_pi = AS_Track->getnsigma_pi_TPC();
+                    double sigma_K = AS_Track->getnsigma_K_TPC();
+                    Float_t pathA,pathB,dcaAB;
+
+                    fHelixAtoLinedca(dir_L, pos_L, AS_Track, pathA, pathB, dcaAB);
+                    if(dcaAB>0.5){continue;}
+
+
+                    Double_t r1[3];
+                    AS_Track->Evaluate(pathA,r1);
+                    TVector3 V0_pos;
+                    V0_pos.SetXYZ(r1[0],r1[1],r1[2]);
+
+                    float dcaprim;
+                    FindDCAHelixPoint2(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dcaprim);
+                    if(dcaprim>0.5)
+                    {
+                        //xi-
+                        if(fabs(sigma_pi)<2.5 && radius > 10)
+                        {
+                            TLorentzVector tlv;
+                            TLorentzVector tlv_pion;
+                            TLorentzVector tlv_xi;
+
+                            tlv_pion = get_tlv(AS_Track, mass_pion,V0_pos);
+
+                            tlv_xi = tlv_L + tlv_pion;
+                            double xi_mass = tlv_xi.M();
+
+                            //if(charge==-1) {histo_invariantmass_xi_minus_baryon->Fill(xi_mass);}
+                            //if(charge==1) {histo_invariantmass_xi_plus_baryon->Fill(xi_mass);cout<<"filledminus"<<endl;}
+                            if(charge==-1) vec_histo_inv_mass[13]->Fill(xi_mass);
+
+                        }
+
+                    }
+
+
+
+                    if(dcaprim>0.5 && radius > 1 && fabs(sigma_K)<2.5)
+                    {
+                        TLorentzVector tlv;
+                        TLorentzVector tlv_kaon;
+                        TLorentzVector tlv_omega;
+
+                        tlv_kaon = get_tlv(AS_Track, mass_K,V0_pos);
+
+                        tlv_omega = tlv_L + tlv_kaon;
+
+                        double omega_mass = tlv_omega.M();
+
+                        if(charge==-1) vec_histo_inv_mass[15]->Fill(omega_mass);
+
+                        //if(charge==-1) {vec_histo_omega_minus[i*4+j]->Fill(omega_mass);}
+                        //if(charge==1) {histo_invariantmass_omega_plus_baryon->Fill(omega_mass);}
+
+                    }
+
+
+                 }
+
+
+
+
+            }
+        }
+
+
+        //search for omega+ and xi+
+
+         //Lambda0 -> antiproton + pi+
+        //check if positive particle is pi+ and if negative particle is antip
+        if(fabs(sigma_p_N) < 2.5 && fabs(sigma_pi_P) < 2.5)
+        {
+            //printf("particles are proton and pion- \n");
+            TLorentzVector tlv_L = get_tlv_by_V0(mass_pion, mass_proton,momP,momN );
+
+            TVector3 dir_L = tlv_L.Vect();
+            TVector3 pos_L;
+            pos_L.SetXYZ(pos[0],pos[1],pos[2]);
+
+            invariantmass = tlv_L.M();
+
+            double dist = calculateMinimumDistanceStraightToPoint(V0_position,dir_L,pos_primary_vertex);
+            double min_dist = 0.075*radius+0.125;
+
+            //study radial dependence of number of AntiLambdas
+            for(int j=0;j<70;j++)
+            {
+                if( overlap_PID(as_trackN,"p"))
+                {
+                    if(radius>j) vec_invmass_L_r[j+3*70]->Fill(invariantmass);
+                    if(radius>j && dist<0.5) vec_invmass_L_r[j+4*70]->Fill(invariantmass);
+                    if(radius>j && dist>min_dist) vec_invmass_L_r[j+5*70]->Fill(invariantmass);
+                }
+
+            }
+
+            //cout<<invariantmass<<endl;
+
+            //cut on mass
+            if(invariantmass < (1.1157+0.001495*2) && invariantmass > (1.1157-0.001495*2))
+            {
+                //s earch for Xi-baryons xi- -> pi- + lambda ; lambda -> proton + pi-
+                //search for Xi-baryons xi+ -> pi+ + antilambda ; antilambda -> antiproton + pi+
+                //search for Omega-baryons omega- -> K- + lambda ; lambda -> proton + pi-
+                //search for Omega-baryons omega+ -> K+ + antilambda ; lambda -> antiproton + pi+
+                for(Int_t i_track_A = 0; i_track_A < NumTracks; i_track_A++)
+                {
+                    AS_Track = AS_Event->getTrack(i_track_A);
+                    Int_t trackid  = AS_Track->gettrackid();
+                    float dca = AS_Track->getdca();
+                    if(dca==-1){continue;}
+                    int charge;
+                    if(dca>0) {charge=1;}
+                    else {charge = -1;}
+
+                    if(trackid==trackidP || trackid==trackidN){continue;}
+
+                    double sigma_pi = AS_Track->getnsigma_pi_TPC();
+                    double sigma_K = AS_Track->getnsigma_K_TPC();
+                    Float_t pathA,pathB,dcaAB;
+
+                    fHelixAtoLinedca(dir_L, pos_L, AS_Track, pathA, pathB, dcaAB);
+                    if(dcaAB>0.5){continue;}
+
+
+                    Double_t r1[3];
+                    AS_Track->Evaluate(pathA,r1);
+                    TVector3 V0_pos;
+                    V0_pos.SetXYZ(r1[0],r1[1],r1[2]);
+
+                    float dcaprim;
+                    FindDCAHelixPoint2(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point,dcaprim);
+                    if(dcaprim>0.5)
+                    {
+                        //x+
+                        if(fabs(sigma_pi)<2.5 && radius > 10)
+                        {
+                            TLorentzVector tlv;
+                            TLorentzVector tlv_pion;
+                            TLorentzVector tlv_xi;
+
+                            tlv_pion = get_tlv(AS_Track, mass_pion,V0_pos);
+
+                            tlv_xi = tlv_L + tlv_pion;
+                            double xi_mass = tlv_xi.M();
+
+                            //if(charge==-1) {histo_invariantmass_xi_minus_baryon->Fill(xi_mass);}
+                            //if(charge==1) {histo_invariantmass_xi_plus_baryon->Fill(xi_mass);cout<<"filledminus"<<endl;}
+                            if(charge==1) vec_histo_inv_mass[14]->Fill(xi_mass);
+
+                        }
+
+                    }
+
+
+
+                    if(dcaprim>0.5 && radius > 1 && fabs(sigma_K)<2.5)
+                    {
+                        TLorentzVector tlv;
+                        TLorentzVector tlv_kaon;
+                        TLorentzVector tlv_omega;
+
+                        tlv_kaon = get_tlv(AS_Track, mass_K,V0_pos);
+
+                        tlv_omega = tlv_L + tlv_kaon;
+
+                        double omega_mass = tlv_omega.M();
+
+                        if(charge==1) vec_histo_inv_mass[16]->Fill(omega_mass);
+
+                        //if(charge==-1) {vec_histo_omega_minus[i*4+j]->Fill(omega_mass);}
+                        //if(charge==1) {histo_invariantmass_omega_plus_baryon->Fill(omega_mass);}
+
+                    }
+
+
+                 }
+
+
+
+
+            }
+        }
+
 
 
         //****************************************************************************************+
@@ -3077,7 +3698,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //NUCLEV search
         //---------------------------------------------------------------------------
 
-        /*
+         /*
         double sigma_e_P  = as_trackP->getnsigma_e_TPC();
         double sigma_e_N  = as_trackN->getnsigma_e_TPC();
         double sigma_pi_P = as_trackP-> getnsigma_pi_TPC();
@@ -3086,8 +3707,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         double sigma_K_N  = as_trackN-> getnsigma_K_TPC();
         double sigma_p_P  = as_trackP-> getnsigma_p_TPC();
         double sigma_p_N  = as_trackN-> getnsigma_p_TPC();
+         */
 
-        */
 
         /*
 
@@ -3144,7 +3765,7 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             //if(m_squared<0){printf("mass squared: %f \n", m_squared);}
             //printf("mass squared: %f \n", m_squared);
         }
-
+         */
 
         //gamma  (two electrons)
         if(fabs(sigma_e_P)<2.5 && fabs(sigma_e_N)<2.5) 
@@ -3157,13 +3778,15 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             *tlv_gamma= *tlv_pos + *tlv_neg;
             invariantmass = tlv_gamma->M();
 
+            if(invariantmass<0.1){continue;}
+
             //printf("invariante Masse gamma: %f \n",invariantmass);
             //histo_invariantmass_gamma->Fill(invariantmass);
 
-            if( (m_squared<0.4 && tofsignal<99990) || tofsignal>99990)
-            {
-                if(invariantmass<0+0.05){continue;}
-            }
+            //if( (m_squared<0.4 && tofsignal<99990) || tofsignal>99990)
+            //{
+              //  if(invariantmass<0+0.05){continue;}
+            //}
         }
 
         //K0s (two pions)
@@ -3236,22 +3859,47 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
             if(Trackid==trackidP){continue;}
             if(Trackid==trackidN){continue;}
 
+            double dca = AS_Track->getdca();
+            if(dca==-1) continue;
+
             Float_t path_closest_to_point = 0;
             Float_t dca_closest_to_point  = 0;
 
             //calculate dca from vertex to particle track
             FindDCAHelixPoint2(pos,AS_Track,path_initA,path_initB,path_closest_to_point,dca_closest_to_point);
 
-            if(dca_closest_to_point > 1.) {continue;}
+            if(dca_closest_to_point > 0.5) {continue;}
 
             Float_t dca_to_prim = -1;
-            //FindDCAHelixPoint2(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point2,dca_to_prim);
-            dca_to_prim = fabs( AS_Track->getdca()  );
-            if(dca_to_prim<0.5){continue;}
+            FindDCAHelixPoint2(pos_primary_vertex,AS_Track,path_initA,path_initB,path_closest_to_point2,dca_to_prim);
+            //dca_to_prim = fabs( AS_Track->getdca()  );
+            if(dca_to_prim<5){continue;}
 
             vec_tracks.push_back(AS_Track);
             vec_dca_to_V0.push_back(dca_closest_to_point);
             vec_path.push_back(path_closest_to_point);
+        }
+
+        Float_t dca_P_prim;
+        Float_t dca_N_prim;
+        FindDCAHelixPoint2(pos_primary_vertex,as_trackP,path_initA,path_initB,path_closest_to_point2,dca_P_prim);
+        FindDCAHelixPoint2(pos_primary_vertex,as_trackN,path_initA,path_initB,path_closest_to_point2,dca_N_prim);
+
+
+        if(radius> 2 && dca_P_prim>2. && dca_N_prim>2. && vec_tracks.size()<=4)
+        {
+            /*
+            AS_NUCLEV = AS_Event->createNUCLEV();
+            Ali_AS_Track* track1 = AS_NUCLEV->createTrack();
+            Ali_AS_Track* track2 = AS_NUCLEV->createTrack();
+            copy_track_params(as_trackP , track1);
+            copy_track_params(as_trackN , track2);
+            for(int i=0;i<vec_tracks.size();i++)
+            {
+                AS_Track = AS_NUCLEV->createTrack();
+                copy_track_params(vec_tracks[i] , AS_Track);
+            }
+            */
         }
 
         //if(vec_tracks.size()>=1)
@@ -3692,8 +4340,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     path_initA = 0.0;
     path_initB = 30.0;
 
-    //Ali_AS_Track* ASTrack1 = new Ali_AS_Track;
-    //Ali_AS_Track* ASTrack2 = new Ali_AS_Track;
+    Ali_AS_Track* ASTrack1 = new Ali_AS_Track;
+    Ali_AS_Track* ASTrack2 = new Ali_AS_Track;
 
     
     vector<int> createdV0s;
@@ -4412,7 +5060,6 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
 
     numberV0 = AS_Event->getNumV0s();
     //cout<<"numberV0: "<<numberV0<<endl;
-    /*
     for (Int_t V0_counter=0; V0_counter<numberV0; V0_counter++)
     {
         //if(counter_events>280) {cout<<"V0 counter2: "<<V0_counter<<endl;}
@@ -4425,19 +5072,17 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
         //AS_V0 -> clearV0List();
         AS_V0->~Ali_AS_V0();
     }
-    */
     //cout<<"a1"<<endl;
     int Ntracks = AS_Event->getN_tracks();
 
-    /*
     if(numberV0<1)
     {
         as_trackP->~Ali_AS_Track();
         as_trackN->~Ali_AS_Track();
     }
-    */
-    //ASTrack1->~Ali_AS_Track();
-    //ASTrack2->~Ali_AS_Track();
+
+    ASTrack1->~Ali_AS_Track();
+    ASTrack2->~Ali_AS_Track();
 
     //cout<<"Ntracks: "<<Ntracks<<endl;
 
@@ -4453,78 +5098,8 @@ void Ali_DarkMatter_ESD_analysis::UserExec(Option_t *)
     */
 
     //AS_Event->clearTrackList();
-    // AS_Event ->cleargeV0List();
-    int numDMs = AS_Event->getNumDMs();
-
-    for(int i=0;i<numDMs;i++)
-    {
-        Ali_AS_DM_particle* DM = AS_Event->getDMparticle(i);
-        DM->clearTrackList();
-        DM->clearV0List();
-
-    }
-
-    if(DMparticle) DMparticle->clearTrackList();
-    if(DMparticle) DMparticle->clearV0List();
-    if(AS_V0) AS_V0-> clearTrackList();
-
+   // AS_Event ->clearV0List();
     AS_Event ->clearNUCLEVList();
-    AS_Event ->clearDMparticleList();
-
-    //delete vectors and objects
-    /*
-    AS_V0 ->~Ali_AS_V0();
-    as_trackP->~Ali_AS_Track();
-
-    as_trackP_save->~Ali_AS_Track();
-    as_trackN->~Ali_AS_Track();
-    as_trackN_save->~Ali_AS_Track();
-    tracka->~Ali_AS_Track();
-    trackb->~Ali_AS_Track();
-    event_track->~Ali_AS_Track();
-    &
-    Ali_AS_Track* as_trackP = new Ali_AS_Track;
-     Ali_AS_Track* as_trackP_save = new Ali_AS_Track;
-     Ali_AS_Track* as_trackN = new Ali_AS_Track;
-     Ali_AS_Track* as_trackN_save = new Ali_AS_Track;
-     Ali_AS_Track* tracka  =  new Ali_AS_Track;
-     Ali_AS_Track* trackb  =  new Ali_AS_Track;
-
-     Ali_AS_Track* event_track  =  new Ali_AS_Track;
-     */
-
-    tlv_pos->~TLorentzVector();
-    tlv_neg->~TLorentzVector();
-    tlv_Lambda->~TLorentzVector();
-    tlv_Kaon->~TLorentzVector();
-    tlv_gamma->~TLorentzVector();
-
-    tlv_SV1->~TLorentzVector();
-    tlv_neutron->~TLorentzVector();
-    tlv_proton->~TLorentzVector();
-    tlv_SV2->~TLorentzVector();
-    tlv_SV3->~TLorentzVector();
-
-    //as_trackP_save->~Ali_AS_Track();
-    //as_trackP->~Ali_AS_Track();
-    //as_trackN->~Ali_AS_Track();
-    //as_trackN_save->~Ali_AS_Track();
-    //tracka->~Ali_AS_Track();
-    //trackb->~Ali_AS_Track();
-
-    //delete as_trackP;
-    //delete as_trackP_save;
-    //delete as_trackN;
-    //delete as_trackN_save;
-    //delete tracka;
-    //delete trackb;
-    /*
-    TLorentzVector* tlv_pos = new TLorentzVector();
-     TLorentzVector* tlv_neg = new TLorentzVector();
-     TLorentzVector* tlv_Lambda = new TLorentzVector();
-     TLorentzVector* tlv_Kaon = new TLorentzVector();
-     TLorentzVector* tlv_gamma = new TLorentzVector();
-     */
 
     N_good_events++;
 
