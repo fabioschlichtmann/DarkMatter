@@ -578,6 +578,34 @@ bool overlap_PID(Ali_AS_Track* track, TString particle)
 
 }
 
+bool isoverlap(Ali_AS_Track* track, TString particle)
+{
+    double sigma_pi = fabs( track -> getnsigma_pi_TPC() );
+    double sigma_K = fabs ( track -> getnsigma_K_TPC() );
+    double sigma_p = fabs ( track -> getnsigma_p_TPC() );
+    double sigma_e = fabs ( track -> getnsigma_e_TPC() );
+
+    if(particle=="K")
+    {
+        if(sigma_pi<2.5 || sigma_p<2.5 || sigma_e<2.5)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    if(particle=="p")
+    {
+        if(sigma_pi<2.5 || sigma_K<2.5 || sigma_e<2.5)
+        {
+            return true;
+        }
+        return false;
+
+    }
+
+}
+
 bool m2_cut_if_available(Ali_AS_Track* track, TString particle)
 {
     double m = calculate_m_squared_by_TOF(track);
@@ -2107,6 +2135,7 @@ void Ali_Dark_Matter_Read::copy_dm_params(Ali_AS_DM_particle* dm_in, Ali_AS_DM_p
     dm_out->  set_DirSV3(dm_in->get_DirSV3());
     dm_out->  setN_V0s(dm_in->getN_V0s());
     dm_out->  settype(dm_in->gettype());
+    dm_out->  set_tlv(dm_in->get_tlv());
 
     int type= dm_in->gettype();
 
@@ -3526,6 +3555,14 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
             Ali_AS_Track* track_K0_pi1 = DM->getTrack(3);        //jetzt richtig! //noch falsch!!!! da vorher falsch auf Grid
             Ali_AS_Track* track_K0_pi2 = DM->getTrack(4);
 
+            double m2_p = calculate_m_squared_by_TOF(track_p);
+
+            if( fabs(track_p->getnsigma_p_TPC()) <2.5 )
+            {
+                if(type==3) m_squared_p_ch3->Fill(m2_p);
+            }
+
+
             //tlv
             TLorentzVector tlv_S = DM->get_tlv();
             TLorentzVector tlv_proton;
@@ -3535,255 +3572,20 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
 
             double S_mass = tlv_S.M();
 
+            //double TOF efficiency for Kaon
+            double m_squared_K_1 = calculate_m_squared_by_TOF(track_K);
+            TOF_eff_K_ch3->Fill(1);
+            if(m_squared_K_1!=-1) TOF_eff_K_ch3->Fill(2);
 
-            //do for all tracks m2 cut if available
-            if ( !m2_cut_if_available(track_K, "K")) continue;
-            if ( !m2_cut_if_available(track_p, "p")) continue;
-            if ( !m2_cut_if_available(track_add_pi, "pi")) continue;
-            if ( !m2_cut_if_available(track_K0_pi1, "pi")) continue;
-            if ( !m2_cut_if_available(track_K0_pi2, "pi")) continue;
-
-            TVector3 pos_K0 = DM->get_S2Vertex();
-            TVector3 S_to_K0 = pos_K0-S_vertex_pos;
-            TVector3 prim_to_K0 = pos_K0-pos_primary_vertex;
-
-            double dist_K0_to_S = S_to_K0.Mag();
-            double radiusK0 = prim_to_K0.Mag();
-
-            printtv3(vec_primtosec,"primtosec");
-            printtv3(S_to_K0,"S_to_K0");
-
-            double angle = vec_primtosec.Angle(S_to_K0);
-            angle = angle/3.14159*180;
-
-            histo_angle_ch3->Fill(angle);
-
-            Ali_AS_V0* S_V0 = DM->getV0(0);
-            Ali_AS_V0* K0_V0 = DM->getV0(1);
-
-            double invmass_K0_by_tracks =  get_invariant_mass(track_K0_pi1, track_K0_pi2 , mass_pion,mass_pion , S_vertex_pos);
-
-            TLorentzVector tlv_K0 = get_tlv_by_V0(mass_pion, mass_pion, K0_V0->getPpxpypz(), K0_V0->getNpxpypz() );
-            printtlv(tlv_K0,"tlvK0");
-            cout<<"angle: "<<angle<<endl;
-            double invmass_K0 = tlv_K0.M();
-            TVector3 dir_K0;
-            dir_K0.SetXYZ(tlv_K0.Px(),tlv_K0.Py(),tlv_K0.Pz());
-
-            //cut on m2 if information is available:
-            double m_squared_add_pi = calculate_m_squared_by_TOF(track_add_pi);
-
-            if(type==3) histo_invariantmass_K0_type3->Fill(invmass_K0);
-            if(type==31) histo_invariantmass_K0_type31->Fill(invmass_K0);
-
-            //double m_squared_p = calculate_m_squared_by_TOF(track_p);
-            //double m_squared_K = calculate_m_squared_by_TOF(track_K);
-
-            //fill r-dependent histos-------------------------------------------------------
-
-            for(int i=0;i<17;i++)
-            {
-                float min_rad = 5+i*5;
-
-                if(radius>min_rad)
-                {
-                    if(type==3) vec_invmass_K0_type3[i]->Fill(invmass_K0);
-                    if(type==31) vec_invmass_K0_type31[i]->Fill(invmass_K0);
-
-                    
-                }
-            }
-
-            //---------------------------------------------------------------------
-
-            float dcaprim_pi1, dcaprim_pi2, dca_to_S_pi1, dca_to_S_pi2, dcaprim_add_pi, dcaprim_K, dcaprim_pro;
-
-            FindDCAHelixPoint(pos_primary_vertex,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dcaprim_pi1);
-            FindDCAHelixPoint(pos_primary_vertex,track_K0_pi2,path_initA,path_initB,path_closest_to_point,dcaprim_pi2);
-            FindDCAHelixPoint(pos_primary_vertex,track_add_pi,path_initA,path_initB,path_closest_to_point,dcaprim_add_pi);
-            FindDCAHelixPoint(pos_primary_vertex,track_K,path_initA,path_initB,path_closest_to_point,dcaprim_K);
-            FindDCAHelixPoint(pos_primary_vertex,track_p,path_initA,path_initB,path_closest_to_point,dcaprim_pro);
-
-            FindDCAHelixPoint(S_vertex_pos,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dca_to_S_pi1);
-            FindDCAHelixPoint(S_vertex_pos,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dca_to_S_pi2);
-
-            //double dcaprim_K0 = calculateMinimumDistanceStraightToPoint(pos_K0,dir_K0,pos_primary_vertex);
-
-            double dca_K0_prim  =  calculateMinimumDistanceStraightToPoint(pos_K0,dir_K0,pos_primary_vertex);
-
-            float dcaprim_arr[6]={0.5,1,2,3,4,5};
-
-            if(dist_K0_to_S>1.5 && dcaprim_pi1>2. && dcaprim_pi2 > 2. && dca_to_S_pi1>1. && dca_to_S_pi2 >1.)
-            {
-                 for(int i=0;i<17;i++)
-                 {
-                     float min_rad = 5+i*5;
-                     double min_dist = 0.075*min_rad+0.125;
-
-                     //vary dcaprim cut
-                     if(radius>min_rad && overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
-                     {
-                         for(int j=0;j<6;j++)
-                         {
-                             if(dca_K0_prim>dcaprim_arr[j])
-                             {
-                                 if(type==3) vec_vec_invmass_K0_type3[i][j]->Fill(invmass_K0);
-                                 if(type==31) vec_vec_invmass_K0_type31[i][j]->Fill(invmass_K0);
-                             }
-                         }
-                         
-                     }
-
-                     //radius-dependent backtracking cut
-                     if(dca_K0_prim<min_dist){continue;}
-
-                     if(radius>min_rad)
-                     {
-                         if(type==3) vec_invmass_K0_type3[i+17]->Fill(invmass_K0);
-                         if(type==31) vec_invmass_K0_type31[i+17]->Fill(invmass_K0);
-
-                         if(overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
-                         {
-                             if(type==3) vec_invmass_K0_type3[i+17*2]->Fill(invmass_K0);
-                             if(type==31) vec_invmass_K0_type31[i+17*2]->Fill(invmass_K0);
-
-                             //3D for r_min=40
-                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 && counter_DM_saved < 500)
-                             {
-                                 AS_DM_particle->clearTrackList();
-                                 AS_DM_particle->clearV0List();
-                                 copy_dm_params(DM,AS_DM_particle);
-                                 Tree_AS_DM_particle ->Fill();
-                                 counter_DM_saved++;
-                             }
-
-                             //normalband
-                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 )
-                             {
-                                 if(type==3) vec_S_mass_ch3[0]->Fill(S_mass);
-                                 if(type==31) vec_S_mass_ch31[0] ->Fill(S_mass);
-
-                             }
-
-                             //sideband1
-                             if(min_rad==40 && invmass_K0 > 0.461 && invmass_K0 < 0.488 )
-                             {
-                                 if(type==3) vec_S_mass_ch3[1]->Fill(S_mass);
-                                 if(type==31) vec_S_mass_ch31[1] ->Fill(S_mass);
-                             }
-
-                             //sideband2
-                             if(min_rad==40 && invmass_K0 > 0.515 && invmass_K0 < 0.542)
-                             {
-                                 if(type==3) vec_S_mass_ch3[1]->Fill(S_mass);
-                                 if(type==31) vec_S_mass_ch31[1] ->Fill(S_mass);
-                             }
-
-                         }
-                     }
-
-                     if(radiusK0>min_rad)
-                     {
-                         if(type==3) vec_invmass_K0_type3[i+17*3]->Fill(invmass_K0);
-                         if(type==31) vec_invmass_K0_type31[i+17*3]->Fill(invmass_K0);
-
-                     }
-
-
-                 }
-
-                
-            }
-
-
-            //dca combi 2-------------------------------------------------------------
-            if(dist_K0_to_S>1. && dcaprim_pi1>3. && dcaprim_pi2 > 3. &&                  //dcaprim auf 1.5, winkel 120 statt 90
-               dcaprim_add_pi>3. && dca_to_S_pi1>0.5 && dca_to_S_pi2 >0.5
-              && dcaprim_K > 0.5 && dcaprim_pro > 0.5 && fabs(angle)<90)
-            {
-                 for(int i=0;i<17;i++)
-                 {
-                     float min_rad = 5+i*5;
-                     double min_dist = 0.075*min_rad+0.125;
-    
-    
-                     //vary dcaprim cut
-                     if(radius>min_rad && overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
-                     {
-                         for(int j=0;j<6;j++)
-                         {
-                             if(dca_K0_prim>dcaprim_arr[j])
-                             {
-                                 if(type==3) vec_vec_invmass_K0_type3[i+17][j]->Fill(invmass_K0);
-                                 if(type==31) vec_vec_invmass_K0_type31[i+17][j]->Fill(invmass_K0);
-                             }
-                         }
-    
-                     }
-    
-                     //radius-dependent backtracking cut
-                     if(dca_K0_prim<min_dist){continue;}
-    
-                     if(radius>min_rad)
-                     {
-                         if(type==3) vec_invmass_K0_type3[i+17*4]->Fill(invmass_K0);
-                         if(type==31) vec_invmass_K0_type31[i+17*4]->Fill(invmass_K0);
-    
-                         if(overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
-                         {
-                             if(type==3) vec_invmass_K0_type3[i+17*5]->Fill(invmass_K0);
-                             if(type==31) vec_invmass_K0_type31[i+17*5]->Fill(invmass_K0);
-    
-                             //3D for r_min=40
-                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 )
-                             {
-                                 AS_DM_particle->clearTrackList();
-                                 AS_DM_particle->clearV0List();
-                                 copy_dm_params(DM,AS_DM_particle);
-                                 Tree_AS_DM_particle ->Fill();
-                             }
-    
-                             //normalband
-                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 )
-                             {
-                                 if(type==3) vec_S_mass_ch3[0+2]->Fill(S_mass);
-                                 if(type==31) vec_S_mass_ch31[0+2] ->Fill(S_mass);
-    
-                             }
-    
-                             //sideband1
-                             if(min_rad==40 && invmass_K0 > 0.461 && invmass_K0 < 0.488 )
-                             {
-                                 if(type==3) vec_S_mass_ch3[1+2]->Fill(S_mass);
-                                 if(type==31) vec_S_mass_ch31[1+2] ->Fill(S_mass);
-                             }
-    
-                             //sideband2
-                             if(min_rad==40 && invmass_K0 > 0.515 && invmass_K0 < 0.542)
-                             {
-                                 if(type==3) vec_S_mass_ch3[1+2]->Fill(S_mass);
-                                 if(type==31) vec_S_mass_ch31[1+2] ->Fill(S_mass);
-                             }
-    
-                         }
-                     }
-                 }
-
-
-            }
-
-
-
-            //----------------------------------------------------------------------------
-
+            //------------------------------------------------------------------------------------
             //msquared
-            
-
             double m_squared_K = calculate_m_squared_by_TOF(track_K);
             double m_squared_p = calculate_m_squared_by_TOF(track_p);
             
             double m_squared_K01 = calculate_m_squared_by_TOF(track_K0_pi1);
             double m_squared_K02 = calculate_m_squared_by_TOF(track_K0_pi2);
+
+            double m_squared_add_pi = calculate_m_squared_by_TOF(track_add_pi);
 
             float dca_arr[5]={0.5,1.,1.5,2.,3.};
 
@@ -3856,6 +3658,287 @@ Int_t Ali_Dark_Matter_Read::Loop_event(Long64_t event)
                
 
             }
+            //------------------------------------------------------------------------------
+
+
+            //do for all tracks m2 cut if available
+            if ( !m2_cut_if_available(track_K, "K")) continue;
+            if ( !m2_cut_if_available(track_p, "p")) continue;
+            if ( !m2_cut_if_available(track_add_pi, "pi")) continue;
+            if ( !m2_cut_if_available(track_K0_pi1, "pi")) continue;
+            if ( !m2_cut_if_available(track_K0_pi2, "pi")) continue;
+
+            TVector3 pos_K0 = DM->get_S2Vertex();
+            TVector3 S_to_K0 = pos_K0-S_vertex_pos;
+            TVector3 prim_to_K0 = pos_K0-pos_primary_vertex;
+
+            double dist_K0_to_S = S_to_K0.Mag();
+            double radiusK0 = prim_to_K0.Mag();
+
+            printtv3(vec_primtosec,"primtosec");
+            printtv3(S_to_K0,"S_to_K0");
+
+            double angle = vec_primtosec.Angle(S_to_K0);
+            angle = angle/3.14159*180;
+
+            histo_angle_ch3->Fill(angle);
+
+            Ali_AS_V0* S_V0 = DM->getV0(0);
+            Ali_AS_V0* K0_V0 = DM->getV0(1);
+
+            double invmass_K0_by_tracks =  get_invariant_mass(track_K0_pi1, track_K0_pi2 , mass_pion,mass_pion , S_vertex_pos);
+
+            TLorentzVector tlv_K0 = get_tlv_by_V0(mass_pion, mass_pion, K0_V0->getPpxpypz(), K0_V0->getNpxpypz() );
+            printtlv(tlv_K0,"tlvK0");
+            cout<<"angle: "<<angle<<endl;
+            double invmass_K0 = tlv_K0.M();
+            TVector3 dir_K0;
+            dir_K0.SetXYZ(tlv_K0.Px(),tlv_K0.Py(),tlv_K0.Pz());
+
+            //cut on m2 if information is available:
+            
+
+            if(type==3) histo_invariantmass_K0_type3->Fill(invmass_K0);
+            if(type==31) histo_invariantmass_K0_type31->Fill(invmass_K0);
+
+            //double m_squared_p = calculate_m_squared_by_TOF(track_p);
+            //double m_squared_K = calculate_m_squared_by_TOF(track_K);
+
+            //fill r-dependent histos-------------------------------------------------------
+
+            for(int i=0;i<17;i++)
+            {
+                float min_rad = 5+i*5;
+
+                if(radius>min_rad)
+                {
+                    if(type==3) vec_invmass_K0_type3[i]->Fill(invmass_K0);
+                    if(type==31) vec_invmass_K0_type31[i]->Fill(invmass_K0);
+
+                    
+                }
+            }
+
+            //---------------------------------------------------------------------
+
+            float dcaprim_pi1, dcaprim_pi2, dca_to_S_pi1, dca_to_S_pi2, dcaprim_add_pi, dcaprim_K, dcaprim_pro;
+
+            FindDCAHelixPoint(pos_primary_vertex,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dcaprim_pi1);
+            FindDCAHelixPoint(pos_primary_vertex,track_K0_pi2,path_initA,path_initB,path_closest_to_point,dcaprim_pi2);
+            FindDCAHelixPoint(pos_primary_vertex,track_add_pi,path_initA,path_initB,path_closest_to_point,dcaprim_add_pi);
+            FindDCAHelixPoint(pos_primary_vertex,track_K,path_initA,path_initB,path_closest_to_point,dcaprim_K);
+            FindDCAHelixPoint(pos_primary_vertex,track_p,path_initA,path_initB,path_closest_to_point,dcaprim_pro);
+
+            FindDCAHelixPoint(S_vertex_pos,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dca_to_S_pi1);
+            FindDCAHelixPoint(S_vertex_pos,track_K0_pi1,path_initA,path_initB,path_closest_to_point,dca_to_S_pi2);
+
+            //double dcaprim_K0 = calculateMinimumDistanceStraightToPoint(pos_K0,dir_K0,pos_primary_vertex);
+
+            double dca_K0_prim  =  calculateMinimumDistanceStraightToPoint(pos_K0,dir_K0,pos_primary_vertex);
+
+            float dcaprim_arr[6]={0.5,1,2,3,4,5};
+
+            //loose cuts and save all with r>25
+            if(dist_K0_to_S>0.5 && dcaprim_pi1>1. && dcaprim_pi2 > 1. && dca_to_S_pi1>0.1 && dca_to_S_pi2 >0.1)
+            {
+                //find out how often overlap
+                if( dca_K0_prim > 0.5 && radius > 25)
+                {
+                    histo_counter_overlap->Fill(1.);
+                    if( isoverlap(track_p, "p") ) histo_counter_overlap->Fill(2.);
+                    if( isoverlap(track_K, "K") ) histo_counter_overlap->Fill(3.);
+
+                }
+
+                if( dca_K0_prim > 0.5 && radius > 25 && overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
+                {
+                    AS_DM_particle->clearTrackList();
+                    AS_DM_particle->clearV0List();
+                    copy_dm_params(DM,AS_DM_particle);
+                    AS_DM_particle->setN_V0s(7);
+                    Tree_AS_DM_particle ->Fill();
+                    counter_DM_saved++;
+
+                }
+
+            }
+
+
+
+            //if(dist_K0_to_S>1.5 && dist_K0_to_S<20.  && dcaprim_pi1>2. && dcaprim_pi2 > 2. && dca_to_S_pi1>0.5 && dca_to_S_pi2 >0.5)
+            if(dist_K0_to_S>0.5 && dcaprim_pi1>2. && dcaprim_pi2 > 2. && dca_to_S_pi1>0.2 && dca_to_S_pi2 >0.2)
+            {
+                 for(int i=0;i<17;i++)
+                 {
+                     float min_rad = 5+i*5;
+                     //double min_dist = 0.075*min_rad+0.125;
+                     double min_dist = 0.075*radiusK0+0.125;
+
+                     //vary dcaprim cut
+                     if(radius>min_rad && overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
+                     {
+                         for(int j=0;j<6;j++)
+                         {
+                             if(dca_K0_prim>dcaprim_arr[j])
+                             {
+                                 if(type==3) vec_vec_invmass_K0_type3[i][j]->Fill(invmass_K0);
+                                 if(type==31) vec_vec_invmass_K0_type31[i][j]->Fill(invmass_K0);
+                             }
+                         }
+                         
+                     }
+
+                     //radius-dependent backtracking cut
+                     if(dca_K0_prim<min_dist){continue;}
+
+                     if(radius>min_rad)
+                     {
+                         if(type==3) vec_invmass_K0_type3[i+17]->Fill(invmass_K0);
+                         if(type==31) vec_invmass_K0_type31[i+17]->Fill(invmass_K0);
+
+                         if(overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
+                         {
+                             if(type==3) vec_invmass_K0_type3[i+17*2]->Fill(invmass_K0);
+                             if(type==31) vec_invmass_K0_type31[i+17*2]->Fill(invmass_K0);
+
+                             //3D for r_min=40
+                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 && counter_DM_saved < 20000)
+                             {
+                                 /*
+                                 AS_DM_particle->clearTrackList();
+                                 AS_DM_particle->clearV0List();
+                                 copy_dm_params(DM,AS_DM_particle);
+                                 AS_DM_particle->setN_V0s(1);
+                                 Tree_AS_DM_particle ->Fill();
+                                 counter_DM_saved++;
+                                 */
+                             }
+
+                             //normalband
+                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 )
+                             {
+                                 if(type==3) vec_S_mass_ch3[0]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[0] ->Fill(S_mass);
+
+                             }
+
+                             //sideband1
+                             if(min_rad==40 && invmass_K0 > 0.461 && invmass_K0 < 0.488 )
+                             {
+                                 if(type==3) vec_S_mass_ch3[1]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[1] ->Fill(S_mass);
+                             }
+
+                             //sideband2
+                             if(min_rad==40 && invmass_K0 > 0.515 && invmass_K0 < 0.542)
+                             {
+                                 if(type==3) vec_S_mass_ch3[1]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[1] ->Fill(S_mass);
+                             }
+
+                         }
+                     }
+
+                     if(radiusK0>min_rad)
+                     {
+                         if(type==3) vec_invmass_K0_type3[i+17*3]->Fill(invmass_K0);
+                         if(type==31) vec_invmass_K0_type31[i+17*3]->Fill(invmass_K0);
+
+                     }
+
+
+                 }
+
+                
+            }
+
+
+            //dca combi 2-------------------------------------------------------------
+            if(dist_K0_to_S>1.5 && dist_K0_to_S<20.  && dcaprim_pi1>1.5 && dcaprim_pi2 > 1.5 &&                  //dcaprim auf 1.5, winkel 120 statt 90
+               dcaprim_add_pi>1.5 && dca_to_S_pi1>0.5 && dca_to_S_pi2 >0.5
+              && dcaprim_K > 1.5 && dcaprim_pro > 1.5 && fabs(angle)<120)
+            {
+                 for(int i=0;i<17;i++)
+                 {
+                     float min_rad = 5+i*5;
+                     //double min_dist = 0.075*min_rad+0.125;
+                     double min_dist = 0.075*radiusK0+0.125;
+    
+    
+                     //vary dcaprim cut
+                     if(radius>min_rad && overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
+                     {
+                         for(int j=0;j<6;j++)
+                         {
+                             if(dca_K0_prim>dcaprim_arr[j])
+                             {
+                                 if(type==3) vec_vec_invmass_K0_type3[i+17][j]->Fill(invmass_K0);
+                                 if(type==31) vec_vec_invmass_K0_type31[i+17][j]->Fill(invmass_K0);
+                             }
+                         }
+    
+                     }
+    
+                     //radius-dependent backtracking cut
+                     if(dca_K0_prim<min_dist){continue;}
+    
+                     if(radius>min_rad)
+                     {
+                         if(type==3) vec_invmass_K0_type3[i+17*4]->Fill(invmass_K0);
+                         if(type==31) vec_invmass_K0_type31[i+17*4]->Fill(invmass_K0);
+    
+                         if(overlap_PID(track_p, "p") && overlap_PID(track_K, "K"))
+                         {
+                             if(type==3) vec_invmass_K0_type3[i+17*5]->Fill(invmass_K0);
+                             if(type==31) vec_invmass_K0_type31[i+17*5]->Fill(invmass_K0);
+    
+                             //3D for r_min=40
+                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 && counter_DM_saved < 20000)
+                             {
+                                 /*
+                                 AS_DM_particle->clearTrackList();
+                                 AS_DM_particle->clearV0List();
+                                 copy_dm_params(DM,AS_DM_particle);
+                                 AS_DM_particle->setN_V0s(2);
+                                 Tree_AS_DM_particle ->Fill();
+                                 counter_DM_saved++;
+                                 */
+                             }
+    
+                             //normalband
+                             if(min_rad==40 && invmass_K0 > 0.488 && invmass_K0 < 0.515 )
+                             {
+                                 if(type==3) vec_S_mass_ch3[0+2]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[0+2] ->Fill(S_mass);
+    
+                             }
+    
+                             //sideband1
+                             if(min_rad==40 && invmass_K0 > 0.461 && invmass_K0 < 0.488 )
+                             {
+                                 if(type==3) vec_S_mass_ch3[1+2]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[1+2] ->Fill(S_mass);
+                             }
+    
+                             //sideband2
+                             if(min_rad==40 && invmass_K0 > 0.515 && invmass_K0 < 0.542)
+                             {
+                                 if(type==3) vec_S_mass_ch3[1+2]->Fill(S_mass);
+                                 if(type==31) vec_S_mass_ch31[1+2] ->Fill(S_mass);
+                             }
+    
+                         }
+                     }
+                 }
+
+
+            }
+
+
+
+            //----------------------------------------------------------------------------
+
+            
 
             //-----------------------------------------------------------------------
 
@@ -6426,6 +6509,7 @@ int Ali_Dark_Matter_Read::DM_Analysis_type5 (Ali_AS_DM_particle* DM,int mode)
     double radius = prim_to_S.Mag();
     double dist_L_to_S = L_to_S.Mag();
     double angle_1 = prim_to_S.Angle(S_to_L);
+    angle_1 = angle_1/3.14159*180;
 
     //cut on r!!!!!!!!!!!!!!!!!
     if(radius<5){return 0;}
@@ -6524,13 +6608,29 @@ int Ali_Dark_Matter_Read::DM_Analysis_type5 (Ali_AS_DM_particle* DM,int mode)
 
     float dcaprim_arr[6]={0.5,1,2,3,4,5};
 
-    if(dist_L_to_S>2. && dcaprim_antip>2. && dcaprim_pi > 2. && dca_to_S_antip>1. && dca_to_S_pi >1. && overlap_PID(track_lambda_antip, "p"))
+
+
+    //save all with loose cuts and r>25
+    if(dist_L_to_S>1. && dcaprim_antip>1 && dcaprim_pi > 1. && dca_to_S_antip>0.1 && dca_to_S_pi >0.1 && overlap_PID(track_lambda_antip, "p"))
+    {
+        if(dca_L_prim>0.5  && radius>25)
+        {
+             AS_DM_particle->clearTrackList();
+             AS_DM_particle->clearV0List();
+             copy_dm_params(DM,AS_DM_particle);
+             AS_DM_particle->setN_V0s(8);
+             Tree_AS_DM_particle ->Fill();
+        }
+    }
+
+
+    if(dist_L_to_S>1. && dist_L_to_S<35. && dcaprim_antip>1. && dcaprim_pi > 1. && dca_to_S_antip>0.4 && dca_to_S_pi >0.4 && overlap_PID(track_lambda_antip, "p")  && fabs(angle_1)<120 )
     {
        // float arr_r2[5]={15,20,25,30,50};
         for(int i=0;i<17;i++)
         {
             double r = 10+i*5;
-            double min_dist = 0.075*r+0.125;
+            double min_dist = 0.075*radius_L+0.125;
             if(dca_L_prim<min_dist){continue;}
 
             if(radius>r && mode==0)  vec_invmass_Lambda_type5[12+i]->Fill(invmass_antilambda_1);
@@ -6539,18 +6639,43 @@ int Ali_Dark_Matter_Read::DM_Analysis_type5 (Ali_AS_DM_particle* DM,int mode)
             if(radius_L>r && mode==0)  vec_invmass_Lambda_type5[12+17*2+i]->Fill(invmass_antilambda_1);
             if(radius_L>r && mode==2)  vec_invmass_Lambda_type51[12+17*2+i]->Fill(invmass_antilambda_1);
 
+            
+
             if(overlap_PID(track_kaon, "K"))
             {
+                 if(r==40 && counter_DM_saved<20000 && radius>r)
+                 {
+                     /*
+                     AS_DM_particle->clearTrackList();
+                     AS_DM_particle->clearV0List();
+                     copy_dm_params(DM,AS_DM_particle);
+                     AS_DM_particle->setN_V0s(1);
+                     Tree_AS_DM_particle ->Fill();
+                     counter_DM_saved++;
+                     */
+                 }
+
                  if(radius>r && mode==0)  vec_invmass_Lambda_type5[12+17+i]->Fill(invmass_antilambda_1);
                  if(radius>r && mode==2)  vec_invmass_Lambda_type51[12+17+i]->Fill(invmass_antilambda_1);
 
                  if(radius_L>r && mode==0)  vec_invmass_Lambda_type5[12+17*3+i]->Fill(invmass_antilambda_1);
                  if(radius_L>r && mode==2)  vec_invmass_Lambda_type51[12+17*3+i]->Fill(invmass_antilambda_1);
 
-                 if(radius>r && dist_L_to_S>4. && dcaprim_pi1>1. && dcaprim_pi2>1. && dcaprim_K>1. && fabs(angle_1)<90)
+                 if(radius>r && dist_L_to_S>4. && dcaprim_pi1>1.5 && dcaprim_pi2>1.5 && dcaprim_K>1.5 && fabs(angle_1)<120)
                  {
                      if(mode==0) vec_invmass_Lambda_type5[12+17*4+i]->Fill(invmass_antilambda_1);
                      if(mode==2) vec_invmass_Lambda_type51[12+17*4+i]->Fill(invmass_antilambda_1);
+                     if(r==40 && counter_DM_saved<20000)
+                     {
+                         /*
+                         AS_DM_particle->clearTrackList();
+                         AS_DM_particle->clearV0List();
+                         copy_dm_params(DM,AS_DM_particle);
+                         AS_DM_particle->setN_V0s(2);
+                         Tree_AS_DM_particle ->Fill();
+                         counter_DM_saved++;
+                         */
+                     }
                  }
 
             }
@@ -7323,6 +7448,8 @@ void Ali_Dark_Matter_Read::Save()
     if (histo_numberDMs->GetEntries()>0) {histo_numberDMs->Write();}
     histo_counter_S->Write();
     histo_type_of_S->Write();
+    TOF_eff_K_ch3->Write();
+    histo_counter_overlap->Write();
 
     
 

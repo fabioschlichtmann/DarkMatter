@@ -147,6 +147,8 @@ private:
     TH1D* histo_counter = new TH1D("histo counter 1.5: S-vertices with two pions; 2.5: S-vertices that fulfill all cuts",
                                    "histo counter 1.5: S-vertices with two pions; 2.5: S-vertices that fulfill all cuts",10,0,10);
 
+    TH1D* histo_counter_overlap = new TH1D("histo_counter_overlap","histo_counter_overlap",10,0.5,10.5);
+
     TH1D* histo_counter_S = new TH1D("histo_counter_S","histo_counter_S",200,0.5,200.5);
     TH1D* histo_counter_type5 = new TH1D("histo_counter_type5","histo_counter_type5",40,0.5,40.5);
 
@@ -452,6 +454,9 @@ private:
 
     TH1D* histo_angle_ch3 = new TH1D("histo_angle_ch3","histo_angle_ch3",360,-180,180);
 
+    TH1D* TOF_eff_K_ch3 = new TH1D("TOF_eff_K_ch3","TOF_eff_K_ch3",2,0.5,2.5);
+
+    TH1D* m_squared_p_ch3 = new TH1D("m_squared_p_ch3","m_squared_p_ch3",400,-0.4,1.4);
 
 
 
