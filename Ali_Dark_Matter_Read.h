@@ -458,7 +458,15 @@ private:
 
     TH1D* m_squared_p_ch3 = new TH1D("m_squared_p_ch3","m_squared_p_ch3",400,-0.4,1.4);
 
+    vector<TH1D*> vec_S_mass_ch3_normalband;
+    vector<TH1D*> vec_S_mass_ch3_sideband;
 
+    vector<TH1D*> vec_S_mass_ch5_normalband;
+    vector<TH1D*> vec_S_mass_ch5_sideband;
+
+    TH1D* hist_radiusK0 = new TH1D("hist_radiusK0","hist_radiusK0",1000,0.,100.);
+
+    TH1D* histo_n_tracks = new TH1D("histo_n_tracks","histo_n_tracks",15000,0.,15000.);
 
 
 
