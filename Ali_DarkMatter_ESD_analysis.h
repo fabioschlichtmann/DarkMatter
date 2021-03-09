@@ -28,12 +28,11 @@ class Ali_DarkMatter_ESD_analysis : public AliAnalysisTaskSE
 public:
     Ali_DarkMatter_ESD_analysis()
 	: AliAnalysisTaskSE(),
-	AS_Event(0),AS_V0(0),AS_Track(0),AS_NUCLEV(),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
-        h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),
-        delta_dca_vs_delta(0x0),histo_delta(0x0),histo_m_squared(0x0),vec_histo_counter(0x0),vec_t_prof(0x0),vec_histo_inv_mass(0x0),
-        dEdx_vs_charge_dot_momentum(0x0),vec_invmass_L_r(0x0),vec_invmass_K0_r(0x0),
-        counter_events(0)
-        
+        AS_Event(0),AS_V0(0),AS_Track(0),as_trackP_save(0),as_trackP(0),
+        as_trackN(0),as_trackN_save(0),tracka(0),trackb(0),event_track(0),
+        pos(0),momP(0),momN(0),AS_NUCLEV(),DMparticle(0),Tree_AS_Event(0), fEventNoInFile(-2), N_good_events(0),
+        h_dca(0x0),h_dca_xyz(0x0),h2D_TPC_dEdx_vs_momentum(0x0),delta_dca_vs_delta(0x0),histo_delta(0x0),histo_m_squared(0x0),vec_histo_counter(0x0),vec_t_prof(0x0),vec_histo_inv_mass(0x0),counter_events(0),
+        EsdTrackCuts(0)
     {
 	cout << "" << endl;
 	cout << "***************************************************************************************" << endl;
@@ -41,8 +40,14 @@ public:
 	//cout << "fDigitsInputFileName: " << fDigitsInputFileName << endl;
 	cout << "***************************************************************************************" << endl;
 	//AS_Event       = new Ali_AS_Event();
-	//AS_Track       = new Ali_AS_Track();
-	cout << "" << endl;
+        //AS_Track       = new Ali_AS_Track();
+        //AS_V0 = new Ali_AS_V0();
+        AS_Track       = new Ali_AS_Track();
+        //as_trackP_save = new Ali_AS_Track();
+
+        //as_trackP = new Ali_AS_Track();
+
+        cout << "" << endl;
     }
 	Ali_DarkMatter_ESD_analysis(const char *name);
 	//virtual ~Ali_DarkMatter_ESD_analysis() {}
@@ -61,7 +66,6 @@ public:
 
     protected:
 
-	Bool_t NextEvent(Bool_t preload=kFALSE);
         void   func_tail_cancellation(Short_t *arr, Int_t nexp);
 
 
@@ -73,9 +77,22 @@ public:
     private:
 
         Ali_AS_Event* AS_Event;
-        Ali_AS_V0* AS_V0;
+        Ali_AS_V0* AS_V0 ;
         //Ali_AS_NUCLEV* AS_NUCLEV;
         Ali_AS_Track* AS_Track;
+
+        Ali_AS_Track* as_trackP_save;
+        Ali_AS_Track* as_trackP;
+        Ali_AS_Track* as_trackN;
+        Ali_AS_Track* as_trackN_save;
+        Ali_AS_Track* tracka;
+        Ali_AS_Track* trackb;
+        Ali_AS_Track* event_track;
+
+        Float_t* pos;
+        Float_t* momP;
+        Float_t* momN;
+
         Ali_AS_NUCLEV* AS_NUCLEV;
         Ali_AS_DM_particle* DMparticle;
        
@@ -102,12 +119,34 @@ public:
 
         vector<TH1D*> vec_histo_inv_mass;
 
-        vector<TH2D*> dEdx_vs_charge_dot_momentum;
-
-        vector<TH1D*> vec_invmass_L_r;
-        vector<TH1D*> vec_invmass_K0_r;
+        
 
         //vector<TH2D*> histo_delta;
+
+        //some tracks and tlvs
+
+        //Ali_AS_Track* as_trackP;
+
+        /*
+        Ali_AS_Track* as_trackP_save;
+        Ali_AS_Track* as_trackN;
+        Ali_AS_Track* as_trackN_save;
+        Ali_AS_Track* tracka;
+        Ali_AS_Track* trackb;
+        Ali_AS_Track* event_track;
+        */
+        //Float_t* pos;
+        //Float_t* momP;
+        //Float_t* momN;
+
+        /*
+        TLorentzVector* tlv_pos ;
+        TLorentzVector* tlv_neg;
+        TLorentzVector* tlv_Lambda;
+        TLorentzVector* tlv_Kaon ;
+        TLorentzVector* tlv_gamma;
+        */
+
 
 
 	Ali_DarkMatter_ESD_analysis(const Ali_DarkMatter_ESD_analysis&); // not implemented
